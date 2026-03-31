@@ -1,0 +1,74 @@
+import React from 'react'
+import { useNavigate } from 'react-router-dom'
+import { ArrowRight, Zap } from 'lucide-react'
+import { morningBriefSnippet } from '../data/mockData'
+
+export default function MorningBriefCard() {
+  const nav = useNavigate()
+
+  return (
+    <div
+      className="relative rounded-xl p-6 mb-6 overflow-hidden cursor-pointer"
+      style={{
+        background: 'linear-gradient(135deg, #0f1724 0%, #111827 40%, #0d1520 100%)',
+        border: '1px solid rgba(59,130,246,0.3)',
+      }}
+      onClick={() => nav('/morning-brief')}
+    >
+      {/* Glow */}
+      <div
+        className="absolute top-0 right-0 w-72 h-72 rounded-full pointer-events-none"
+        style={{
+          background: 'radial-gradient(circle, rgba(59,130,246,0.08) 0%, transparent 70%)',
+          transform: 'translate(30%, -30%)',
+        }}
+      />
+
+      <div className="relative z-10">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-3">
+              <div
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold"
+                style={{ background: 'rgba(59,130,246,0.15)', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.2)' }}
+              >
+                <Zap size={11} fill="currentColor" />
+                MORNING BRIEF
+              </div>
+              <span className="text-xs" style={{ color: '#4a5568' }}>{morningBriefSnippet.date}</span>
+            </div>
+
+            <h2
+              className="text-xl font-bold mb-2 leading-tight"
+              style={{ fontFamily: 'Syne, sans-serif', color: '#e8eaf0' }}
+            >
+              {morningBriefSnippet.headline}
+            </h2>
+
+            <p className="text-sm mb-4 leading-relaxed" style={{ color: '#8892a4' }}>
+              {morningBriefSnippet.snippet}
+            </p>
+
+            <div className="space-y-1.5 mb-5">
+              {morningBriefSnippet.catalysts.map((c, i) => (
+                <div key={i} className="flex items-start gap-2">
+                  <div className="w-1 h-1 rounded-full mt-2 flex-shrink-0" style={{ background: '#3b82f6' }} />
+                  <p className="text-sm" style={{ color: '#8892a4' }}>{c}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <button
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all"
+          style={{ background: '#3b82f6', color: '#fff' }}
+          onClick={(e) => { e.stopPropagation(); nav('/morning-brief') }}
+        >
+          View Full Brief
+          <ArrowRight size={14} />
+        </button>
+      </div>
+    </div>
+  )
+}
