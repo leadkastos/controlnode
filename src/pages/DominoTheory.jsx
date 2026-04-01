@@ -18,7 +18,7 @@ const dominoes = [
     status: 'Active',
     color: '#3b82f6',
     badge: 'blue',
-    desc: 'BTC ETF at $60B+ AUM. ETH ETF growing. XRP ETF applications filed by 3 major institutions. Institutional access layer now exists.',
+    desc: 'BTC ETF at $60B+ AUM. ETH ETF growing. XRP ETF applications filed by multiple institutions. Institutional access infrastructure developing.',
   },
   {
     num: '03',
@@ -26,23 +26,23 @@ const dominoes = [
     status: 'Activating',
     color: '#f59e0b',
     badge: 'yellow',
-    desc: 'BRICS summit opened with digital settlement framework language. XRP as a neutral bridge currency in non-USD corridors is the long-term thesis trigger.',
+    desc: 'BRICS summit opened with digital settlement framework language. Cross-border payment infrastructure context developing for non-USD corridors.',
   },
   {
     num: '04',
     title: 'Sovereign Adoption',
-    status: 'Pending',
+    status: 'Monitoring',
     color: '#4a5568',
     badge: 'blue',
-    desc: 'Watch for central bank or sovereign wealth fund announcements. When one sovereign adopts XRP-based settlement, the cascade begins.',
+    desc: 'Watching for central bank or sovereign wealth fund engagement with XRP-based settlement infrastructure. Not yet active.',
   },
   {
     num: '05',
-    title: 'Retail FOMO Cycle',
-    status: 'Pending',
+    title: 'Broader Market Participation',
+    status: 'Monitoring',
     color: '#4a5568',
     badge: 'blue',
-    desc: 'Final stage. Retail re-enters after institutional positioning complete. Media narrative reaches saturation. Parabolic price discovery.',
+    desc: 'Final stage context. Broader market participation typically follows institutional positioning. Media narrative and search interest would be observable signals.',
   },
 ]
 
@@ -51,17 +51,19 @@ export default function DominoTheory() {
     <AppLayout>
       <DetailPageLayout
         title="Domino Theory"
-        subtitle="The framework for understanding the sequential catalysts that drive XRP's long-term price thesis."
+        subtitle="A framework for tracking sequential macro and regulatory developments. For informational and educational purposes only — not financial advice."
         badge="STAGE 3 — ACTIVATING"
         badgeColor="yellow"
       >
         <DetailSection title="Framework Overview">
           <p className="text-sm leading-relaxed mb-3">
-            The Domino Theory is ControlNode's proprietary framework for tracking sequential macro and regulatory catalysts. Each "domino" represents a structural change that makes the next one more probable. We are currently in Stage 3.
+            The Domino Theory is ControlNode's observational framework for tracking sequential macro and regulatory developments. Each stage represents a structural shift that contextually supports the next. We are currently observing Stage 3 conditions.
+          </p>
+          <p className="text-xs" style={{ color: '#4a5568' }}>
+            This framework is for educational context only. It does not constitute a prediction of future price movements or a recommendation of any kind.
           </p>
         </DetailSection>
 
-        {/* Domino Cards */}
         <div className="space-y-3 mb-4">
           {dominoes.map((d) => (
             <div
@@ -73,7 +75,7 @@ export default function DominoTheory() {
                 {d.num}
               </div>
               <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <h3 className="text-sm font-semibold" style={{ color: '#e8eaf0' }}>{d.title}</h3>
                   <Badge color={d.badge}>{d.status}</Badge>
                 </div>
@@ -83,22 +85,22 @@ export default function DominoTheory() {
           ))}
         </div>
 
-        <DetailSection title="Current Stage Analysis — Stage 3">
+        <DetailSection title="Stage 3 Context">
           <BulletList items={[
-            'The BRICS summit language on "digital settlement frameworks" is the Stage 3 catalyst trigger.',
-            'This does not mean XRP is officially adopted — it means the narrative and political will is forming.',
-            'Stage 3 historically lasts 3–9 months before Stage 4 (Sovereign Adoption) signals emerge.',
-            'Price behavior in Stage 3: volatile accumulation with higher lows. Range: $2.00 – $3.50.',
-            'Catalyst to watch: Any G20 or BRICS nation announcing XRP or RLUSD integration.',
+            'BRICS summit language on digital settlement frameworks represents the Stage 3 observational trigger.',
+            'This does not indicate official XRP adoption — it indicates geopolitical narrative formation around non-USD settlement infrastructure.',
+            'Stage 3 periods historically involve increased volatility and institutional positioning activity.',
+            'Price ranges during such periods have historically been wide — precise ranges are not predictable.',
+            'Key development to watch: Any G20 or BRICS nation making formal digital settlement announcements.',
           ]} />
         </DetailSection>
 
-        <DetailSection title="Risks to the Thesis">
+        <DetailSection title="Contextual Risk Factors">
           <BulletList items={[
-            'USD strengthens significantly and BRICS framework stalls — delays Stage 3 → 4 transition.',
-            'XRP ETF applications denied — removes institutional access catalyst.',
-            'Competing technology (SWIFT GPI upgrade, CBDC interoperability) reduces XRP\'s edge.',
-            'Macro recession scenario — risk asset selloff delays entire sequence by 12–18 months.',
+            'USD strengthening significantly could delay BRICS framework momentum.',
+            'XRP ETF application denials would affect the Stage 2 institutional access thesis.',
+            'Competing infrastructure (SWIFT upgrades, CBDC interoperability) could reduce the relative opportunity.',
+            'Broader macro downturn could affect all risk assets and delay sequential development.',
           ]} />
         </DetailSection>
       </DetailPageLayout>
