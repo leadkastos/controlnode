@@ -8,8 +8,8 @@ export const mockNotifications = [
   },
   {
     id: 2,
-    title: 'ETF Flow Update Posted',
-    snippet: 'BlackRock BTC ETF sees $340M inflow — largest in 3 weeks.',
+    title: 'XRP ETF Flow Update Posted',
+    snippet: 'XRP ETF applications: SEC review timeline updated.',
     time: '42 min ago',
     unread: true,
   },
@@ -35,10 +35,47 @@ export const mockSignals = [
   { label: 'Risk Appetite', value: 'Cautious', color: 'red' },
 ]
 
-export const mockTrendingNarratives = [
-  'SEC drops XRP retail lawsuit — Ripple IPO speculation resurfaces',
-  'BRICS nations accelerate de-dollarization via digital assets',
-  'BlackRock expands tokenization play beyond BTC ETF',
+export const mockNewsFeed = [
+  {
+    id: 1,
+    headline: 'SEC Drops Final Appeal in XRP Lawsuit — Ripple Fully Cleared',
+    source: 'Reuters',
+    category: 'Regulatory',
+    time: '2 hrs ago',
+    url: 'https://reuters.com',
+  },
+  {
+    id: 2,
+    headline: 'Senate Banking Committee Schedules Crypto Framework Hearing',
+    source: 'Congress.gov',
+    category: 'Government',
+    time: '4 hrs ago',
+    url: 'https://congress.gov',
+  },
+  {
+    id: 3,
+    headline: 'BRICS Summit: Digital Settlement Framework Language Introduced',
+    source: 'Financial Times',
+    category: 'Geopolitical',
+    time: '6 hrs ago',
+    url: 'https://ft.com',
+  },
+  {
+    id: 4,
+    headline: 'BlackRock Files for XRP ETF — Third Institution This Month',
+    source: 'Bloomberg',
+    category: 'ETF',
+    time: '1 day ago',
+    url: 'https://bloomberg.com',
+  },
+  {
+    id: 5,
+    headline: 'BOJ Holds Rates — Yen Carry Trade Dynamics Remain in Focus',
+    source: 'WSJ',
+    category: 'Macro',
+    time: '1 day ago',
+    url: 'https://wsj.com',
+  },
 ]
 
 export const morningBriefSnippet = {
@@ -105,12 +142,12 @@ export const dashboardCards = [
   },
   {
     id: 'etf',
-    title: 'ETF Flow Tracker',
+    title: 'XRP ETF Flow Tracker',
     route: '/etf-flows',
     data: [
-      { label: 'BTC ETF Net', value: '+$340M (24h)', positive: true },
-      { label: 'ETH ETF Net', value: '+$82M (24h)', positive: true },
-      { label: 'Observed Trend', value: 'Institutional inflows' },
+      { label: 'Filings Active', value: '3 institutions', positive: true },
+      { label: 'SEC Status', value: 'Under review' },
+      { label: 'Est. AUM (approval)', value: '$2–5B projected' },
     ],
   },
   {
@@ -130,7 +167,17 @@ export const dashboardCards = [
     data: [
       { label: 'Brent Crude', value: '$87.40 (+1.2%)' },
       { label: 'USD/JPY', value: '153.4' },
-      { label: 'Correlation Context', value: 'Historically observed' },
+      { label: 'Oil in JPY', value: '¥13,407/barrel' },
+    ],
+  },
+  {
+    id: 'youtube',
+    title: 'YouTube Intel',
+    route: '/account',
+    data: [
+      { label: 'Following', value: '0 channels' },
+      { label: 'Latest Video', value: 'Add channels in profile' },
+      { label: 'Next Check', value: '6:00 AM' },
     ],
   },
 ]
