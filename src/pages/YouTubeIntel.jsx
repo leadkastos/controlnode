@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { Link } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
 import { Play, ExternalLink, Clock, Youtube } from 'lucide-react'
 
@@ -198,9 +199,9 @@ export default function YouTubeIntel() {
       <div className="mt-6 text-center">
         <p className="text-xs" style={{ color: '#4a5568' }}>
           Following 4 of 4 channels.{' '}
-          <a href="/account" style={{ color: '#3b82f6' }}>
+          <Link to="/account" style={{ color: '#3b82f6' }}>
             Manage channels in your profile →
-          </a>
+          </Link>
         </p>
       </div>
     </AppLayout>
