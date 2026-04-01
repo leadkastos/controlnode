@@ -13,6 +13,7 @@ const routeTitles = {
   '/media-narratives': 'Media & Narratives',
   '/etf-flows': 'XRP ETF Flow Tracker',
   '/watchlist': 'Watchlist',
+  '/youtube-intel': 'YouTube Intel',
   '/account': 'My Profile',
   '/billing': 'Billing',
   '/settings': 'Settings',
