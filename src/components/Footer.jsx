@@ -21,7 +21,7 @@ export default function Footer() {
       >
         {/* Disclaimer text */}
         <p className="text-xs leading-relaxed text-center mb-4" style={{ color: '#374151' }}>
-          ControlNode provides market intelligence for <span style={{ color: '#4a5568' }}>informational purposes only</span>. Nothing on this platform constitutes financial advice, investment advice, or a recommendation to buy or sell any asset. Always consult a qualified financial advisor. M&N Consulting LLC.
+          ControlNode provides market intelligence for <span style={{ color: '#4a5568' }}>informational purposes only</span>. Nothing on this platform constitutes financial advice, investment advice, or a recommendation to buy or sell any asset. Third-party content (including embedded videos) is provided for informational purposes — ControlNode does not own or control this content. Always consult a qualified financial advisor. M&N Consulting LLC.
         </p>
 
         {/* Links row */}
