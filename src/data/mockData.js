@@ -173,7 +173,7 @@ export const dashboardCards = [
   {
     id: 'youtube',
     title: 'YouTube Intel',
-    route: '/account',
+    route: '/youtube-intel',
     data: [
       { label: 'Following', value: '0 channels' },
       { label: 'Latest Video', value: 'Add channels in profile' },
