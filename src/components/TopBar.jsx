@@ -14,6 +14,8 @@ const routeTitles = {
   '/etf-flows': 'XRP ETF Flow Tracker',
   '/watchlist': 'Watchlist',
   '/youtube-intel': 'YouTube Intel',
+  '/market-chatter': 'Unconfirmed Market Chatter',
+  '/admin/chatter': 'Admin — Market Chatter',
   '/account': 'My Profile',
   '/billing': 'Billing',
   '/settings': 'Settings',
