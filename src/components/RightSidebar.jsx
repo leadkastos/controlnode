@@ -1,11 +1,21 @@
 import React from 'react'
-import { mockWatchlist, mockSignals, mockTrendingNarratives } from '../data/mockData'
-import { TrendingUp, TrendingDown } from 'lucide-react'
+import { mockWatchlist, mockSignals, mockNewsFeed } from '../data/mockData'
+import { TrendingUp, TrendingDown, ExternalLink } from 'lucide-react'
 
 const signalColors = {
   green: { bg: 'rgba(16,185,129,0.12)', text: '#10b981' },
   yellow: { bg: 'rgba(245,158,11,0.12)', text: '#f59e0b' },
   red: { bg: 'rgba(239,68,68,0.12)', text: '#ef4444' },
+}
+
+const categoryColors = {
+  Regulatory: { bg: 'rgba(139,92,246,0.12)', text: '#8b5cf6' },
+  Government: { bg: 'rgba(59,130,246,0.12)', text: '#3b82f6' },
+  Geopolitical: { bg: 'rgba(245,158,11,0.12)', text: '#f59e0b' },
+  ETF: { bg: 'rgba(16,185,129,0.12)', text: '#10b981' },
+  Macro: { bg: 'rgba(239,68,68,0.12)', text: '#ef4444' },
+  XRP: { bg: 'rgba(59,130,246,0.12)', text: '#3b82f6' },
+  Ripple: { bg: 'rgba(139,92,246,0.12)', text: '#8b5cf6' },
 }
 
 export default function RightSidebar() {
@@ -66,30 +76,45 @@ export default function RightSidebar() {
         </div>
       </div>
 
-      {/* Trending Narratives */}
+      {/* News Feed */}
       <div>
         <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#4a5568' }}>
-          Trending Narratives
+          News Feed
         </p>
         <div className="space-y-2">
-          {mockTrendingNarratives.map((n, i) => (
-            <div
-              key={i}
-              className="px-3 py-2.5 rounded-lg cursor-pointer transition-colors hover:bg-white/5"
-              style={{ background: '#161a22', border: '1px solid #1e2330' }}
-            >
-              <div className="flex gap-2">
-                <span className="text-xs font-bold mt-0.5 flex-shrink-0" style={{ color: '#3b82f6' }}>
-                  {String(i + 1).padStart(2, '0')}
-                </span>
-                <p className="text-xs leading-snug" style={{ color: '#8892a4' }}>{n}</p>
-              </div>
-            </div>
-          ))}
+          {mockNewsFeed.map((item) => {
+            const cat = categoryColors[item.category] || categoryColors['XRP']
+            return (
+              <a
+                key={item.id}
+                href={item.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block px-3 py-3 rounded-lg transition-colors hover:bg-white/5"
+                style={{ background: '#161a22', border: '1px solid #1e2330', textDecoration: 'none' }}
+              >
+                <div className="flex items-center justify-between gap-1 mb-1.5">
+                  <span
+                    className="text-xs font-semibold px-1.5 py-0.5 rounded"
+                    style={{ background: cat.bg, color: cat.text }}
+                  >
+                    {item.category}
+                  </span>
+                  <ExternalLink size={10} style={{ color: '#4a5568', flexShrink: 0 }} />
+                </div>
+                <p className="text-xs leading-snug mb-1" style={{ color: '#e8eaf0' }}>
+                  {item.headline}
+                </p>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium" style={{ color: '#3b82f6' }}>{item.source}</span>
+                  <span className="text-xs" style={{ color: '#4a5568' }}>{item.time}</span>
+                </div>
+              </a>
+            )
+          })}
         </div>
       </div>
 
-      {/* Disclaimer note */}
       <div className="pt-2">
         <p className="text-xs leading-relaxed" style={{ color: '#2d3748' }}>
           For informational purposes only. Not financial advice.
