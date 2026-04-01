@@ -185,7 +185,7 @@ export default function YouTubeIntel() {
         style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.15)', color: '#8892a4' }}
       >
         <span style={{ color: '#3b82f6', fontWeight: 600 }}>Note: </span>
-        Videos below are from independent creators. ControlNode does not endorse the content of any video. Nothing presented here constitutes financial advice. Always do your own research.
+        Videos below are from independent creators. Third-party content (including embedded videos) is provided for informational purposes only. ControlNode does not own or control this content. Nothing presented here constitutes financial advice. Always do your own research.
       </div>
 
       {/* 2x2 Video Grid */}
