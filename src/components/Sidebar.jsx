@@ -62,12 +62,20 @@ function SidebarContent({ onClose }) {
     <>
       <div className="px-4 py-5 flex items-center justify-between" style={{ borderBottom: '1px solid #1e2330' }}>
         <div className="flex items-center gap-2.5">
-          <div
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold"
-            style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)' }}
-          >
-            CN
-          </div>
+          <svg width="28" height="28" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="64" height="64" rx="12" fill="#6d28d9"/>
+            <circle cx="32" cy="32" r="4" fill="white"/>
+            <circle cx="16" cy="20" r="3" fill="white" opacity="0.9"/>
+            <circle cx="48" cy="18" r="3" fill="white" opacity="0.9"/>
+            <circle cx="50" cy="44" r="3" fill="white" opacity="0.9"/>
+            <circle cx="18" cy="48" r="3" fill="white" opacity="0.9"/>
+            <line x1="32" y1="32" x2="16" y2="20" stroke="white" strokeWidth="1.5" opacity="0.5"/>
+            <line x1="32" y1="32" x2="48" y2="18" stroke="white" strokeWidth="1.5" opacity="0.5"/>
+            <line x1="32" y1="32" x2="50" y2="44" stroke="white" strokeWidth="1.5" opacity="0.5"/>
+            <line x1="32" y1="32" x2="18" y2="48" stroke="white" strokeWidth="1.5" opacity="0.5"/>
+            <line x1="16" y1="20" x2="48" y2="18" stroke="white" strokeWidth="1" opacity="0.25"/>
+            <line x1="50" y1="44" x2="18" y2="48" stroke="white" strokeWidth="1" opacity="0.25"/>
+          </svg>
           <span className="font-semibold text-sm tracking-wide" style={{ fontFamily: 'Syne, sans-serif', color: '#e8eaf0' }}>
             ControlNode
           </span>
