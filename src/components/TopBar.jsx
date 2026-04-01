@@ -27,15 +27,19 @@ export default function TopBar() {
 
   return (
     <header
-      className="sticky top-0 z-20 flex items-center justify-between px-6 h-14"
+      className="sticky top-0 z-20 flex items-center justify-between px-4 lg:px-6 h-14"
       style={{ background: 'rgba(10,11,15,0.85)', borderBottom: '1px solid #1e2330', backdropFilter: 'blur(12px)' }}
     >
-      <h1
-        className="text-base font-semibold tracking-tight"
-        style={{ fontFamily: 'Syne, sans-serif', color: '#e8eaf0' }}
-      >
-        {title}
-      </h1>
+      {/* Left: spacer on mobile for hamburger, title */}
+      <div className="flex items-center gap-3">
+        <div className="w-8 lg:hidden" /> {/* space for hamburger button */}
+        <h1
+          className="text-base font-semibold tracking-tight"
+          style={{ fontFamily: 'Syne, sans-serif', color: '#e8eaf0' }}
+        >
+          {title}
+        </h1>
+      </div>
 
       <div className="flex items-center gap-2">
         <NotificationBell />
