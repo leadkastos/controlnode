@@ -196,7 +196,7 @@ const legalDocs = {
       },
       {
         heading: '6. Third-Party Content',
-        body: `ControlNode aggregates and displays content from third-party news sources, data providers, and public information. M&N Consulting LLC does not endorse, verify, or guarantee the accuracy of third-party content. YouTube videos displayed through the YouTube Intel feature are created by independent content creators. ControlNode does not endorse the views, opinions, or recommendations expressed in any third-party content.`,
+        body: `ControlNode aggregates and displays content from third-party news sources, data providers, and public information. M&N Consulting LLC does not endorse, verify, or guarantee the accuracy of third-party content. YouTube videos displayed through the YouTube Intel feature are created by independent content creators. ControlNode does not endorse the views, opinions, or recommendations expressed in any third-party content.\n\nThird-party content (including embedded videos) is provided for informational purposes only. ControlNode does not own or control this content. All rights to third-party content remain with their respective owners.`,
       },
       {
         heading: '7. Past Performance',
