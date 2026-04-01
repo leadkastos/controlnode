@@ -2,7 +2,7 @@ export const mockNotifications = [
   {
     id: 1,
     title: 'New Morning Brief Available',
-    snippet: 'XRP faces key resistance at $2.40. Macro headwinds persist.',
+    snippet: 'XRP technical structure and macro context reviewed. BRICS developments noted.',
     time: '8 min ago',
     unread: true,
   },
@@ -16,7 +16,7 @@ export const mockNotifications = [
   {
     id: 3,
     title: 'Geopolitical Alert Updated',
-    snippet: 'USD/JPY breaks 152 — BOJ intervention risk rising.',
+    snippet: 'USD/JPY breaks 152 — BOJ intervention context updated.',
     time: '2 hrs ago',
     unread: false,
   },
@@ -44,10 +44,10 @@ export const mockTrendingNarratives = [
 export const morningBriefSnippet = {
   date: 'Monday, March 23, 2026',
   headline: 'XRP Holds Key Level as Macro Turns — Domino Theory Activates',
-  snippet: 'Three catalysts converged overnight. XRP defended $2.18 support on heavy volume, the BOJ signaled a policy hold, and a major BRICS summit opened with digital asset language for the first time.',
+  snippet: 'Three developments converged overnight. XRP held the $2.18 area on elevated volume, the BOJ signaled a policy hold, and a major BRICS summit opened with digital asset settlement language for the first time.',
   catalysts: [
-    'XRP held $2.18 support — bulls defending critical floor',
-    'BOJ holds rates; USD/JPY spikes to 153.4 — yen pressure building',
+    'XRP price action at $2.18 area — technically significant reference zone',
+    'BOJ holds rates; USD/JPY moves to 153.4 — yen dynamics in focus',
     'BRICS summit opens with "digital settlement framework" language',
   ],
 }
@@ -60,7 +60,7 @@ export const dashboardCards = [
     data: [
       { label: 'Current Price', value: '$2.31', highlight: true },
       { label: '24h Change', value: '+3.4%', positive: true },
-      { label: 'Key Resistance', value: '$2.55' },
+      { label: 'Overhead Reference', value: '$2.55' },
     ],
   },
   {
@@ -68,9 +68,9 @@ export const dashboardCards = [
     title: 'Daily Technical Analysis',
     route: '/xrp-intelligence',
     data: [
-      { label: 'Trend', value: 'Bullish Structure Intact' },
-      { label: 'RSI (14)', value: '61.4 — Not Overbought' },
-      { label: 'Key Level', value: '$2.18 Support Holding' },
+      { label: 'Structure', value: 'Uptrend Observed' },
+      { label: 'RSI (14)', value: '61.4 — Mid-range' },
+      { label: 'Reference Level', value: '$2.18 Area' },
     ],
   },
   {
@@ -79,7 +79,7 @@ export const dashboardCards = [
     route: '/xrp-intelligence',
     data: [
       { label: 'Top Story', value: 'SEC drops retail lawsuit' },
-      { label: 'Ripple IPO', value: 'Speculation rising post-ruling' },
+      { label: 'Ripple IPO', value: 'Early-stage discussions noted' },
       { label: 'ODL Volume', value: '+18% WoW' },
     ],
   },
@@ -88,9 +88,9 @@ export const dashboardCards = [
     title: 'Domino Theory',
     route: '/domino-theory',
     data: [
-      { label: 'Stage', value: 'Stage 3 — Acceleration' },
-      { label: 'Trigger', value: 'BOJ policy divergence' },
-      { label: 'Next Domino', value: 'Yen carry unwind' },
+      { label: 'Stage', value: 'Stage 3 — Activating' },
+      { label: 'Context', value: 'BOJ policy divergence' },
+      { label: 'Next Watch', value: 'Yen carry dynamics' },
     ],
   },
   {
@@ -98,9 +98,9 @@ export const dashboardCards = [
     title: 'Geopolitical Watch',
     route: '/geopolitical-watch',
     data: [
-      { label: 'Flash Point', value: 'USD/JPY at 153.4' },
+      { label: 'Focus', value: 'USD/JPY at 153.4' },
       { label: 'BRICS Summit', value: 'Digital asset framework' },
-      { label: 'Risk Level', value: 'Elevated', warning: true },
+      { label: 'Context Level', value: 'Elevated', warning: true },
     ],
   },
   {
@@ -110,7 +110,7 @@ export const dashboardCards = [
     data: [
       { label: 'BTC ETF Net', value: '+$340M (24h)', positive: true },
       { label: 'ETH ETF Net', value: '+$82M (24h)', positive: true },
-      { label: 'Trend', value: 'Institutional accumulation' },
+      { label: 'Observed Trend', value: 'Institutional inflows' },
     ],
   },
   {
@@ -119,8 +119,8 @@ export const dashboardCards = [
     route: '/media-narratives',
     data: [
       { label: 'Dominant Narrative', value: 'Crypto regulation clarity' },
-      { label: 'Sentiment', value: 'Cautiously Bullish' },
-      { label: 'Contrarian Signal', value: 'Retail FOMO rising' },
+      { label: 'Sentiment Reading', value: 'Cautiously Bullish' },
+      { label: 'Contrarian Note', value: 'Sentiment elevated' },
     ],
   },
   {
@@ -129,8 +129,8 @@ export const dashboardCards = [
     route: '/oil-vs-yen',
     data: [
       { label: 'Brent Crude', value: '$87.40 (+1.2%)' },
-      { label: 'USD/JPY', value: '153.4 (Risk ON)' },
-      { label: 'Correlation', value: 'Oil up = XRP bullish' },
+      { label: 'USD/JPY', value: '153.4' },
+      { label: 'Correlation Context', value: 'Historically observed' },
     ],
   },
 ]
