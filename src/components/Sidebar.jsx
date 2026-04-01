@@ -3,25 +3,26 @@ import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, TrendingUp, Zap, GitBranch, Globe,
   BarChart2, Newspaper, LineChart, Star, User, CreditCard,
-  Settings, Menu, X
+  Settings, Menu, X, Youtube
 } from 'lucide-react'
 
 const mainNav = [
-  { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
-  { label: 'Market Overview', icon: TrendingUp, path: '/market-overview' },
-  { label: 'XRP Intelligence', icon: Zap, path: '/xrp-intelligence' },
-  { label: 'Domino Theory', icon: GitBranch, path: '/domino-theory' },
-  { label: 'Geopolitical Watch', icon: Globe, path: '/geopolitical-watch' },
-  { label: 'Oil vs Yen', icon: BarChart2, path: '/oil-vs-yen' },
-  { label: 'Media & Narratives', icon: Newspaper, path: '/media-narratives' },
-  { label: 'ETF Flows', icon: LineChart, path: '/etf-flows' },
-  { label: 'Watchlist', icon: Star, path: '/watchlist' },
+  { label: 'Dashboard', icon: LayoutDashboard, path: '/', color: '#3b82f6' },
+  { label: 'Market Overview', icon: TrendingUp, path: '/market-overview', color: '#06b6d4' },
+  { label: 'XRP Intelligence', icon: Zap, path: '/xrp-intelligence', color: '#8b5cf6' },
+  { label: 'Domino Theory', icon: GitBranch, path: '/domino-theory', color: '#f59e0b' },
+  { label: 'Geopolitical Watch', icon: Globe, path: '/geopolitical-watch', color: '#ef4444' },
+  { label: 'Oil vs Yen', icon: BarChart2, path: '/oil-vs-yen', color: '#f97316' },
+  { label: 'Media & Narratives', icon: Newspaper, path: '/media-narratives', color: '#ec4899' },
+  { label: 'ETF Flows', icon: LineChart, path: '/etf-flows', color: '#10b981' },
+  { label: 'Watchlist', icon: Star, path: '/watchlist', color: '#eab308' },
+  { label: 'YouTube Intel', icon: Youtube, path: '/youtube-intel', color: '#ef4444' },
 ]
 
 const bottomNav = [
-  { label: 'Account', icon: User, path: '/account' },
-  { label: 'Billing', icon: CreditCard, path: '/billing' },
-  { label: 'Settings', icon: Settings, path: '/settings' },
+  { label: 'Account', icon: User, path: '/account', color: '#8892a4' },
+  { label: 'Billing', icon: CreditCard, path: '/billing', color: '#8892a4' },
+  { label: 'Settings', icon: Settings, path: '/settings', color: '#8892a4' },
 ]
 
 function NavItem({ item, onClose }) {
@@ -33,11 +34,24 @@ function NavItem({ item, onClose }) {
   return (
     <NavLink
       to={item.path}
-      className={`sidebar-item ${isActive ? 'active' : ''}`}
       onClick={onClose}
+      style={{ textDecoration: 'none' }}
     >
-      <item.icon size={16} strokeWidth={1.8} />
-      <span>{item.label}</span>
+      <div
+        className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer"
+        style={{
+          background: isActive ? `${item.color}18` : 'transparent',
+          color: isActive ? item.color : '#8892a4',
+          borderLeft: isActive ? `2px solid ${item.color}` : '2px solid transparent',
+        }}
+      >
+        <item.icon
+          size={16}
+          strokeWidth={1.8}
+          style={{ color: isActive ? item.color : item.color + '99', flexShrink: 0 }}
+        />
+        <span>{item.label}</span>
+      </div>
     </NavLink>
   )
 }
@@ -90,7 +104,6 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* Mobile hamburger */}
       <button
         className="fixed top-3.5 left-4 z-50 p-2 rounded-lg lg:hidden"
         style={{ background: '#161a22', border: '1px solid #1e2330', color: '#e8eaf0' }}
@@ -99,7 +112,6 @@ export default function Sidebar() {
         <Menu size={18} />
       </button>
 
-      {/* Mobile overlay */}
       {mobileOpen && (
         <div
           className="fixed inset-0 z-40 lg:hidden"
@@ -108,7 +120,6 @@ export default function Sidebar() {
         />
       )}
 
-      {/* Mobile drawer */}
       <aside
         className="fixed left-0 top-0 h-screen w-64 flex flex-col z-50 transition-transform duration-300 lg:hidden"
         style={{
@@ -120,7 +131,6 @@ export default function Sidebar() {
         <SidebarContent onClose={() => setMobileOpen(false)} />
       </aside>
 
-      {/* Desktop sidebar */}
       <aside
         className="hidden lg:flex fixed left-0 top-0 h-screen w-56 flex-col z-30"
         style={{ background: '#0d0f14', borderRight: '1px solid #1e2330' }}
