@@ -8,55 +8,57 @@ export default function XRPIntelligence() {
     <AppLayout>
       <DetailPageLayout
         title="XRP Intelligence"
-        subtitle="Deep-dive technical analysis, on-chain data, Ripple corporate updates, and ODL corridor tracking."
+        subtitle="Technical structure, on-chain data, Ripple corporate updates, and ODL corridor tracking. For informational purposes only."
         badge="XRP FOCUS"
         badgeColor="blue"
       >
-        <DetailSection title="Price & Technicals">
+        <DetailSection title="Price & Technical Structure">
           <div className="space-y-0">
             <DataRow label="Current Price" value="$2.31" valueColor="#e8eaf0" />
             <DataRow label="24h Change" value="+3.4%" valueColor="#10b981" />
             <DataRow label="7d Change" value="+11.2%" valueColor="#10b981" />
             <DataRow label="30d Change" value="+28.4%" valueColor="#10b981" />
-            <DataRow label="RSI (14)" value="61.4 — Neutral/Bullish" valueColor="#f59e0b" />
-            <DataRow label="MACD" value="Bullish Crossover" valueColor="#10b981" />
+            <DataRow label="RSI (14)" value="61.4 — Mid-range" />
+            <DataRow label="MACD" value="Positive crossover observed" />
             <DataRow label="Volume (24h)" value="$4.2B" />
             <DataRow label="Market Cap" value="$133B" />
           </div>
         </DetailSection>
 
-        <DetailSection title="Key Levels">
+        <DetailSection title="Technical Reference Levels">
           <div className="space-y-0">
-            <DataRow label="🔴 Hard Support" value="$2.05" valueColor="#ef4444" />
-            <DataRow label="🟡 Support Zone" value="$2.18 – $2.22" valueColor="#f59e0b" />
+            <DataRow label="Lower Reference Zone" value="$2.05" />
+            <DataRow label="Area of Interest (Below)" value="$2.18 – $2.22" />
             <DataRow label="Current Price" value="$2.31" valueColor="#e8eaf0" />
-            <DataRow label="🟡 Resistance" value="$2.40" valueColor="#f59e0b" />
-            <DataRow label="🟢 Bull Target" value="$2.55 → $2.80" valueColor="#10b981" />
-            <DataRow label="🚀 Extended Target" value="$3.00+" valueColor="#10b981" />
+            <DataRow label="Overhead Reference" value="$2.40" />
+            <DataRow label="Extended Overhead Reference" value="$2.55 – $2.80" />
           </div>
+          <p className="text-xs mt-3" style={{ color: '#4a5568' }}>
+            These are technical observation levels only. Not buy or sell signals.
+          </p>
         </DetailSection>
 
-        <DetailSection title="On-Chain Data">
+        <DetailSection title="On-Chain Observations">
           <BulletList items={[
-            'Exchange inflows declining — net outflow trend suggests accumulation behavior.',
-            'Large wallet (whale) addresses increased holdings by ~2.3% over past 7 days.',
-            'ODL (On-Demand Liquidity) volume up 18% WoW — real utility growth continues.',
-            'Active addresses: 380K/day (30-day high) — network usage expanding.',
-            'XRP locked in escrow: 39.4B (Ripple monthly release cadence on track).',
+            'Exchange inflows declining — net outflow trend observed, consistent with longer-term holding behavior.',
+            'Large wallet addresses increased holdings by approximately 2.3% over the past 7 days.',
+            'ODL (On-Demand Liquidity) volume up 18% week-over-week — network utility data point.',
+            'Active addresses: 380K/day — at 30-day high, network usage expanding.',
+            'XRP in escrow: 39.4B — Ripple monthly release cadence continuing as scheduled.',
           ]} />
         </DetailSection>
 
         <DetailSection title="Ripple Corporate">
           <BulletList items={[
-            'SEC case effectively resolved — Ripple operating without legal overhang for first time since 2020.',
-            'Ripple IPO speculation: Investment banks reportedly in early conversations. Timeline: H2 2026 earliest.',
-            'RLUSD (Ripple stablecoin): $2.1B market cap, growing. On-ramp for institutional XRP flows.',
+            'SEC case effectively resolved — Ripple operating without active legal proceedings for first time since 2020.',
+            'Ripple IPO: Early-stage conversations with investment banks reported. No confirmed timeline.',
+            'RLUSD (Ripple stablecoin): $2.1B market cap. Functioning as institutional on-ramp to XRP ecosystem.',
             'New ODL corridors: Philippines, Brazil, and UAE activations confirmed in Q1 2026.',
-            'Ripple acquiring prime brokerage licenses in 3 new jurisdictions (details pending).',
+            'Ripple pursuing prime brokerage licenses in additional jurisdictions.',
           ]} />
         </DetailSection>
 
-        <DetailSection title="XRP News">
+        <DetailSection title="Recent News">
           <div className="space-y-3">
             {[
               { headline: 'SEC Drops Final Retail Lawsuit Appeal Against XRP', time: '2 hrs ago', tag: 'Regulatory' },
