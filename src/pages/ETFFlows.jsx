@@ -3,70 +3,119 @@ import AppLayout from '../components/AppLayout'
 import DetailPageLayout, { DetailSection, DataRow, BulletList } from '../components/DetailPageLayout'
 import { Badge } from '../components/UI'
 
-const etfData = [
-  { name: 'BlackRock iShares BTC ETF (IBIT)', flow: '+$340M', aum: '$28.4B', up: true },
-  { name: 'Fidelity Wise Origin BTC (FBTC)', flow: '+$128M', aum: '$11.2B', up: true },
-  { name: 'ARK 21Shares BTC ETF (ARKB)', flow: '+$44M', aum: '$3.8B', up: true },
-  { name: 'Grayscale BTC Trust (GBTC)', flow: '-$62M', aum: '$18.1B', up: false },
-  { name: 'BlackRock ETH ETF (ETHA)', flow: '+$82M', aum: '$3.1B', up: true },
-  { name: 'Fidelity ETH ETF (FETH)', flow: '+$31M', aum: '$1.4B', up: true },
+const xrpEtfFilings = [
+  { institution: 'Blackrock', ticker: 'XRPA', status: 'Filed', date: 'Feb 2026', inflow: null, outflow: null },
+  { institution: 'Fidelity', ticker: 'FXRP', status: 'Filed', date: 'Jan 2026', inflow: null, outflow: null },
+  { institution: 'Franklin Templeton', ticker: 'FXRP', status: 'Filed', date: 'Mar 2026', inflow: null, outflow: null },
 ]
 
 export default function ETFFlows() {
   return (
     <AppLayout>
       <DetailPageLayout
-        title="ETF Flow Tracker"
-        subtitle="Daily net flows for Bitcoin and Ethereum ETFs — the institutional demand signal."
-        badge="INSTITUTIONAL FLOWS"
+        title="XRP ETF Flow Tracker"
+        subtitle="Tracking XRP ETF filings, SEC review status, and projected flow data. For informational purposes only."
+        badge="XRP ETFs ONLY"
         badgeColor="blue"
       >
-        <DetailSection title="Today's Net Flows">
+        {/* Status Banner */}
+        <div
+          className="rounded-xl p-4 mb-4 flex items-start gap-3"
+          style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}
+        >
+          <div className="flex-1">
+            <p className="text-sm font-semibold mb-1" style={{ color: '#f59e0b' }}>XRP ETF Status — Pending SEC Approval</p>
+            <p className="text-xs leading-relaxed" style={{ color: '#8892a4' }}>
+              No XRP ETF has been approved as of March 2026. Three institutional filings are currently under SEC review. Inflow and outflow data will populate upon approval. All figures below are projections only.
+            </p>
+          </div>
+        </div>
+
+        {/* Active Filings */}
+        <DetailSection title="Active XRP ETF Filings">
           <div className="space-y-2">
-            <div className="grid grid-cols-3 gap-2 pb-2 text-xs font-semibold uppercase tracking-wide" style={{ color: '#4a5568', borderBottom: '1px solid #1e2330' }}>
-              <span>ETF</span>
-              <span className="text-right">Flow (24h)</span>
-              <span className="text-right">AUM</span>
+            <div
+              className="grid gap-2 pb-2 text-xs font-semibold uppercase tracking-wide"
+              style={{ color: '#4a5568', borderBottom: '1px solid #1e2330', gridTemplateColumns: '1fr 1fr 1fr 1fr' }}
+            >
+              <span>Institution</span>
+              <span>Ticker</span>
+              <span>Filed</span>
+              <span>Status</span>
             </div>
-            {etfData.map((e) => (
-              <div key={e.name} className="grid grid-cols-3 gap-2 py-1.5 text-sm items-center" style={{ borderBottom: '1px solid rgba(30,35,48,0.5)' }}>
-                <span className="text-xs" style={{ color: '#8892a4' }}>{e.name}</span>
-                <span className="text-right text-xs font-medium" style={{ color: e.up ? '#10b981' : '#ef4444' }}>{e.flow}</span>
-                <span className="text-right text-xs" style={{ color: '#e8eaf0' }}>{e.aum}</span>
+            {xrpEtfFilings.map((e) => (
+              <div
+                key={e.institution}
+                className="grid gap-2 py-2 text-sm items-center"
+                style={{ borderBottom: '1px solid rgba(30,35,48,0.5)', gridTemplateColumns: '1fr 1fr 1fr 1fr' }}
+              >
+                <span style={{ color: '#e8eaf0' }}>{e.institution}</span>
+                <span className="text-xs font-mono" style={{ color: '#8892a4' }}>{e.ticker}</span>
+                <span className="text-xs" style={{ color: '#8892a4' }}>{e.date}</span>
+                <Badge color="yellow">{e.status}</Badge>
               </div>
             ))}
           </div>
         </DetailSection>
 
-        <DetailSection title="Aggregate Summary">
-          <div className="space-y-0">
-            <DataRow label="Total BTC ETF Net Flow (24h)" value="+$450M" valueColor="#10b981" />
-            <DataRow label="Total ETH ETF Net Flow (24h)" value="+$113M" valueColor="#10b981" />
-            <DataRow label="Total BTC ETF AUM" value="$61.5B" />
-            <DataRow label="Total ETH ETF AUM" value="$4.5B" />
-            <DataRow label="7-Day Flow Trend" value="Institutional accumulation" valueColor="#10b981" />
-            <DataRow label="30-Day Flow Trend" value="Positive but slowing" valueColor="#f59e0b" />
+        {/* Inflow / Outflow placeholder */}
+        <DetailSection title="Daily Inflow / Outflow (Post-Approval)">
+          <div
+            className="rounded-lg p-5 text-center"
+            style={{ background: '#111318', border: '1px solid #1e2330' }}
+          >
+            <p className="text-sm font-semibold mb-2" style={{ color: '#4a5568' }}>Awaiting ETF Approval</p>
+            <p className="text-xs leading-relaxed" style={{ color: '#4a5568' }}>
+              Daily net inflow and outflow data will appear here once an XRP ETF is approved and begins trading. This section will show per-fund and aggregate flow data updated daily.
+            </p>
           </div>
         </DetailSection>
 
-        <DetailSection title="XRP ETF Pipeline">
+        {/* Projected Impact */}
+        <DetailSection title="Projected Impact (Analyst Estimates)">
+          <div className="space-y-0">
+            <DataRow label="Projected AUM — First 90 Days" value="$2B – $5B" />
+            <DataRow label="Projected AUM — First Year" value="$10B – $20B" />
+            <DataRow label="Approval Probability (est.)" value="~65%" valueColor="#10b981" />
+            <DataRow label="Estimated Timeline" value="6–12 months" />
+            <DataRow label="Comparable (BTC ETF Day 1)" value="$4.6B inflow" />
+          </div>
+          <p className="text-xs mt-3" style={{ color: '#4a5568' }}>
+            All projections are analyst estimates only. Not predictive of actual outcomes. Not financial advice.
+          </p>
+        </DetailSection>
+
+        {/* Why it matters */}
+        <DetailSection title="Why This Matters for XRP">
           <BulletList items={[
-            'Three major institutions have filed XRP ETF applications: Pending SEC review.',
-            'Timeline estimate: 6–12 months to approval (optimistic scenario).',
-            'If approved, analyst estimates suggest $2–5B AUM in first 90 days.',
-            'Approval probability: ~65% given current regulatory environment.',
-            'XRP ETF approval = Domino Theory Stage 2 completion signal.',
+            'An approved XRP ETF would create direct institutional access to XRP without requiring crypto wallets or exchange accounts.',
+            'BTC ETF approval in January 2024 resulted in $4.6B inflow on day one — XRP ETF scale would depend on market conditions at time of approval.',
+            'ETF approval is tracked as Stage 2 completion in the ControlNode Domino Theory framework.',
+            'Three simultaneous filings from major institutions signals serious institutional intent.',
+            'SEC review timeline is the primary variable — no guaranteed approval date exists.',
           ]} />
         </DetailSection>
 
-        <DetailSection title="What Flows Are Telling Us">
-          <BulletList items={[
-            'BlackRock\'s $340M single-day inflow is the largest in 3 weeks — institutional buying resumed.',
-            'GBTC outflows shrinking — the "exit legacy product" narrative largely complete.',
-            'ETH ETF gaining traction after slow start — institutional rotation from BTC to ETH underway.',
-            'Net positive flows for 12 consecutive days — structural demand, not one-time event.',
-            'Contrarian note: When flows peak and sentiment is max bullish, expect short-term correction.',
-          ]} />
+        {/* Recent ETF News */}
+        <DetailSection title="Recent XRP ETF News">
+          <div className="space-y-3">
+            {[
+              { headline: 'BlackRock Files XRP ETF Application with SEC', source: 'Bloomberg', time: '2 days ago' },
+              { headline: 'Franklin Templeton Joins XRP ETF Race — Third Major Filing', source: 'Reuters', time: '4 days ago' },
+              { headline: 'SEC Acknowledges XRP ETF Filings — Review Clock Starts', source: 'CoinDesk', time: '1 week ago' },
+              { headline: 'Fidelity XRP ETF Filing Details Revealed — Structure Similar to FBTC', source: 'The Block', time: '2 weeks ago' },
+            ].map((n, i) => (
+              <div key={i} className="flex items-start justify-between gap-3 py-2" style={{ borderBottom: '1px solid #1e2330' }}>
+                <div>
+                  <p className="text-sm" style={{ color: '#e8eaf0' }}>{n.headline}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-xs font-medium" style={{ color: '#3b82f6' }}>{n.source}</span>
+                    <span className="text-xs" style={{ color: '#4a5568' }}>{n.time}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </DetailSection>
       </DetailPageLayout>
     </AppLayout>
