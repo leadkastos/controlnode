@@ -11,7 +11,7 @@ const signalColors = {
 export default function RightSidebar() {
   return (
     <aside
-      className="fixed right-0 top-0 h-screen w-64 overflow-y-auto py-5 px-4 space-y-5"
+      className="hidden lg:flex fixed right-0 top-0 h-screen w-64 flex-col overflow-y-auto py-5 px-4 space-y-5"
       style={{ background: '#0d0f14', borderLeft: '1px solid #1e2330' }}
     >
       {/* Watchlist */}
@@ -87,6 +87,13 @@ export default function RightSidebar() {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Disclaimer note */}
+      <div className="pt-2">
+        <p className="text-xs leading-relaxed" style={{ color: '#2d3748' }}>
+          For informational purposes only. Not financial advice.
+        </p>
       </div>
     </aside>
   )
