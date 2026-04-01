@@ -11,6 +11,7 @@ import OilVsYen from './pages/OilVsYen'
 import MediaNarratives from './pages/MediaNarratives'
 import ETFFlows from './pages/ETFFlows'
 import Watchlist from './pages/Watchlist'
+import YouTubeIntel from './pages/YouTubeIntel'
 import { Account, Billing, Settings } from './pages/AccountPages'
 import { Admin, AdminMorningBrief, AdminUpdates } from './pages/AdminPages'
 
@@ -28,6 +29,7 @@ export default function App() {
         <Route path="/media-narratives" element={<MediaNarratives />} />
         <Route path="/etf-flows" element={<ETFFlows />} />
         <Route path="/watchlist" element={<Watchlist />} />
+        <Route path="/youtube-intel" element={<YouTubeIntel />} />
         <Route path="/account" element={<Account />} />
         <Route path="/billing" element={<Billing />} />
         <Route path="/settings" element={<Settings />} />
