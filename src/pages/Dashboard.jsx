@@ -15,7 +15,8 @@ export default function Dashboard() {
         </h2>
       </div>
 
-      <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
+      {/* Mobile: 1 col, tablet: 2 col, desktop: 3 col */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
         {dashboardCards.map((card) => (
           <DashboardCard key={card.id} card={card} />
         ))}
