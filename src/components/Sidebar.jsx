@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, TrendingUp, Zap, GitBranch, Globe,
   BarChart2, Newspaper, LineChart, Star, User, CreditCard,
-  Settings, Menu, X, Youtube
+  Settings, Menu, X, Youtube, MessageCircleWarning
 } from 'lucide-react'
 
 const mainNav = [
@@ -17,6 +17,7 @@ const mainNav = [
   { label: 'ETF Flows', icon: LineChart, path: '/etf-flows', color: '#10b981' },
   { label: 'Watchlist', icon: Star, path: '/watchlist', color: '#eab308' },
   { label: 'YouTube Intel', icon: Youtube, path: '/youtube-intel', color: '#ef4444' },
+  { label: 'Market Chatter', icon: MessageCircleWarning, path: '/market-chatter', color: '#8b5cf6' },
 ]
 
 const bottomNav = [
