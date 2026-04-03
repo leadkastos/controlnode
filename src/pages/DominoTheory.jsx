@@ -168,32 +168,40 @@ function DominoSVG({ domino, isActive, state }) {
             fill={domino.color} opacity={0.65} fontFamily="monospace">
             {String(domino.id).padStart(2,'0')}
           </text>
-          {/* Divider */}
-          <line x1={RX+4} y1={RY+RH/2} x2={RX+RW-4} y2={RY+RH/2}
-            stroke={domino.color} strokeWidth={1} opacity={0.25}/>
-          {/* Top pips */}
-          {topPips.map((p,i)=>(
-            <circle key={'t'+i}
-              cx={RX+5 + (p[0]/100)*(RW-10)}
-              cy={RY+14 + (p[1]/100)*(RH/2-20)}
-              r={3.5} fill={pipColor} opacity={0.9}/>
-          ))}
-          {/* Bottom pips */}
-          {botPips.map((p,i)=>(
-            <circle key={'b'+i}
-              cx={RX+5 + (p[0]/100)*(RW-10)}
-              cy={RY+RH/2+4 + (p[1]/100)*(RH/2-18)}
-              r={3.5} fill={pipColor} opacity={0.9}/>
-          ))}
-          {domino.accelerator && (
-            <text x={RX+RW-10} y={RY+13} fontSize={8} fill="#eab308" fontWeight="700">▲</text>
+          {/* Divider — hidden for XRP domino */}
+          {domino.id !== 9 && (
+            <line x1={RX+4} y1={RY+RH/2} x2={RX+RW-4} y2={RY+RH/2}
+              stroke={domino.color} strokeWidth={1} opacity={0.25}/>
           )}
-          {domino.fragile && (
-            <text x={RX+RW-12} y={RY+13} fontSize={8} fill="#f87171">⚠</text>
+          {/* XRP logo for final domino, pips for all others */}
+          {domino.id === 9 ? (
+            <g transform={`translate(${RX + RW/2}, ${RY + RH/2 + 4})`}>
+              <circle cx={0} cy={0} r={19}
+                fill={isActive ? 'rgba(255,255,255,0.12)' : `${domino.color}18`}
+                stroke={domino.color} strokeWidth={1.5} opacity={0.85}/>
+              <line x1={-9} y1={-9} x2={9} y2={9} stroke={pipColor} strokeWidth={3.5} strokeLinecap="round" opacity={0.95}/>
+              <line x1={9} y1={-9} x2={-9} y2={9} stroke={pipColor} strokeWidth={3.5} strokeLinecap="round" opacity={0.95}/>
+              <line x1={-11} y1={0} x2={-3.5} y2={0} stroke={bg} strokeWidth={3.5}/>
+              <line x1={3.5} y1={0} x2={11} y2={0} stroke={bg} strokeWidth={3.5}/>
+              <text x={0} y={33} fontSize={7} fontWeight="700" fill={pipColor} opacity={0.85}
+                textAnchor="middle" fontFamily="monospace" letterSpacing="2">XRP</text>
+            </g>
+          ) : (
+            <>
+              {topPips.map((p,i)=>(
+                <circle key={'t'+i}
+                  cx={RX+5 + (p[0]/100)*(RW-10)}
+                  cy={RY+14 + (p[1]/100)*(RH/2-20)}
+                  r={3.5} fill={pipColor} opacity={0.9}/>
+              ))}
+              {botPips.map((p,i)=>(
+                <circle key={'b'+i}
+                  cx={RX+5 + (p[0]/100)*(RW-10)}
+                  cy={RY+RH/2+4 + (p[1]/100)*(RH/2-18)}
+                  r={3.5} fill={pipColor} opacity={0.9}/>
+              ))}
+            </>
           )}
-          {/* Ground line */}
-          <line x1={RX} y1={RY+RH+2} x2={RX+RW} y2={RY+RH+2}
-            stroke={domino.color} strokeWidth={1} opacity={0.2}/>
         </g>
       )}
     </svg>
