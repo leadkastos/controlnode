@@ -66,6 +66,13 @@ function DominoSVG({ domino, isActive, state }) {
       viewBox={`0 0 ${W} ${H + 14}`}
       style={{ overflow:'visible' }}
     >
+      <defs>
+        <radialGradient id="goldGrad" cx="40%" cy="35%" r="60%">
+          <stop offset="0%" stopColor="#ffe066"/>
+          <stop offset="50%" stopColor="#d4a017"/>
+          <stop offset="100%" stopColor="#7a5200"/>
+        </radialGradient>
+      </defs>
       {/* ── FALLEN state ── */}
       {isFallen && (
         <g>
@@ -173,19 +180,47 @@ function DominoSVG({ domino, isActive, state }) {
             <line x1={RX+4} y1={RY+RH/2} x2={RX+RW-4} y2={RY+RH/2}
               stroke={domino.color} strokeWidth={1} opacity={0.25}/>
           )}
-          {/* XRP logo for final domino, pips for all others */}
+          {/* XRP gold coin for final domino, pips for all others */}
           {domino.id === 9 ? (
-            <g transform={`translate(${RX + RW/2}, ${RY + RH/2 + 4})`}>
-              <circle cx={0} cy={0} r={19}
-                fill={isActive ? 'rgba(255,255,255,0.12)' : `${domino.color}18`}
-                stroke={domino.color} strokeWidth={1.5} opacity={0.85}/>
-              <line x1={-9} y1={-9} x2={9} y2={9} stroke={pipColor} strokeWidth={3.5} strokeLinecap="round" opacity={0.95}/>
-              <line x1={9} y1={-9} x2={-9} y2={9} stroke={pipColor} strokeWidth={3.5} strokeLinecap="round" opacity={0.95}/>
-              <line x1={-11} y1={0} x2={-3.5} y2={0} stroke={bg} strokeWidth={3.5}/>
-              <line x1={3.5} y1={0} x2={11} y2={0} stroke={bg} strokeWidth={3.5}/>
-              <text x={0} y={33} fontSize={7} fontWeight="700" fill={pipColor} opacity={0.85}
-                textAnchor="middle" fontFamily="monospace" letterSpacing="2">XRP</text>
-            </g>
+            <>
+              {/* Divider */}
+              <line x1={RX+4} y1={RY+RH/2} x2={RX+RW-4} y2={RY+RH/2}
+                stroke={domino.color} strokeWidth={1} opacity={0.25}/>
+              {/* Corner pips — top half */}
+              <circle cx={RX+8}  cy={RY+16} r={3} fill={pipColor} opacity={0.8}/>
+              <circle cx={RX+RW-8} cy={RY+16} r={3} fill={pipColor} opacity={0.8}/>
+              {/* Corner pips — bottom half */}
+              <circle cx={RX+8}  cy={RY+RH-10} r={3} fill={pipColor} opacity={0.8}/>
+              <circle cx={RX+RW-8} cy={RY+RH-10} r={3} fill={pipColor} opacity={0.8}/>
+              {/* Gold coin outer ring */}
+              <circle cx={RX+RW/2} cy={RY+RH/2} r={16}
+                fill="#92700a" stroke="#f5c842" strokeWidth={1.5}/>
+              {/* Gold coin inner ring */}
+              <circle cx={RX+RW/2} cy={RY+RH/2} r={13}
+                fill="#b8860b" stroke="#ffd700" strokeWidth={0.8} opacity={0.6}/>
+              {/* Gold coin face */}
+              <circle cx={RX+RW/2} cy={RY+RH/2} r={11}
+                fill="url(#goldGrad)"/>
+              {/* XRP X symbol — gold */}
+              {/* Left diagonal */}
+              <line x1={RX+RW/2-5} y1={RY+RH/2-5}
+                    x2={RX+RW/2+5} y2={RY+RH/2+5}
+                    stroke="#ffd700" strokeWidth={2.5} strokeLinecap="round"/>
+              {/* Right diagonal */}
+              <line x1={RX+RW/2+5} y1={RY+RH/2-5}
+                    x2={RX+RW/2-5} y2={RY+RH/2+5}
+                    stroke="#ffd700" strokeWidth={2.5} strokeLinecap="round"/>
+              {/* Horizontal cuts to create XRP X shape */}
+              <line x1={RX+RW/2-7} y1={RY+RH/2}
+                    x2={RX+RW/2-2.5} y2={RY+RH/2}
+                    stroke="#92700a" strokeWidth={2.5}/>
+              <line x1={RX+RW/2+2.5} y1={RY+RH/2}
+                    x2={RX+RW/2+7} y2={RY+RH/2}
+                    stroke="#92700a" strokeWidth={2.5}/>
+              {/* Coin shine */}
+              <ellipse cx={RX+RW/2-3} cy={RY+RH/2-5} rx={4} ry={2}
+                fill="white" opacity={0.15} transform={`rotate(-30,${RX+RW/2-3},${RY+RH/2-5})`}/>
+            </>
           ) : (
             <>
               {topPips.map((p,i)=>(
