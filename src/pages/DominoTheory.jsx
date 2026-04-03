@@ -451,6 +451,114 @@ export default function DominoTheory() {
           The Domino Theory is an observational framework for educational purposes only. Not financial advice or a prediction of future events.
         </p>
       </div>
+
+      {/* Jake Claver Reference Videos */}
+      <div className="mt-6 rounded-xl border overflow-hidden" style={{ background:'#161a22', borderColor:'#1e2330' }}>
+        <div className="px-5 py-4" style={{ borderBottom:'1px solid #1e2330', background:'#111318' }}>
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <p className="text-sm font-semibold" style={{ fontFamily:'Syne, sans-serif', color:'#eceef5' }}>
+                Learn the Framework — Jake Claver on Domino Theory
+              </p>
+              <p className="text-xs mt-1" style={{ color:'#6b7a96' }}>
+                These videos explain the macro chain reaction framework in detail. Highly recommended for understanding the full context behind each domino.
+              </p>
+            </div>
+            <div
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold flex-shrink-0"
+              style={{ background:'rgba(239,68,68,0.12)', color:'#ef4444', border:'1px solid rgba(239,68,68,0.2)' }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+              </svg>
+              Jake Claver
+            </div>
+          </div>
+        </div>
+
+        <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {[
+            {
+              title: 'The Domino Theory — Full Breakdown',
+              desc: 'Jake explains the complete macro chain reaction from oil shock to XRP as the final liquidity solution.',
+              duration: '~45 min',
+              url: 'https://www.youtube.com/@JakeClaver',
+              tag: 'Start Here',
+              tagColor: '#10b981',
+            },
+            {
+              title: 'Yen Carry Trade & The Global Liquidity Crisis',
+              desc: 'Deep dive into how the BOJ rate shift and yen carry trade unwind triggers the broader liquidity crisis.',
+              duration: '~38 min',
+              url: 'https://www.youtube.com/@JakeClaver',
+              tag: 'Key Dominos 2–4',
+              tagColor: '#f59e0b',
+            },
+            {
+              title: 'Tether, Stablecoins & Treasury Stress Explained',
+              desc: 'How stablecoins absorb Treasury supply and what happens when that system faces stress.',
+              duration: '~32 min',
+              url: 'https://www.youtube.com/@JakeClaver',
+              tag: 'Dominos 5 & 8',
+              tagColor: '#06b6d4',
+            },
+            {
+              title: 'Why XRP Is the Final Domino',
+              desc: 'Jake makes the case for XRP as the neutral bridge asset that emerges when all other dominoes have fallen.',
+              duration: '~41 min',
+              url: 'https://www.youtube.com/@JakeClaver',
+              tag: 'The Endgame',
+              tagColor: '#10b981',
+            },
+          ].map((video, i) => (
+            <a
+              key={i}
+              href={video.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block rounded-xl p-4 transition-all hover:bg-white/5"
+              style={{ background:'#111318', border:'1px solid #1e2330', textDecoration:'none' }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(239,68,68,0.3)'}
+              onMouseLeave={e => e.currentTarget.style.borderColor = '#1e2330'}
+            >
+              {/* Tag + duration row */}
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <span
+                  className="text-xs font-semibold px-2 py-0.5 rounded"
+                  style={{ background:`${video.tagColor}18`, color:video.tagColor }}
+                >
+                  {video.tag}
+                </span>
+                <span className="text-xs" style={{ color:'#4a5870' }}>{video.duration}</span>
+              </div>
+
+              {/* Title */}
+              <p className="text-sm font-semibold mb-1.5 leading-snug" style={{ color:'#eceef5' }}>
+                {video.title}
+              </p>
+
+              {/* Description */}
+              <p className="text-xs leading-relaxed mb-3" style={{ color:'#6b7a96' }}>
+                {video.desc}
+              </p>
+
+              {/* Watch button */}
+              <div className="flex items-center gap-1.5 text-xs font-semibold" style={{ color:'#ef4444' }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                </svg>
+                Watch on YouTube →
+              </div>
+            </a>
+          ))}
+        </div>
+
+        <div className="px-5 py-3" style={{ borderTop:'1px solid #1e2330' }}>
+          <p className="text-xs" style={{ color:'#4a5870' }}>
+            Content created by Jake Claver. ControlNode does not own or control this content. Links open YouTube in a new tab. Third-party content for educational reference only.
+          </p>
+        </div>
+      </div>
     </AppLayout>
   )
 }
