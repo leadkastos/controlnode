@@ -8,7 +8,6 @@ const dominoes = [
     title: 'Global Oil Shock',
     shortTitle: 'Oil Shock',
     color: '#ef4444',
-    darkColor: '#7f1d1d',
     pips: [2, 4],
     description: 'A geopolitical or supply-driven spike in oil prices creates global inflation pressure that ripples through every major economy.',
     whatToWatch: [
@@ -27,7 +26,6 @@ const dominoes = [
     title: 'Japan Rate Shift',
     shortTitle: 'BOJ Hike',
     color: '#f97316',
-    darkColor: '#7c2d12',
     pips: [1, 3],
     description: 'Japan is forced to raise interest rates due to inflation caused by rising oil prices, breaking decades of ultra-loose monetary policy.',
     whatToWatch: [
@@ -46,7 +44,6 @@ const dominoes = [
     title: 'Yen Carry Unwind',
     shortTitle: 'Carry Trade',
     color: '#f59e0b',
-    darkColor: '#78350f',
     pips: [3, 5],
     description: 'Investors unwind trillions of dollars in leveraged positions funded by cheap yen, triggering cascading asset sales globally.',
     whatToWatch: [
@@ -65,7 +62,6 @@ const dominoes = [
     title: 'Liquidity Crisis',
     shortTitle: 'Liquidity',
     color: '#8b5cf6',
-    darkColor: '#4c1d95',
     pips: [2, 6],
     description: 'Massive capital shifts cause liquidity to dry up across global markets simultaneously, creating a systemic funding crisis.',
     whatToWatch: [
@@ -84,7 +80,6 @@ const dominoes = [
     title: 'Treasury Stress',
     shortTitle: 'Stablecoins',
     color: '#06b6d4',
-    darkColor: '#164e63',
     pips: [1, 5],
     description: 'Stablecoins and institutions are forced into Treasuries creating systemic pressure, while stablecoin pegs face extreme stress.',
     whatToWatch: [
@@ -103,7 +98,6 @@ const dominoes = [
     title: 'BTC Collapse',
     shortTitle: 'BTC Falls',
     color: '#ec4899',
-    darkColor: '#831843',
     pips: [3, 3],
     description: 'Bitcoin and risk assets experience forced selling as institutions and funds liquidate positions to meet liquidity demands.',
     whatToWatch: [
@@ -122,7 +116,6 @@ const dominoes = [
     title: 'XRP Solution',
     shortTitle: 'XRP Wins',
     color: '#10b981',
-    darkColor: '#064e3b',
     pips: [4, 6],
     description: 'XRP emerges as the neutral bridge asset for global liquidity and settlement as the world demands a non-dollar, instant settlement layer.',
     whatToWatch: [
@@ -139,145 +132,195 @@ const dominoes = [
 ]
 
 const statusConfig = {
-  triggered: { label: 'Triggered', color: '#ef4444', bg: 'rgba(239,68,68,0.15)' },
-  in_progress: { label: 'In Progress', color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' },
-  not_started: { label: 'Monitoring', color: '#6b7280', bg: 'rgba(75,85,99,0.2)' },
+  triggered: { label: 'Fallen', color: '#ef4444', bg: 'rgba(239,68,68,0.15)' },
+  in_progress: { label: 'Tipping', color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' },
+  not_started: { label: 'Standing', color: '#6b7280', bg: 'rgba(75,85,99,0.2)' },
 }
 
-// Domino pip layout positions (for a domino tile)
 const pipPositions = {
   1: [[50, 50]],
-  2: [[25, 30], [75, 70]],
-  3: [[25, 25], [50, 50], [75, 75]],
-  4: [[25, 25], [75, 25], [25, 75], [75, 75]],
-  5: [[25, 25], [75, 25], [50, 50], [25, 75], [75, 75]],
-  6: [[25, 20], [75, 20], [25, 50], [75, 50], [25, 80], [75, 80]],
+  2: [[30, 28], [70, 72]],
+  3: [[30, 22], [50, 50], [70, 78]],
+  4: [[30, 25], [70, 25], [30, 75], [70, 75]],
+  5: [[30, 22], [70, 22], [50, 50], [30, 78], [70, 78]],
+  6: [[30, 18], [70, 18], [30, 50], [70, 50], [30, 82], [70, 82]],
 }
 
-function DominoPip({ x, y, color }) {
+function PipSVG({ count, color, half }) {
+  const positions = pipPositions[count] || []
   return (
-    <circle
-      cx={`${x}%`}
-      cy={`${y}%`}
-      r="3.5"
-      fill={color}
-      opacity="0.9"
-    />
+    <svg width="100%" height="100%" viewBox="0 0 100 100" style={{ display: 'block' }}>
+      {positions.map((pos, i) => (
+        <circle key={i} cx={pos[0]} cy={pos[1]} r="9" fill={color} opacity="0.85" />
+      ))}
+    </svg>
   )
 }
 
-function DominoTile({ domino, isActive, onClick }) {
-  const s = statusConfig[domino.status]
-  const topPips = pipPositions[domino.pips[0]] || []
-  const bottomPips = pipPositions[domino.pips[1]] || []
+function DominoPiece({ domino, isActive, onClick }) {
+  const isFallen = domino.status === 'triggered'
+  const isTipping = domino.status === 'in_progress'
+  const isStanding = domino.status === 'not_started'
+
+  const pipColor = isActive ? 'white' : domino.color
+  const bgColor = isActive ? domino.color : '#1a1f2e'
+  const borderColor = isActive ? domino.color : domino.color + '55'
+
+  // Rotation: fallen = 90deg, tipping = 45deg, standing = 0deg
+  const rotation = isFallen ? 90 : isTipping ? 42 : 0
+
+  // Transform origin and positioning adjustments
+  // When fallen, the domino lays flat — shift it down
+  // When tipping, shift slightly
+  const containerStyle = {
+    width: '72px',
+    height: '140px', // extra space for rotation
+    display: 'flex',
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    position: 'relative',
+  }
+
+  const pieceStyle = {
+    width: '58px',
+    height: '110px',
+    background: bgColor,
+    border: `2px solid ${borderColor}`,
+    borderRadius: '8px',
+    position: 'absolute',
+    bottom: 0,
+    left: '50%',
+    transformOrigin: 'bottom center',
+    transform: `translateX(-50%) rotate(${-rotation}deg)`,
+    transition: 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s, border-color 0.2s',
+    boxShadow: isActive
+      ? `0 0 20px ${domino.color}50`
+      : isFallen
+      ? `4px 2px 12px rgba(0,0,0,0.5)`
+      : isTipping
+      ? `3px 1px 8px rgba(0,0,0,0.3)`
+      : `0 2px 8px rgba(0,0,0,0.2)`,
+    cursor: 'pointer',
+    overflow: 'hidden',
+    animation: isTipping && !isActive ? 'teetering 2.5s ease-in-out infinite' : 'none',
+  }
+
+  // Shadow/ground effect under fallen domino
+  const shadowStyle = isFallen ? {
+    position: 'absolute',
+    bottom: '-3px',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    width: '100px',
+    height: '6px',
+    background: `radial-gradient(ellipse, ${domino.color}30 0%, transparent 70%)`,
+    borderRadius: '50%',
+  } : isTipping ? {
+    position: 'absolute',
+    bottom: '-3px',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    width: '70px',
+    height: '4px',
+    background: `radial-gradient(ellipse, ${domino.color}20 0%, transparent 70%)`,
+    borderRadius: '50%',
+  } : null
 
   return (
-    <button
-      onClick={onClick}
-      className="relative flex flex-col items-center gap-1 group"
-      style={{ width: '80px' }}
-    >
-      {/* Domino piece */}
-      <div
-        className="rounded-lg transition-all duration-200"
-        style={{
-          width: '72px',
-          height: '120px',
-          background: isActive ? domino.color : '#1a1f2e',
-          border: `2px solid ${isActive ? domino.color : domino.color + '60'}`,
-          boxShadow: isActive ? `0 0 16px ${domino.color}40` : 'none',
-          position: 'relative',
-          overflow: 'hidden',
-        }}
-      >
-        {/* Status glow at top */}
-        {domino.status === 'triggered' && (
-          <div
-            className="absolute top-0 left-0 right-0 h-0.5"
-            style={{ background: domino.color, boxShadow: `0 0 8px ${domino.color}` }}
-          />
-        )}
+    <button onClick={onClick} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
+      <div style={containerStyle}>
+        {/* Ground shadow */}
+        {shadowStyle && <div style={shadowStyle} />}
 
-        {/* Top half */}
-        <div style={{ height: '50%', position: 'relative', padding: '4px' }}>
-          <svg width="100%" height="100%" viewBox="0 0 100 100">
-            {topPips.map((pos, i) => (
-              <DominoPip key={i} x={pos[0]} y={pos[1]} color={isActive ? 'white' : domino.color} />
-            ))}
-          </svg>
-        </div>
+        {/* The domino piece */}
+        <div style={pieceStyle}>
+          {/* Status strip at top */}
+          <div style={{
+            position: 'absolute', top: 0, left: 0, right: 0, height: '3px',
+            background: domino.color,
+            opacity: isFallen ? 1 : 0.6,
+            boxShadow: domino.status !== 'not_started' ? `0 0 6px ${domino.color}` : 'none',
+          }} />
 
-        {/* Dividing line */}
-        <div style={{ height: '2px', background: isActive ? 'rgba(255,255,255,0.3)' : domino.color + '40', margin: '0 8px' }} />
+          {/* Number */}
+          <div style={{
+            position: 'absolute', top: '5px', left: '5px',
+            fontSize: '8px', fontFamily: 'JetBrains Mono',
+            color: isActive ? 'rgba(255,255,255,0.8)' : domino.color + 'aa',
+            fontWeight: 700,
+          }}>
+            {String(domino.id).padStart(2, '0')}
+          </div>
 
-        {/* Bottom half */}
-        <div style={{ height: '50%', position: 'relative', padding: '4px' }}>
-          <svg width="100%" height="100%" viewBox="0 0 100 100">
-            {bottomPips.map((pos, i) => (
-              <DominoPip key={i} x={pos[0]} y={pos[1]} color={isActive ? 'white' : domino.color} />
-            ))}
-          </svg>
-        </div>
+          {/* Top half pips */}
+          <div style={{ height: '48%', padding: '12px 8px 4px' }}>
+            <PipSVG count={domino.pips[0]} color={pipColor} />
+          </div>
 
-        {/* Number badge */}
-        <div
-          className="absolute top-1 left-1 text-xs font-bold"
-          style={{ fontFamily: 'JetBrains Mono', color: isActive ? 'white' : domino.color, fontSize: '9px', opacity: 0.8 }}
-        >
-          {String(domino.id).padStart(2, '0')}
+          {/* Divider */}
+          <div style={{
+            height: '2px', margin: '0 8px',
+            background: isActive ? 'rgba(255,255,255,0.25)' : domino.color + '35',
+          }} />
+
+          {/* Bottom half pips */}
+          <div style={{ height: '48%', padding: '4px 8px 8px' }}>
+            <PipSVG count={domino.pips[1]} color={pipColor} />
+          </div>
         </div>
       </div>
+    </button>
+  )
+}
 
-      {/* Status dot */}
-      <div
-        className="w-2 h-2 rounded-full"
-        style={{
-          background: s.color,
-          boxShadow: domino.status !== 'not_started' ? `0 0 6px ${s.color}` : 'none',
-        }}
-      />
+function DominoCard({ domino, isActive, onClick }) {
+  const s = statusConfig[domino.status]
+
+  return (
+    <div className="flex flex-col items-center gap-2" style={{ width: '80px' }}>
+      <DominoPiece domino={domino} isActive={isActive} onClick={onClick} />
+
+      {/* Status label */}
+      <div className="flex items-center gap-1">
+        <div
+          className="w-1.5 h-1.5 rounded-full"
+          style={{
+            background: s.color,
+            boxShadow: domino.status !== 'not_started' ? `0 0 5px ${s.color}` : 'none',
+          }}
+        />
+        <span style={{ fontSize: '9px', color: s.color, fontWeight: 600 }}>{s.label}</span>
+      </div>
 
       {/* Title */}
-      <p
-        className="text-center leading-tight"
-        style={{ fontSize: '10px', color: isActive ? domino.color : '#8892a4', fontWeight: isActive ? 600 : 400 }}
-      >
+      <p style={{
+        fontSize: '10px',
+        color: isActive ? domino.color : '#6b7280',
+        fontWeight: isActive ? 600 : 400,
+        textAlign: 'center',
+        lineHeight: 1.3,
+      }}>
         {domino.shortTitle}
       </p>
-    </button>
+    </div>
   )
 }
 
 function DetailPanel({ domino, onClose }) {
   const s = statusConfig[domino.status]
-
   return (
-    <div
-      className="rounded-xl border mt-5"
-      style={{ background: '#161a22', borderColor: domino.color + '40' }}
-    >
-      <div
-        className="flex items-center justify-between px-5 py-4"
-        style={{ background: `${domino.color}10`, borderBottom: `1px solid ${domino.color}25` }}
-      >
+    <div className="rounded-xl border mt-5" style={{ background: '#161a22', borderColor: domino.color + '40' }}>
+      <div className="flex items-center justify-between px-5 py-4" style={{ background: `${domino.color}10`, borderBottom: `1px solid ${domino.color}25` }}>
         <div>
-          <div className="flex items-center gap-2 mb-0.5">
-            <h2 className="text-base font-bold" style={{ fontFamily: 'Syne, sans-serif', color: '#e8eaf0' }}>
-              Domino {String(domino.id).padStart(2, '0')} — {domino.title}
-            </h2>
-          </div>
-          <span
-            className="text-xs font-semibold px-2 py-0.5 rounded"
-            style={{ background: s.bg, color: s.color }}
-          >
-            {s.label}
-          </span>
+          <h2 className="text-base font-bold mb-0.5" style={{ fontFamily: 'Syne, sans-serif', color: '#e8eaf0' }}>
+            Domino {String(domino.id).padStart(2, '0')} — {domino.title}
+          </h2>
+          <span className="text-xs font-semibold px-2 py-0.5 rounded" style={{ background: s.bg, color: s.color }}>{s.label}</span>
         </div>
         <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10" style={{ color: '#8892a4' }}>
           <X size={15} />
         </button>
       </div>
-
       <div className="p-5 grid grid-cols-1 lg:grid-cols-2 gap-5">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: '#4a5568' }}>What This Means</p>
@@ -308,7 +351,6 @@ function DetailPanel({ domino, onClose }) {
           </div>
         </div>
       </div>
-
       <div className="px-5 py-3 text-xs text-center" style={{ borderTop: '1px solid #1e2330', color: '#2d3748' }}>
         For informational purposes only — not financial advice
       </div>
@@ -330,32 +372,38 @@ export default function DominoTheory() {
 
   return (
     <AppLayout>
-      {/* Header */}
+      <style>{`
+        @keyframes teetering {
+          0%   { transform: translateX(-50%) rotate(-42deg); }
+          40%  { transform: translateX(-50%) rotate(-38deg); }
+          60%  { transform: translateX(-50%) rotate(-44deg); }
+          100% { transform: translateX(-50%) rotate(-42deg); }
+        }
+      `}</style>
+
       <div className="mb-5">
         <div className="flex items-center gap-3 mb-1 flex-wrap">
-          <h1 className="text-2xl font-bold" style={{ fontFamily: 'Syne, sans-serif', color: '#e8eaf0' }}>
-            Domino Theory
-          </h1>
+          <h1 className="text-2xl font-bold" style={{ fontFamily: 'Syne, sans-serif', color: '#e8eaf0' }}>Domino Theory</h1>
           <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ background: 'rgba(245,158,11,0.12)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)' }}>
             {progressCount} of {dominoes.length} Active
           </span>
         </div>
         <p className="text-sm" style={{ color: '#8892a4' }}>
-          A macro-economic chain reaction framework. For informational and educational purposes only.
+          A macro-economic chain reaction framework. Fallen dominoes have triggered. Tipping dominoes are in progress. For informational purposes only.
         </p>
       </div>
 
-      {/* Progress bar */}
+      {/* Progress */}
       <div className="rounded-xl p-4 border mb-5" style={{ background: '#161a22', borderColor: '#1e2330' }}>
         <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
           <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: '#4a5568' }}>Chain Reaction Progress</p>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             {[
-              { label: 'Triggered', count: triggered, color: '#ef4444' },
-              { label: 'In Progress', count: inProgress, color: '#f59e0b' },
-              { label: 'Monitoring', count: dominoes.length - progressCount, color: '#4a5568' },
+              { label: 'Fallen', count: triggered, color: '#ef4444' },
+              { label: 'Tipping', count: inProgress, color: '#f59e0b' },
+              { label: 'Standing', count: dominoes.length - progressCount, color: '#4a5568' },
             ].map(g => (
-              <div key={g.label} className="flex items-center gap-1">
+              <div key={g.label} className="flex items-center gap-1.5">
                 <div className="w-2 h-2 rounded-full" style={{ background: g.color }} />
                 <span className="text-xs" style={{ color: '#8892a4' }}>{g.label} ({g.count})</span>
               </div>
@@ -363,10 +411,7 @@ export default function DominoTheory() {
           </div>
         </div>
         <div className="h-2 rounded-full overflow-hidden" style={{ background: '#111318' }}>
-          <div
-            className="h-full rounded-full transition-all duration-500"
-            style={{ width: `${progressPct}%`, background: 'linear-gradient(90deg, #ef4444, #f59e0b)' }}
-          />
+          <div className="h-full rounded-full transition-all duration-500" style={{ width: `${progressPct}%`, background: 'linear-gradient(90deg, #ef4444, #f59e0b)' }} />
         </div>
         <div className="flex justify-between mt-1">
           <span className="text-xs" style={{ color: '#4a5568' }}>Oil Shock</span>
@@ -375,21 +420,24 @@ export default function DominoTheory() {
         </div>
       </div>
 
-      {/* Domino chain — wraps on small screens */}
+      {/* Domino chain */}
       <div className="rounded-xl p-5 border mb-4" style={{ background: '#161a22', borderColor: '#1e2330' }}>
-        <p className="text-xs font-semibold uppercase tracking-wide mb-4" style={{ color: '#4a5568' }}>
-          The Chain — Click Any Domino
+        <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: '#4a5568' }}>
+          The Chain — Click Any Domino for Details
         </p>
-        <div className="flex flex-wrap gap-3 items-end justify-start">
+        <p className="text-xs mb-5" style={{ color: '#2d3748' }}>
+          Fallen = triggered · Tipping = in progress · Standing = monitoring
+        </p>
+        <div className="flex flex-wrap gap-4 items-end">
           {dominoes.map((domino, i) => (
-            <div key={domino.id} className="flex items-center">
-              <DominoTile
+            <div key={domino.id} className="flex items-end gap-2">
+              <DominoCard
                 domino={domino}
                 isActive={activeDomino?.id === domino.id}
                 onClick={() => handleClick(domino)}
               />
               {i < dominoes.length - 1 && (
-                <ChevronRight size={14} className="ml-1 flex-shrink-0" style={{ color: '#2d3748', marginBottom: '32px' }} />
+                <ChevronRight size={12} style={{ color: '#2d3748', marginBottom: '28px', flexShrink: 0 }} />
               )}
             </div>
           ))}
@@ -397,22 +445,18 @@ export default function DominoTheory() {
       </div>
 
       {/* Detail panel */}
-      {activeDomino && (
-        <DetailPanel domino={activeDomino} onClose={() => setActiveDomino(null)} />
-      )}
+      {activeDomino && <DetailPanel domino={activeDomino} onClose={() => setActiveDomino(null)} />}
 
       {/* Status summary */}
       {!activeDomino && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
-            { label: 'Triggered', items: dominoes.filter(d => d.status === 'triggered'), color: '#ef4444', bg: 'rgba(239,68,68,0.07)', border: 'rgba(239,68,68,0.2)' },
-            { label: 'In Progress', items: dominoes.filter(d => d.status === 'in_progress'), color: '#f59e0b', bg: 'rgba(245,158,11,0.07)', border: 'rgba(245,158,11,0.2)' },
-            { label: 'Monitoring', items: dominoes.filter(d => d.status === 'not_started'), color: '#6b7280', bg: 'rgba(75,85,99,0.1)', border: 'rgba(75,85,99,0.2)' },
+            { label: 'Fallen Dominoes', items: dominoes.filter(d => d.status === 'triggered'), color: '#ef4444', bg: 'rgba(239,68,68,0.07)', border: 'rgba(239,68,68,0.2)' },
+            { label: 'Tipping Dominoes', items: dominoes.filter(d => d.status === 'in_progress'), color: '#f59e0b', bg: 'rgba(245,158,11,0.07)', border: 'rgba(245,158,11,0.2)' },
+            { label: 'Standing — Monitoring', items: dominoes.filter(d => d.status === 'not_started'), color: '#6b7280', bg: 'rgba(75,85,99,0.1)', border: 'rgba(75,85,99,0.2)' },
           ].map(group => (
             <div key={group.label} className="rounded-xl p-4 border" style={{ background: group.bg, borderColor: group.border }}>
-              <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: group.color }}>
-                {group.label} ({group.items.length})
-              </p>
+              <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: group.color }}>{group.label} ({group.items.length})</p>
               <div className="space-y-2">
                 {group.items.map(d => (
                   <button key={d.id} onClick={() => handleClick(d)} className="text-left w-full hover:opacity-80">
