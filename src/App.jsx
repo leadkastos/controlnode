@@ -15,6 +15,7 @@ import YouTubeIntel from './pages/YouTubeIntel'
 import MarketChatter from './pages/MarketChatter'
 import { Account, Billing, Settings } from './pages/AccountPages'
 import { Admin, AdminMorningBrief, AdminUpdates } from './pages/AdminPages'
+import { AdminDominoTheory } from './pages/AdminPages'
 import AdminChatter from './pages/AdminChatter'
 
 export default function App() {
@@ -39,6 +40,7 @@ export default function App() {
         <Route path="/admin" element={<Admin />} />
         <Route path="/admin/morning-brief" element={<AdminMorningBrief />} />
         <Route path="/admin/updates" element={<AdminUpdates />} />
+        <Route path="/admin/domino-theory" element={<AdminDominoTheory />} />
         <Route path="/admin/chatter" element={<AdminChatter />} />
       </Routes>
     </BrowserRouter>
