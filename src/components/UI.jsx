@@ -29,7 +29,7 @@ export function Button({ children, variant = 'primary', onClick, className = '' 
     <button
       onClick={onClick}
       className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150 border ${className}`}
-      style={{ color: '#8892a4', borderColor: '#1e2330', background: 'transparent' }}
+      style={{ color: '#9aa8be', borderColor: '#1e2330', background: 'transparent' }}
     >
       {children}
     </button>
@@ -57,7 +57,7 @@ export function Badge({ children, color = 'blue' }) {
 
 export function SectionTitle({ children }) {
   return (
-    <h2 className="text-lg font-semibold mb-4" style={{ fontFamily: 'Syne, sans-serif', color: '#e8eaf0' }}>
+    <h2 className="text-lg font-semibold mb-4" style={{ fontFamily: 'Syne, sans-serif', color: '#eceef5' }}>
       {children}
     </h2>
   )

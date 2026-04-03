@@ -237,17 +237,17 @@ export default function LegalModal({ doc, onClose }) {
           style={{ borderBottom: '1px solid #1e2330' }}
         >
           <div>
-            <h2 className="text-lg font-bold" style={{ fontFamily: 'Syne, sans-serif', color: '#e8eaf0' }}>
+            <h2 className="text-lg font-bold" style={{ fontFamily: 'Syne, sans-serif', color: '#eceef5' }}>
               {data.title}
             </h2>
-            <p className="text-xs mt-0.5" style={{ color: '#4a5568' }}>
+            <p className="text-xs mt-0.5" style={{ color: '#6b7a96' }}>
               Effective Date: {data.effectiveDate} · M&N Consulting LLC
             </p>
           </div>
           <button
             onClick={onClose}
             className="p-2 rounded-lg transition-colors hover:bg-white/10"
-            style={{ color: '#8892a4' }}
+            style={{ color: '#9aa8be' }}
           >
             <X size={18} />
           </button>
@@ -266,7 +266,7 @@ export default function LegalModal({ doc, onClose }) {
                 </h3>
                 <p
                   className="text-sm leading-relaxed whitespace-pre-line"
-                  style={{ color: '#8892a4' }}
+                  style={{ color: '#9aa8be' }}
                 >
                   {section.body}
                 </p>
@@ -278,7 +278,7 @@ export default function LegalModal({ doc, onClose }) {
             className="mt-8 pt-4 text-center"
             style={{ borderTop: '1px solid #1e2330' }}
           >
-            <p className="text-xs" style={{ color: '#374151' }}>
+            <p className="text-xs" style={{ color: '#4a5870' }}>
               M&N Consulting LLC · ControlNode · clientcare@leadkast.com
             </p>
           </div>

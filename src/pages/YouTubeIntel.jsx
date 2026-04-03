@@ -120,22 +120,22 @@ function VideoCard({ video }) {
           <span className="text-xs font-semibold" style={{ color: video.color }}>
             {video.channelName}
           </span>
-          <span className="text-xs" style={{ color: '#4a5568' }}>{video.channelHandle}</span>
+          <span className="text-xs" style={{ color: '#6b7a96' }}>{video.channelHandle}</span>
         </div>
 
         {/* Title */}
-        <p className="text-sm font-medium leading-snug mb-3" style={{ color: '#e8eaf0' }}>
+        <p className="text-sm font-medium leading-snug mb-3" style={{ color: '#eceef5' }}>
           {video.title}
         </p>
 
         {/* Meta */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1 text-xs" style={{ color: '#4a5568' }}>
+            <span className="flex items-center gap-1 text-xs" style={{ color: '#6b7a96' }}>
               <Clock size={11} />
               {video.posted}
             </span>
-            <span className="text-xs" style={{ color: '#4a5568' }}>{video.views}</span>
+            <span className="text-xs" style={{ color: '#6b7a96' }}>{video.views}</span>
           </div>
           <a
             href={`https://youtube.com/watch?v=${video.videoId}`}
@@ -164,16 +164,16 @@ export default function YouTubeIntel() {
           >
             <Youtube size={16} style={{ color: '#ef4444' }} />
           </div>
-          <h1 className="text-2xl font-bold" style={{ fontFamily: 'Syne, sans-serif', color: '#e8eaf0' }}>
+          <h1 className="text-2xl font-bold" style={{ fontFamily: 'Syne, sans-serif', color: '#eceef5' }}>
             YouTube Intel
           </h1>
         </div>
-        <p className="text-sm" style={{ color: '#8892a4' }}>
+        <p className="text-sm" style={{ color: '#9aa8be' }}>
           Latest videos from your followed channels. Updated 4x daily — 6AM, 12PM, 6PM, 12AM CT.
         </p>
         <div className="flex items-center gap-2 mt-3">
           <div className="w-2 h-2 rounded-full" style={{ background: '#10b981' }} />
-          <span className="text-xs" style={{ color: '#4a5568' }}>
+          <span className="text-xs" style={{ color: '#6b7a96' }}>
             Following 4 channels · Last checked 6:00 AM CT · Next check 12:00 PM CT
           </span>
         </div>
@@ -182,7 +182,7 @@ export default function YouTubeIntel() {
       {/* Disclaimer */}
       <div
         className="rounded-lg px-4 py-3 mb-6 text-xs"
-        style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.15)', color: '#8892a4' }}
+        style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.15)', color: '#9aa8be' }}
       >
         <span style={{ color: '#3b82f6', fontWeight: 600 }}>Note: </span>
         Videos below are from independent creators. Third-party content (including embedded videos) is provided for informational purposes only. ControlNode does not own or control this content. Nothing presented here constitutes financial advice. Always do your own research.
@@ -197,7 +197,7 @@ export default function YouTubeIntel() {
 
       {/* Manage channels link */}
       <div className="mt-6 text-center">
-        <p className="text-xs" style={{ color: '#4a5568' }}>
+        <p className="text-xs" style={{ color: '#6b7a96' }}>
           Following 4 of 4 channels.{' '}
           <Link to="/account" style={{ color: '#3b82f6' }}>
             Manage channels in your profile →

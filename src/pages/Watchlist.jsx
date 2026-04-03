@@ -22,7 +22,7 @@ export default function Watchlist() {
       >
         <div className="rounded-xl border overflow-hidden" style={{ background: '#161a22', borderColor: '#1e2330' }}>
           {/* Header */}
-          <div className="grid grid-cols-6 gap-4 px-5 py-3 text-xs font-semibold uppercase tracking-wide" style={{ color: '#4a5568', borderBottom: '1px solid #1e2330', background: '#111318' }}>
+          <div className="grid grid-cols-6 gap-4 px-5 py-3 text-xs font-semibold uppercase tracking-wide" style={{ color: '#6b7a96', borderBottom: '1px solid #1e2330', background: '#111318' }}>
             <span className="col-span-2">Asset</span>
             <span className="text-right">Price</span>
             <span className="text-right">24h</span>
@@ -44,17 +44,17 @@ export default function Watchlist() {
                   {a.symbol.slice(0, 2)}
                 </div>
                 <div>
-                  <p className="text-sm font-semibold" style={{ color: '#e8eaf0' }}>{a.symbol}</p>
-                  <p className="text-xs" style={{ color: '#4a5568' }}>{a.name}</p>
+                  <p className="text-sm font-semibold" style={{ color: '#eceef5' }}>{a.symbol}</p>
+                  <p className="text-xs" style={{ color: '#6b7a96' }}>{a.name}</p>
                 </div>
               </div>
-              <p className="text-sm font-medium text-right" style={{ color: '#e8eaf0' }}>{a.price}</p>
+              <p className="text-sm font-medium text-right" style={{ color: '#eceef5' }}>{a.price}</p>
               <div className="flex items-center justify-end gap-1">
                 {a.up ? <TrendingUp size={12} style={{ color: '#10b981' }} /> : <TrendingDown size={12} style={{ color: '#ef4444' }} />}
                 <span className="text-sm font-medium" style={{ color: a.up ? '#10b981' : '#ef4444' }}>{a.change}</span>
               </div>
-              <p className="text-sm text-right" style={{ color: '#8892a4' }}>{a.vol}</p>
-              <p className="text-xs text-right" style={{ color: '#4a5568' }}>{a.low} – {a.high}</p>
+              <p className="text-sm text-right" style={{ color: '#9aa8be' }}>{a.vol}</p>
+              <p className="text-xs text-right" style={{ color: '#6b7a96' }}>{a.low} – {a.high}</p>
             </div>
           ))}
         </div>
@@ -62,7 +62,7 @@ export default function Watchlist() {
         <div className="mt-4 flex justify-end">
           <button
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-colors"
-            style={{ color: '#8892a4', borderColor: '#1e2330' }}
+            style={{ color: '#9aa8be', borderColor: '#1e2330' }}
           >
             <Star size={14} />
             Add Asset

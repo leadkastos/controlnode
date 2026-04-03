@@ -36,7 +36,7 @@ export default function XRPIntelligence() {
             <DataRow label="Overhead Reference" value="$2.40" />
             <DataRow label="Extended Overhead Reference" value="$2.55 – $2.80" />
           </div>
-          <p className="text-xs mt-3" style={{ color: '#4a5568' }}>
+          <p className="text-xs mt-3" style={{ color: '#6b7a96' }}>
             Technical levels are observational reference points only — not buy or sell signals.
           </p>
         </DetailSection>
@@ -45,7 +45,7 @@ export default function XRPIntelligence() {
         <DetailSection title="On-Chain Observations">
           <div
             className="rounded-lg px-4 py-3 mb-4 text-xs leading-relaxed"
-            style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.15)', color: '#8892a4' }}
+            style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.15)', color: '#9aa8be' }}
           >
             <span style={{ color: '#3b82f6', fontWeight: 600 }}>What is on-chain data? </span>
             On-chain data refers to publicly recorded activity on the XRP Ledger blockchain itself — things like how many wallets are active, how much XRP is moving on exchanges, and how whales (large holders) are behaving. This data is sourced from the XRP Ledger directly and from analytics platforms like Santiment and Glassnode.
@@ -61,7 +61,7 @@ export default function XRPIntelligence() {
 
         {/* Ripple News */}
         <DetailSection title="Ripple News">
-          <p className="text-xs mb-4" style={{ color: '#4a5568' }}>
+          <p className="text-xs mb-4" style={{ color: '#6b7a96' }}>
             Latest Ripple corporate developments from reputable global news sources. Updated continuously.
           </p>
           <div className="space-y-3">
@@ -74,10 +74,10 @@ export default function XRPIntelligence() {
             ].map((n, i) => (
               <div key={i} className="flex items-start justify-between gap-3 py-2.5" style={{ borderBottom: '1px solid #1e2330' }}>
                 <div className="flex-1">
-                  <p className="text-sm leading-snug mb-1" style={{ color: '#e8eaf0' }}>{n.headline}</p>
+                  <p className="text-sm leading-snug mb-1" style={{ color: '#eceef5' }}>{n.headline}</p>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-medium" style={{ color: '#3b82f6' }}>{n.source}</span>
-                    <span className="text-xs" style={{ color: '#4a5568' }}>{n.time}</span>
+                    <span className="text-xs" style={{ color: '#6b7a96' }}>{n.time}</span>
                   </div>
                 </div>
                 <Badge color="blue">{n.category}</Badge>
@@ -88,7 +88,7 @@ export default function XRPIntelligence() {
 
         {/* XRP Market News */}
         <DetailSection title="XRP Market News">
-          <p className="text-xs mb-4" style={{ color: '#4a5568' }}>
+          <p className="text-xs mb-4" style={{ color: '#6b7a96' }}>
             XRP price, market structure, and ecosystem news from reputable sources globally.
           </p>
           <div className="space-y-3">
@@ -100,10 +100,10 @@ export default function XRPIntelligence() {
             ].map((n, i) => (
               <div key={i} className="flex items-start justify-between gap-3 py-2.5" style={{ borderBottom: '1px solid #1e2330' }}>
                 <div className="flex-1">
-                  <p className="text-sm leading-snug mb-1" style={{ color: '#e8eaf0' }}>{n.headline}</p>
+                  <p className="text-sm leading-snug mb-1" style={{ color: '#eceef5' }}>{n.headline}</p>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-medium" style={{ color: '#3b82f6' }}>{n.source}</span>
-                    <span className="text-xs" style={{ color: '#4a5568' }}>{n.time}</span>
+                    <span className="text-xs" style={{ color: '#6b7a96' }}>{n.time}</span>
                   </div>
                 </div>
                 <Badge color="purple">{n.category}</Badge>

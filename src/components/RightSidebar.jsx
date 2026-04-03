@@ -31,7 +31,7 @@ export default function RightSidebar() {
       <div className="flex-1 overflow-y-auto py-4 px-4 space-y-5">
         {/* Watchlist */}
         <div>
-          <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#4a5568' }}>
+          <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#6b7a96' }}>
             Watchlist
           </p>
           <div className="space-y-1.5">
@@ -46,10 +46,10 @@ export default function RightSidebar() {
                     ? <TrendingUp size={13} style={{ color: '#10b981' }} />
                     : <TrendingDown size={13} style={{ color: '#ef4444' }} />
                   }
-                  <span className="text-sm font-semibold" style={{ color: '#e8eaf0' }}>{item.symbol}</span>
+                  <span className="text-sm font-semibold" style={{ color: '#eceef5' }}>{item.symbol}</span>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs font-medium" style={{ color: '#e8eaf0' }}>{item.price}</p>
+                  <p className="text-xs font-medium" style={{ color: '#eceef5' }}>{item.price}</p>
                   <p className="text-xs" style={{ color: item.up ? '#10b981' : '#ef4444' }}>{item.change}</p>
                 </div>
               </div>
@@ -59,7 +59,7 @@ export default function RightSidebar() {
 
         {/* Market Signals */}
         <div>
-          <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#4a5568' }}>
+          <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#6b7a96' }}>
             Market Signals
           </p>
           <div className="space-y-2">
@@ -69,7 +69,7 @@ export default function RightSidebar() {
                 className="flex items-center justify-between px-3 py-2 rounded-lg"
                 style={{ background: '#161a22', border: '1px solid #1e2330' }}
               >
-                <span className="text-xs" style={{ color: '#8892a4' }}>{s.label}</span>
+                <span className="text-xs" style={{ color: '#9aa8be' }}>{s.label}</span>
                 <span
                   className="text-xs font-semibold px-2 py-0.5 rounded"
                   style={{ background: signalColors[s.color].bg, color: signalColors[s.color].text }}
@@ -83,7 +83,7 @@ export default function RightSidebar() {
 
         {/* News Feed */}
         <div>
-          <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#4a5568' }}>
+          <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#6b7a96' }}>
             News Feed
           </p>
           <div className="space-y-2">
@@ -102,12 +102,12 @@ export default function RightSidebar() {
                     <span className="text-xs font-semibold px-1.5 py-0.5 rounded" style={{ background: cat.bg, color: cat.text }}>
                       {item.category}
                     </span>
-                    <ExternalLink size={10} style={{ color: '#4a5568', flexShrink: 0 }} />
+                    <ExternalLink size={10} style={{ color: '#6b7a96', flexShrink: 0 }} />
                   </div>
-                  <p className="text-xs leading-snug mb-1" style={{ color: '#e8eaf0' }}>{item.headline}</p>
+                  <p className="text-xs leading-snug mb-1" style={{ color: '#eceef5' }}>{item.headline}</p>
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-medium" style={{ color: '#3b82f6' }}>{item.source}</span>
-                    <span className="text-xs" style={{ color: '#4a5568' }}>{item.time}</span>
+                    <span className="text-xs" style={{ color: '#6b7a96' }}>{item.time}</span>
                   </div>
                 </a>
               )
@@ -116,7 +116,7 @@ export default function RightSidebar() {
         </div>
 
         <div className="pt-2 pb-4">
-          <p className="text-xs leading-relaxed" style={{ color: '#2d3748' }}>
+          <p className="text-xs leading-relaxed" style={{ color: '#4a5870' }}>
             For informational purposes only. Not financial advice.
           </p>
         </div>

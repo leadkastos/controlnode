@@ -21,9 +21,9 @@ const mainNav = [
 ]
 
 const bottomNav = [
-  { label: 'Account', icon: User, path: '/account', color: '#8892a4' },
-  { label: 'Billing', icon: CreditCard, path: '/billing', color: '#8892a4' },
-  { label: 'Settings', icon: Settings, path: '/settings', color: '#8892a4' },
+  { label: 'Account', icon: User, path: '/account', color: '#9aa8be' },
+  { label: 'Billing', icon: CreditCard, path: '/billing', color: '#9aa8be' },
+  { label: 'Settings', icon: Settings, path: '/settings', color: '#9aa8be' },
 ]
 
 function NavItem({ item, onClose }) {
@@ -76,19 +76,19 @@ function SidebarContent({ onClose }) {
             <line x1="16" y1="20" x2="48" y2="18" stroke="white" strokeWidth="1" opacity="0.25"/>
             <line x1="50" y1="44" x2="18" y2="48" stroke="white" strokeWidth="1" opacity="0.25"/>
           </svg>
-          <span className="font-semibold text-sm tracking-wide" style={{ fontFamily: 'Syne, sans-serif', color: '#e8eaf0' }}>
+          <span className="font-semibold text-sm tracking-wide" style={{ fontFamily: 'Syne, sans-serif', color: '#eceef5' }}>
             ControlNode
           </span>
         </div>
         {onClose && (
-          <button onClick={onClose} className="p-1 rounded-lg lg:hidden" style={{ color: '#8892a4' }}>
+          <button onClick={onClose} className="p-1 rounded-lg lg:hidden" style={{ color: '#9aa8be' }}>
             <X size={18} />
           </button>
         )}
       </div>
 
       <nav className="flex-1 px-2 py-4 overflow-y-auto space-y-0.5">
-        <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-widest" style={{ color: '#4a5568' }}>
+        <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-widest" style={{ color: '#6b7a96' }}>
           Intelligence
         </p>
         {mainNav.map((item) => (
@@ -97,7 +97,7 @@ function SidebarContent({ onClose }) {
       </nav>
 
       <div className="px-2 py-4 space-y-0.5" style={{ borderTop: '1px solid #1e2330' }}>
-        <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-widest" style={{ color: '#4a5568' }}>
+        <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-widest" style={{ color: '#6b7a96' }}>
           Account
         </p>
         {bottomNav.map((item) => (
@@ -115,7 +115,7 @@ export default function Sidebar() {
     <>
       <button
         className="fixed top-3.5 left-4 z-50 p-2 rounded-lg lg:hidden"
-        style={{ background: '#161a22', border: '1px solid #1e2330', color: '#e8eaf0' }}
+        style={{ background: '#161a22', border: '1px solid #1e2330', color: '#eceef5' }}
         onClick={() => setMobileOpen(true)}
       >
         <Menu size={18} />

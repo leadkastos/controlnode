@@ -20,8 +20,8 @@ export default function Footer() {
         style={{ borderTop: '1px solid #1e2330' }}
       >
         {/* Disclaimer text */}
-        <p className="text-xs leading-relaxed text-center mb-4" style={{ color: '#374151' }}>
-          ControlNode provides market intelligence for <span style={{ color: '#4a5568' }}>informational purposes only</span>. Nothing on this platform constitutes financial advice, investment advice, or a recommendation to buy or sell any asset. Third-party content (including embedded videos) is provided for informational purposes — ControlNode does not own or control this content. Always consult a qualified financial advisor. M&N Consulting LLC.
+        <p className="text-xs leading-relaxed text-center mb-4" style={{ color: '#5a6880' }}>
+          ControlNode provides market intelligence for <span style={{ color: '#6b7a96' }}>informational purposes only</span>. Nothing on this platform constitutes financial advice, investment advice, or a recommendation to buy or sell any asset. Third-party content (including embedded videos) is provided for informational purposes — ControlNode does not own or control this content. Always consult a qualified financial advisor. M&N Consulting LLC.
         </p>
 
         {/* Links row */}
@@ -31,7 +31,7 @@ export default function Footer() {
               key={link.doc}
               onClick={() => setActiveDoc(link.doc)}
               className="text-xs transition-colors hover:opacity-80"
-              style={{ color: '#4a5568' }}
+              style={{ color: '#6b7a96' }}
               onMouseEnter={e => e.target.style.color = '#3b82f6'}
               onMouseLeave={e => e.target.style.color = '#4a5568'}
             >
@@ -41,7 +41,7 @@ export default function Footer() {
           <a
             href="mailto:clientcare@leadkast.com"
             className="flex items-center gap-1 text-xs transition-colors"
-            style={{ color: '#4a5568' }}
+            style={{ color: '#6b7a96' }}
             onMouseEnter={e => e.currentTarget.style.color = '#3b82f6'}
             onMouseLeave={e => e.currentTarget.style.color = '#4a5568'}
           >
@@ -51,7 +51,7 @@ export default function Footer() {
         </div>
 
         {/* Copyright */}
-        <p className="text-xs text-center" style={{ color: '#2d3748' }}>
+        <p className="text-xs text-center" style={{ color: '#5a6880' }}>
           © {new Date().getFullYear()} M&N Consulting LLC · ControlNode · All rights reserved
         </p>
       </footer>

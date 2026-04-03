@@ -109,18 +109,18 @@ function FlowChart({ data, period }) {
       <div className="flex gap-1.5 mt-1">
         {data.map((d, i) => (
           <div key={i} className="flex-1 text-center">
-            <span style={{ fontSize: '10px', color: '#4a5568' }}>{d.label}</span>
+            <span style={{ fontSize: '10px', color: '#6b7a96' }}>{d.label}</span>
           </div>
         ))}
       </div>
       <div className="flex items-center gap-4 mt-2">
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-sm" style={{ background: 'rgba(16,185,129,0.7)' }} />
-          <span style={{ fontSize: '11px', color: '#8892a4' }}>Inflows</span>
+          <span style={{ fontSize: '11px', color: '#9aa8be' }}>Inflows</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-sm" style={{ background: 'rgba(239,68,68,0.7)' }} />
-          <span style={{ fontSize: '11px', color: '#8892a4' }}>Outflows</span>
+          <span style={{ fontSize: '11px', color: '#9aa8be' }}>Outflows</span>
         </div>
       </div>
     </div>
@@ -171,9 +171,9 @@ function PieChart({ etfs }) {
           <div key={i} className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5">
               <div className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ background: s.color }} />
-              <span style={{ fontSize: '11px', color: '#8892a4' }}>{s.issuer}</span>
+              <span style={{ fontSize: '11px', color: '#9aa8be' }}>{s.issuer}</span>
             </div>
-            <span style={{ fontSize: '11px', color: '#e8eaf0', fontFamily: 'monospace' }}>
+            <span style={{ fontSize: '11px', color: '#eceef5', fontFamily: 'monospace' }}>
               {(s.pct * 100).toFixed(1)}%
             </span>
           </div>
@@ -222,14 +222,14 @@ export default function ETFFlows() {
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-1">
-          <h1 className="text-2xl font-bold" style={{ fontFamily: 'Syne, sans-serif', color: '#e8eaf0' }}>
+          <h1 className="text-2xl font-bold" style={{ fontFamily: 'Syne, sans-serif', color: '#eceef5' }}>
             XRP ETF Intelligence
           </h1>
           <span className="text-xs font-semibold px-2 py-0.5 rounded" style={{ background: 'rgba(16,185,129,0.12)', color: '#10b981' }}>
             LIVE (MOCK)
           </span>
         </div>
-        <p className="text-sm" style={{ color: '#8892a4' }}>
+        <p className="text-sm" style={{ color: '#9aa8be' }}>
           Institutional Flow & Market Impact Tracker — For informational purposes only
         </p>
       </div>
@@ -244,9 +244,9 @@ export default function ETFFlows() {
           { label: 'Net Flow 30d', value: (net30d >= 0 ? '+' : '') + '$' + fmt(net30d), sub: 'Rolling 30 days', color: net30d >= 0 ? '#10b981' : '#ef4444' },
         ].map((k, i) => (
           <div key={i} className="rounded-xl p-4 border" style={{ background: '#161a22', borderColor: '#1e2330' }}>
-            <p className="text-xs uppercase tracking-wide mb-2" style={{ color: '#4a5568' }}>{k.label}</p>
+            <p className="text-xs uppercase tracking-wide mb-2" style={{ color: '#6b7a96' }}>{k.label}</p>
             <p className="text-xl font-bold font-mono" style={{ color: k.color }}>{k.value}</p>
-            <p className="text-xs mt-1" style={{ color: '#4a5568' }}>{k.sub}</p>
+            <p className="text-xs mt-1" style={{ color: '#6b7a96' }}>{k.sub}</p>
           </div>
         ))}
       </div>
@@ -254,17 +254,17 @@ export default function ETFFlows() {
       {/* ETF Table */}
       <div className="rounded-xl border mb-6 overflow-hidden" style={{ background: '#161a22', borderColor: '#1e2330' }}>
         <div className="px-5 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid #1e2330', background: '#111318' }}>
-          <h2 className="text-sm font-semibold" style={{ fontFamily: 'Syne, sans-serif', color: '#e8eaf0' }}>
+          <h2 className="text-sm font-semibold" style={{ fontFamily: 'Syne, sans-serif', color: '#eceef5' }}>
             Active XRP ETFs
           </h2>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5">
               <div className="w-2 h-2 rounded-sm" style={{ background: '#3b82f6' }} />
-              <span className="text-xs" style={{ color: '#8892a4' }}>Spot</span>
+              <span className="text-xs" style={{ color: '#9aa8be' }}>Spot</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-2 h-2 rounded-sm" style={{ background: '#f59e0b' }} />
-              <span className="text-xs" style={{ color: '#8892a4' }}>Futures</span>
+              <span className="text-xs" style={{ color: '#9aa8be' }}>Futures</span>
             </div>
           </div>
         </div>
@@ -274,7 +274,7 @@ export default function ETFFlows() {
             <thead>
               <tr style={{ borderBottom: '1px solid #1e2330' }}>
                 {['ETF Name', 'Ticker', 'Type', 'AUM', 'XRP Holdings', 'Inflow 24h', 'Outflow 24h', 'Net 7d', 'Price Chg', 'Status'].map(h => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide" style={{ color: '#4a5568' }}>
+                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide" style={{ color: '#6b7a96' }}>
                     {h}
                   </th>
                 ))}
@@ -296,7 +296,7 @@ export default function ETFFlows() {
                           className="w-1.5 h-8 rounded-full flex-shrink-0"
                           style={{ background: e.type === 'spot' ? '#3b82f6' : '#f59e0b' }}
                         />
-                        <span className="text-sm font-medium" style={{ color: '#e8eaf0' }}>{e.name}</span>
+                        <span className="text-sm font-medium" style={{ color: '#eceef5' }}>{e.name}</span>
                       </div>
                     </td>
                     <td className="px-4 py-3">
@@ -315,8 +315,8 @@ export default function ETFFlows() {
                         {e.type}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-sm font-mono" style={{ color: '#e8eaf0' }}>${fmt(e.aum)}</td>
-                    <td className="px-4 py-3 text-sm font-mono" style={{ color: '#8892a4' }}>
+                    <td className="px-4 py-3 text-sm font-mono" style={{ color: '#eceef5' }}>${fmt(e.aum)}</td>
+                    <td className="px-4 py-3 text-sm font-mono" style={{ color: '#9aa8be' }}>
                       {e.type === 'spot' ? fmtXRP(e.xrp_holdings) : '—'}
                     </td>
                     <td className="px-4 py-3">
@@ -326,7 +326,7 @@ export default function ETFFlows() {
                           +${fmt(inflow)}
                         </span>
                       ) : (
-                        <span className="text-sm font-mono" style={{ color: '#4a5568' }}>—</span>
+                        <span className="text-sm font-mono" style={{ color: '#6b7a96' }}>—</span>
                       )}
                     </td>
                     <td className="px-4 py-3">
@@ -336,7 +336,7 @@ export default function ETFFlows() {
                           ${fmt(outflow)}
                         </span>
                       ) : (
-                        <span className="text-sm font-mono" style={{ color: '#4a5568' }}>—</span>
+                        <span className="text-sm font-mono" style={{ color: '#6b7a96' }}>—</span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-sm font-mono" style={{ color: e.flow_7d >= 0 ? '#10b981' : '#ef4444' }}>
@@ -361,7 +361,7 @@ export default function ETFFlows() {
         {/* Flow chart */}
         <div className="rounded-xl p-5 border" style={{ background: '#161a22', borderColor: '#1e2330' }}>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold" style={{ color: '#e8eaf0' }}>Inflows vs Outflows</h2>
+            <h2 className="text-sm font-semibold" style={{ color: '#eceef5' }}>Inflows vs Outflows</h2>
             <div className="flex gap-1">
               {['24h', '7d', '30d'].map(p => (
                 <button
@@ -380,16 +380,16 @@ export default function ETFFlows() {
             </div>
           </div>
           <FlowChart data={flowHistory[flowPeriod]} period={flowPeriod} />
-          <p className="text-xs mt-3" style={{ color: '#4a5568' }}>
+          <p className="text-xs mt-3" style={{ color: '#6b7a96' }}>
             Values in $M. Green = inflows, Red = outflows.
           </p>
         </div>
 
         {/* Pie chart */}
         <div className="rounded-xl p-5 border" style={{ background: '#161a22', borderColor: '#1e2330' }}>
-          <h2 className="text-sm font-semibold mb-4" style={{ color: '#e8eaf0' }}>AUM Market Share (Spot ETFs)</h2>
+          <h2 className="text-sm font-semibold mb-4" style={{ color: '#eceef5' }}>AUM Market Share (Spot ETFs)</h2>
           <PieChart etfs={etfs} />
-          <p className="text-xs mt-4" style={{ color: '#4a5568' }}>
+          <p className="text-xs mt-4" style={{ color: '#6b7a96' }}>
             Total Spot AUM: ${fmt(etfs.filter(e => e.type === 'spot').reduce((s, e) => s + e.aum, 0))}
           </p>
         </div>
@@ -399,7 +399,7 @@ export default function ETFFlows() {
       <div className="rounded-xl p-5 border mb-6" style={{ background: '#161a22', borderColor: '#1e2330' }}>
         <div className="flex items-center gap-2 mb-4">
           <Activity size={16} style={{ color: '#8b5cf6' }} />
-          <h2 className="text-sm font-semibold" style={{ color: '#e8eaf0' }}>Market Impact Panel</h2>
+          <h2 className="text-sm font-semibold" style={{ color: '#eceef5' }}>Market Impact Panel</h2>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
@@ -409,9 +409,9 @@ export default function ETFFlows() {
             { label: 'Institutional Participation', value: '~42%', note: 'Estimated of total ETF flows' },
           ].map((m, i) => (
             <div key={i} className="rounded-lg p-4" style={{ background: '#111318', border: '1px solid #1e2330' }}>
-              <p className="text-xs uppercase tracking-wide mb-2" style={{ color: '#4a5568' }}>{m.label}</p>
+              <p className="text-xs uppercase tracking-wide mb-2" style={{ color: '#6b7a96' }}>{m.label}</p>
               <p className="text-xl font-bold font-mono" style={{ color: '#8b5cf6' }}>{m.value}</p>
-              <p className="text-xs mt-1" style={{ color: '#4a5568' }}>{m.note}</p>
+              <p className="text-xs mt-1" style={{ color: '#6b7a96' }}>{m.note}</p>
             </div>
           ))}
         </div>
@@ -419,10 +419,10 @@ export default function ETFFlows() {
         {/* AI Insight box */}
         <div className="rounded-lg p-4" style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.2)' }}>
           <p className="text-xs font-semibold mb-2" style={{ color: '#3b82f6' }}>ControlNode Insight</p>
-          <p className="text-sm leading-relaxed" style={{ color: '#8892a4' }}>
-            XRP ETF inflows have increased for 5 consecutive days, with combined net flows of <span style={{ color: '#e8eaf0' }}>${fmt(net7d)}</span> over the past 7 days. Spot ETFs now hold approximately <span style={{ color: '#e8eaf0' }}>{fmtXRP(totalXRP)}</span> — representing 3.84% of circulating supply. Grayscale remains the only ETF showing net outflows in the 24-hour window, consistent with the rotation pattern observed in BTC ETF markets post-launch. Institutional participation is estimated at 42% of total flows, suggesting sustained professional interest rather than retail-driven movement.
+          <p className="text-sm leading-relaxed" style={{ color: '#9aa8be' }}>
+            XRP ETF inflows have increased for 5 consecutive days, with combined net flows of <span style={{ color: '#eceef5' }}>${fmt(net7d)}</span> over the past 7 days. Spot ETFs now hold approximately <span style={{ color: '#eceef5' }}>{fmtXRP(totalXRP)}</span> — representing 3.84% of circulating supply. Grayscale remains the only ETF showing net outflows in the 24-hour window, consistent with the rotation pattern observed in BTC ETF markets post-launch. Institutional participation is estimated at 42% of total flows, suggesting sustained professional interest rather than retail-driven movement.
           </p>
-          <p className="text-xs mt-3 font-semibold" style={{ color: '#4a5568' }}>
+          <p className="text-xs mt-3 font-semibold" style={{ color: '#6b7a96' }}>
             Informational context only — not financial advice.
           </p>
         </div>
@@ -433,13 +433,13 @@ export default function ETFFlows() {
         <div className="px-5 py-3" style={{ borderBottom: '1px solid #1e2330', background: '#111318' }}>
           <div className="flex items-center gap-2">
             <Building2 size={15} style={{ color: '#8b5cf6' }} />
-            <h2 className="text-sm font-semibold" style={{ color: '#e8eaf0' }}>ETF Pipeline & Institutional Watchlist</h2>
+            <h2 className="text-sm font-semibold" style={{ color: '#eceef5' }}>ETF Pipeline & Institutional Watchlist</h2>
           </div>
         </div>
 
         {/* Not Filed — High Priority */}
         <div className="px-5 py-3" style={{ borderBottom: '1px solid #1e2330' }}>
-          <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#4a5568' }}>
+          <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#6b7a96' }}>
             Not Yet Filed — High Priority Watch
           </p>
           <div className="space-y-2">
@@ -447,10 +447,10 @@ export default function ETFFlows() {
               <div key={i} className="flex items-start justify-between gap-3 p-3 rounded-lg" style={{ background: '#111318', border: '1px solid #1e2330' }}>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-semibold" style={{ color: '#e8eaf0' }}>{p.issuer}</span>
+                    <span className="text-sm font-semibold" style={{ color: '#eceef5' }}>{p.issuer}</span>
                     <ImportanceBadge importance={p.importance} />
                   </div>
-                  <p className="text-xs" style={{ color: '#8892a4' }}>{p.notes}</p>
+                  <p className="text-xs" style={{ color: '#9aa8be' }}>{p.notes}</p>
                 </div>
                 <StatusBadge status={p.status} />
               </div>
@@ -460,7 +460,7 @@ export default function ETFFlows() {
 
         {/* Active */}
         <div className="px-5 py-3" style={{ borderBottom: '1px solid #1e2330' }}>
-          <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#4a5568' }}>
+          <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#6b7a96' }}>
             Active / Expanding
           </p>
           <div className="space-y-2">
@@ -468,10 +468,10 @@ export default function ETFFlows() {
               <div key={i} className="flex items-start justify-between gap-3 p-3 rounded-lg" style={{ background: '#111318', border: '1px solid #1e2330' }}>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-semibold" style={{ color: '#e8eaf0' }}>{p.issuer}</span>
+                    <span className="text-sm font-semibold" style={{ color: '#eceef5' }}>{p.issuer}</span>
                     <ImportanceBadge importance={p.importance} />
                   </div>
-                  <p className="text-xs" style={{ color: '#8892a4' }}>{p.notes}</p>
+                  <p className="text-xs" style={{ color: '#9aa8be' }}>{p.notes}</p>
                 </div>
                 <StatusBadge status={p.status} />
               </div>
@@ -481,7 +481,7 @@ export default function ETFFlows() {
 
         {/* Withdrawn */}
         <div className="px-5 py-3">
-          <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#4a5568' }}>
+          <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#6b7a96' }}>
             Withdrawn
           </p>
           <div className="space-y-2">
@@ -489,10 +489,10 @@ export default function ETFFlows() {
               <div key={i} className="flex items-start justify-between gap-3 p-3 rounded-lg" style={{ background: '#111318', border: '1px solid #1e2330', opacity: 0.7 }}>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-semibold" style={{ color: '#e8eaf0' }}>{p.issuer}</span>
+                    <span className="text-sm font-semibold" style={{ color: '#eceef5' }}>{p.issuer}</span>
                     <ImportanceBadge importance={p.importance} />
                   </div>
-                  <p className="text-xs" style={{ color: '#8892a4' }}>{p.notes}</p>
+                  <p className="text-xs" style={{ color: '#9aa8be' }}>{p.notes}</p>
                 </div>
                 <StatusBadge status={p.status} />
               </div>
@@ -503,7 +503,7 @@ export default function ETFFlows() {
 
       {/* Disclaimer */}
       <div className="text-center pb-4">
-        <p className="text-xs" style={{ color: '#374151' }}>
+        <p className="text-xs" style={{ color: '#4a5870' }}>
           All data shown is mock/illustrative. Live data connected in Phase 2. Not financial advice.
         </p>
       </div>

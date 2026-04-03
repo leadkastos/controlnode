@@ -70,13 +70,13 @@ export default function MediaNarratives() {
                         </span>
                       )}
                     </div>
-                    <p className="text-sm leading-snug mb-1.5" style={{ color: '#e8eaf0' }}>
+                    <p className="text-sm leading-snug mb-1.5" style={{ color: '#eceef5' }}>
                       {item.headline}
                     </p>
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-medium" style={{ color: '#3b82f6' }}>{item.source}</span>
-                      <span className="text-xs" style={{ color: '#4a5568' }}>{item.time}</span>
-                      <ExternalLink size={10} style={{ color: '#4a5568' }} />
+                      <span className="text-xs" style={{ color: '#6b7a96' }}>{item.time}</span>
+                      <ExternalLink size={10} style={{ color: '#6b7a96' }} />
                     </div>
                   </div>
                 </a>
@@ -87,7 +87,7 @@ export default function MediaNarratives() {
 
         <div
           className="rounded-lg px-4 py-3 mt-2 text-xs text-center"
-          style={{ color: '#4a5568' }}
+          style={{ color: '#6b7a96' }}
         >
           Headlines sourced from Reuters, Bloomberg, WSJ, Financial Times, CoinDesk, The Block, Forbes, Decrypt, and official government sources only. Unconfirmed items are flagged in red — always verify independently.
         </div>

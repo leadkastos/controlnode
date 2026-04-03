@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom'
 function InputField({ label, value, onChange, placeholder, type = 'text' }) {
   return (
     <div className="mb-4">
-      <label className="block text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: '#4a5568' }}>
+      <label className="block text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: '#6b7a96' }}>
         {label}
       </label>
       <input
@@ -19,7 +19,7 @@ function InputField({ label, value, onChange, placeholder, type = 'text' }) {
         style={{
           background: '#111318',
           border: '1px solid #1e2330',
-          color: '#e8eaf0',
+          color: '#eceef5',
         }}
         onFocus={e => e.target.style.borderColor = '#3b82f6'}
         onBlur={e => e.target.style.borderColor = '#1e2330'}
@@ -31,7 +31,7 @@ function InputField({ label, value, onChange, placeholder, type = 'text' }) {
 function TextareaField({ label, value, onChange, placeholder, rows = 4 }) {
   return (
     <div className="mb-4">
-      <label className="block text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: '#4a5568' }}>
+      <label className="block text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: '#6b7a96' }}>
         {label}
       </label>
       <textarea
@@ -43,7 +43,7 @@ function TextareaField({ label, value, onChange, placeholder, rows = 4 }) {
         style={{
           background: '#111318',
           border: '1px solid #1e2330',
-          color: '#e8eaf0',
+          color: '#eceef5',
         }}
         onFocus={e => e.target.style.borderColor = '#3b82f6'}
         onBlur={e => e.target.style.borderColor = '#1e2330'}
@@ -69,8 +69,8 @@ export function Admin() {
               style={{ background: '#161a22', borderColor: '#1e2330' }}
             >
               <Badge color={item.badge} className="mb-2">{item.badge === 'blue' ? 'Content' : 'Updates'}</Badge>
-              <h3 className="font-semibold mt-2" style={{ color: '#e8eaf0' }}>{item.title}</h3>
-              <p className="text-sm mt-1" style={{ color: '#8892a4' }}>{item.desc}</p>
+              <h3 className="font-semibold mt-2" style={{ color: '#eceef5' }}>{item.title}</h3>
+              <p className="text-sm mt-1" style={{ color: '#9aa8be' }}>{item.desc}</p>
             </button>
           ))}
         </div>
@@ -84,8 +84,8 @@ export function Admin() {
             ].map((pub, i) => (
               <div key={i} className="flex items-center justify-between py-2" style={{ borderBottom: '1px solid #1e2330' }}>
                 <div>
-                  <p className="text-sm font-medium" style={{ color: '#e8eaf0' }}>{pub.title}</p>
-                  <p className="text-xs" style={{ color: '#4a5568' }}>{pub.time}</p>
+                  <p className="text-sm font-medium" style={{ color: '#eceef5' }}>{pub.title}</p>
+                  <p className="text-xs" style={{ color: '#6b7a96' }}>{pub.time}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge color="blue">{pub.type}</Badge>
@@ -146,7 +146,7 @@ export function AdminMorningBrief() {
             </button>
             <button
               className="px-6 py-2.5 rounded-lg text-sm font-medium border transition-colors"
-              style={{ color: '#8892a4', borderColor: '#1e2330' }}
+              style={{ color: '#9aa8be', borderColor: '#1e2330' }}
             >
               Save Draft
             </button>
@@ -180,14 +180,14 @@ export function AdminUpdates() {
             placeholder="e.g. Geopolitical Alert: USD/JPY Breaks 155"
           />
           <div className="mb-4">
-            <label className="block text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: '#4a5568' }}>
+            <label className="block text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: '#6b7a96' }}>
               Target Module
             </label>
             <select
               value={module}
               onChange={e => setModule(e.target.value)}
               className="w-full px-3 py-2.5 rounded-lg text-sm outline-none"
-              style={{ background: '#111318', border: '1px solid #1e2330', color: '#e8eaf0' }}
+              style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}
             >
               <option value="geopolitical-watch">Geopolitical Watch</option>
               <option value="xrp-intelligence">XRP Intelligence</option>
@@ -215,7 +215,7 @@ export function AdminUpdates() {
             </button>
             <button
               className="px-6 py-2.5 rounded-lg text-sm font-medium border"
-              style={{ color: '#8892a4', borderColor: '#1e2330' }}
+              style={{ color: '#9aa8be', borderColor: '#1e2330' }}
             >
               Preview
             </button>
@@ -258,10 +258,10 @@ export function AdminDominoTheory() {
     <AppLayout hideRightSidebar>
       <div className="max-w-3xl">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold" style={{ fontFamily: 'Syne, sans-serif', color: '#e8eaf0' }}>
+          <h1 className="text-2xl font-bold" style={{ fontFamily: 'Syne, sans-serif', color: '#eceef5' }}>
             Domino Theory Manager
           </h1>
-          <p className="text-sm mt-1" style={{ color: '#8892a4' }}>
+          <p className="text-sm mt-1" style={{ color: '#9aa8be' }}>
             Update the status and notes for each domino. Changes go live immediately for all members.
           </p>
         </div>
@@ -277,15 +277,15 @@ export function AdminDominoTheory() {
             const d = dominoStatuses[id]
             return (
               <div key={id} className="rounded-xl p-5 border" style={{ background: '#161a22', borderColor: '#1e2330' }}>
-                <h3 className="text-sm font-semibold mb-3" style={{ color: '#e8eaf0' }}>{title}</h3>
+                <h3 className="text-sm font-semibold mb-3" style={{ color: '#eceef5' }}>{title}</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: '#4a5568' }}>Status</label>
+                    <label className="block text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: '#6b7a96' }}>Status</label>
                     <select
                       value={d.status}
                       onChange={e => setDominoStatuses(prev => ({ ...prev, [id]: { ...prev[id], status: e.target.value } }))}
                       className="w-full px-3 py-2 rounded-lg text-sm outline-none"
-                      style={{ background: '#111318', border: '1px solid #1e2330', color: '#e8eaf0' }}
+                      style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}
                     >
                       <option value="not_started">Monitoring</option>
                       <option value="in_progress">In Progress</option>
@@ -293,13 +293,13 @@ export function AdminDominoTheory() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: '#4a5568' }}>ControlNode Assessment</label>
+                    <label className="block text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: '#6b7a96' }}>ControlNode Assessment</label>
                     <textarea
                       value={d.notes}
                       onChange={e => setDominoStatuses(prev => ({ ...prev, [id]: { ...prev[id], notes: e.target.value } }))}
                       rows={2}
                       className="w-full px-3 py-2 rounded-lg text-sm outline-none resize-none"
-                      style={{ background: '#111318', border: '1px solid #1e2330', color: '#e8eaf0' }}
+                      style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}
                     />
                   </div>
                 </div>
@@ -318,7 +318,7 @@ export function AdminDominoTheory() {
           </button>
           <button
             className="px-6 py-2.5 rounded-lg text-sm font-medium border"
-            style={{ color: '#8892a4', borderColor: '#1e2330' }}
+            style={{ color: '#9aa8be', borderColor: '#1e2330' }}
           >
             Preview Changes
           </button>

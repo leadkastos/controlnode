@@ -7,7 +7,7 @@ import { Youtube, Plus, Trash2, ExternalLink } from 'lucide-react'
 function InputField({ label, value, onChange, placeholder, type = 'text' }) {
   return (
     <div className="mb-4">
-      <label className="block text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: '#4a5568' }}>
+      <label className="block text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: '#6b7a96' }}>
         {label}
       </label>
       <input
@@ -16,7 +16,7 @@ function InputField({ label, value, onChange, placeholder, type = 'text' }) {
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
         className="w-full px-3 py-2.5 rounded-lg text-sm outline-none"
-        style={{ background: '#111318', border: '1px solid #1e2330', color: '#e8eaf0' }}
+        style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}
         onFocus={e => e.target.style.borderColor = '#3b82f6'}
         onBlur={e => e.target.style.borderColor = '#1e2330'}
       />
@@ -57,7 +57,7 @@ function YouTubeSection() {
     <DetailSection title="YouTube Intel — Channel Settings">
       <div
         className="rounded-lg px-4 py-3 mb-4 text-xs leading-relaxed"
-        style={{ background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.15)', color: '#8892a4' }}
+        style={{ background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.15)', color: '#9aa8be' }}
       >
         <span style={{ color: '#ef4444', fontWeight: 600 }}>How this works: </span>
         Add up to 4 YouTube channels below. ControlNode checks for new videos 4 times daily (6AM, 12PM, 6PM, 12AM CT). When a new video is posted, your notification bell will light up and the YouTube Intel card on your dashboard will update.
@@ -78,22 +78,22 @@ function YouTubeSection() {
               <Youtube size={14} style={{ color: '#ef4444' }} />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate" style={{ color: '#e8eaf0' }}>@{ch.name}</p>
-              <p className="text-xs truncate" style={{ color: '#4a5568' }}>{ch.url}</p>
+              <p className="text-sm font-medium truncate" style={{ color: '#eceef5' }}>@{ch.name}</p>
+              <p className="text-xs truncate" style={{ color: '#6b7a96' }}>{ch.url}</p>
             </div>
             <a
               href={ch.url}
               target="_blank"
               rel="noopener noreferrer"
               className="p-1.5 rounded"
-              style={{ color: '#4a5568' }}
+              style={{ color: '#6b7a96' }}
             >
               <ExternalLink size={13} />
             </a>
             <button
               onClick={() => removeChannel(ch.id)}
               className="p-1.5 rounded transition-colors hover:bg-red-500/10"
-              style={{ color: '#4a5568' }}
+              style={{ color: '#6b7a96' }}
             >
               <Trash2 size={13} />
             </button>
@@ -111,9 +111,9 @@ function YouTubeSection() {
               className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
               style={{ background: '#161a22' }}
             >
-              <Youtube size={14} style={{ color: '#2d3748' }} />
+              <Youtube size={14} style={{ color: '#4a5870' }} />
             </div>
-            <p className="text-xs" style={{ color: '#2d3748' }}>Empty slot</p>
+            <p className="text-xs" style={{ color: '#4a5870' }}>Empty slot</p>
           </div>
         ))}
       </div>
@@ -128,7 +128,7 @@ function YouTubeSection() {
               onChange={e => { setNewUrl(e.target.value); setError('') }}
               placeholder="https://youtube.com/@channelname"
               className="flex-1 px-3 py-2.5 rounded-lg text-sm outline-none"
-              style={{ background: '#111318', border: '1px solid #1e2330', color: '#e8eaf0' }}
+              style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}
               onFocus={e => e.target.style.borderColor = '#3b82f6'}
               onBlur={e => e.target.style.borderColor = '#1e2330'}
               onKeyDown={e => e.key === 'Enter' && addChannel()}
@@ -145,7 +145,7 @@ function YouTubeSection() {
           {error && (
             <p className="text-xs mt-2" style={{ color: '#ef4444' }}>{error}</p>
           )}
-          <p className="text-xs mt-2" style={{ color: '#4a5568' }}>
+          <p className="text-xs mt-2" style={{ color: '#6b7a96' }}>
             {channels.length} of {MAX} channels used
           </p>
         </div>
@@ -154,14 +154,14 @@ function YouTubeSection() {
       {channels.length >= MAX && (
         <div
           className="rounded-lg px-4 py-3 text-xs text-center"
-          style={{ background: '#111318', border: '1px solid #1e2330', color: '#4a5568' }}
+          style={{ background: '#111318', border: '1px solid #1e2330', color: '#6b7a96' }}
         >
           Maximum of 4 channels reached. Remove a channel to add a new one.
         </div>
       )}
 
       <div className="mt-4 pt-4" style={{ borderTop: '1px solid #1e2330' }}>
-        <p className="text-xs" style={{ color: '#4a5568' }}>
+        <p className="text-xs" style={{ color: '#6b7a96' }}>
           Check schedule: 6:00 AM · 12:00 PM · 6:00 PM · 12:00 AM (CT)
         </p>
       </div>
@@ -183,8 +183,8 @@ export function Account() {
               JD
             </div>
             <div>
-              <p className="font-semibold" style={{ color: '#e8eaf0' }}>John Doe</p>
-              <p className="text-sm" style={{ color: '#8892a4' }}>john@example.com</p>
+              <p className="font-semibold" style={{ color: '#eceef5' }}>John Doe</p>
+              <p className="text-sm" style={{ color: '#9aa8be' }}>john@example.com</p>
               <div className="mt-1"><Badge color="blue">Pro Plan</Badge></div>
             </div>
           </div>
@@ -200,7 +200,7 @@ export function Account() {
           <div className="space-y-3">
             {['Email Address', 'Display Name', 'Reset Password', 'Timezone'].map((field) => (
               <div key={field} className="flex items-center justify-between py-1">
-                <span className="text-sm" style={{ color: '#8892a4' }}>{field}</span>
+                <span className="text-sm" style={{ color: '#9aa8be' }}>{field}</span>
                 <button
                   className="text-xs px-3 py-1.5 rounded-lg border transition-colors"
                   style={{ color: '#3b82f6', borderColor: '#1e2330' }}
@@ -230,8 +230,8 @@ export function Billing() {
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-semibold" style={{ color: '#e8eaf0' }}>ControlNode Pro</p>
-                <p className="text-sm" style={{ color: '#8892a4' }}>$49/month · Renews April 23, 2026</p>
+                <p className="font-semibold" style={{ color: '#eceef5' }}>ControlNode Pro</p>
+                <p className="text-sm" style={{ color: '#9aa8be' }}>$49/month · Renews April 23, 2026</p>
               </div>
               <Badge color="blue">Active</Badge>
             </div>
@@ -250,8 +250,8 @@ export function Billing() {
               { date: 'Jan 23, 2026', amount: '$49.00', status: 'Paid' },
             ].map((inv, i) => (
               <div key={i} className="flex items-center justify-between py-2" style={{ borderBottom: '1px solid #1e2330' }}>
-                <span className="text-sm" style={{ color: '#8892a4' }}>{inv.date}</span>
-                <span className="text-sm" style={{ color: '#e8eaf0' }}>{inv.amount}</span>
+                <span className="text-sm" style={{ color: '#9aa8be' }}>{inv.date}</span>
+                <span className="text-sm" style={{ color: '#eceef5' }}>{inv.amount}</span>
                 <Badge color="green">{inv.status}</Badge>
                 <button className="text-xs" style={{ color: '#3b82f6' }}>Download</button>
               </div>
@@ -277,8 +277,8 @@ export function Settings() {
             ].map((item) => (
               <div key={item.label} className="flex items-center justify-between py-2" style={{ borderBottom: '1px solid #1e2330' }}>
                 <div>
-                  <p className="text-sm font-medium" style={{ color: '#e8eaf0' }}>{item.label}</p>
-                  <p className="text-xs" style={{ color: '#8892a4' }}>{item.desc}</p>
+                  <p className="text-sm font-medium" style={{ color: '#eceef5' }}>{item.label}</p>
+                  <p className="text-xs" style={{ color: '#9aa8be' }}>{item.desc}</p>
                 </div>
                 <div
                   className="w-10 h-5 rounded-full flex items-center px-0.5 cursor-pointer"

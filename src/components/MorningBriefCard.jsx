@@ -32,17 +32,17 @@ export default function MorningBriefCard() {
             <Zap size={11} fill="currentColor" />
             MORNING BRIEF
           </div>
-          <span className="text-xs" style={{ color: '#4a5568' }}>{morningBriefSnippet.date}</span>
+          <span className="text-xs" style={{ color: '#6b7a96' }}>{morningBriefSnippet.date}</span>
         </div>
 
         <h2
           className="text-lg lg:text-xl font-bold mb-2 leading-tight"
-          style={{ fontFamily: 'Syne, sans-serif', color: '#e8eaf0' }}
+          style={{ fontFamily: 'Syne, sans-serif', color: '#eceef5' }}
         >
           {morningBriefSnippet.headline}
         </h2>
 
-        <p className="text-sm mb-4 leading-relaxed" style={{ color: '#8892a4' }}>
+        <p className="text-sm mb-4 leading-relaxed" style={{ color: '#9aa8be' }}>
           {morningBriefSnippet.snippet}
         </p>
 
@@ -50,7 +50,7 @@ export default function MorningBriefCard() {
           {morningBriefSnippet.catalysts.map((c, i) => (
             <div key={i} className="flex items-start gap-2">
               <div className="w-1 h-1 rounded-full mt-2 flex-shrink-0" style={{ background: '#3b82f6' }} />
-              <p className="text-sm" style={{ color: '#8892a4' }}>{c}</p>
+              <p className="text-sm" style={{ color: '#9aa8be' }}>{c}</p>
             </div>
           ))}
         </div>
@@ -64,7 +64,7 @@ export default function MorningBriefCard() {
             View Full Brief
             <ArrowRight size={14} />
           </button>
-          <span className="text-xs" style={{ color: '#4a5568' }}>For informational purposes only</span>
+          <span className="text-xs" style={{ color: '#6b7a96' }}>For informational purposes only</span>
         </div>
       </div>
     </div>

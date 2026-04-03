@@ -43,8 +43,8 @@ export default function GeopoliticalWatch() {
             {flashPoints.map((fp) => (
               <div key={fp.region} className="flex items-start justify-between gap-3 py-2.5" style={{ borderBottom: '1px solid #1e2330' }}>
                 <div>
-                  <p className="text-sm font-medium" style={{ color: '#e8eaf0' }}>{fp.region}</p>
-                  <p className="text-xs mt-0.5" style={{ color: '#8892a4' }}>{fp.note}</p>
+                  <p className="text-sm font-medium" style={{ color: '#eceef5' }}>{fp.region}</p>
+                  <p className="text-xs mt-0.5" style={{ color: '#9aa8be' }}>{fp.note}</p>
                 </div>
                 <Badge color={fp.color}>{fp.level}</Badge>
               </div>
@@ -73,10 +73,10 @@ export default function GeopoliticalWatch() {
                     </span>
                   )}
                 </div>
-                <p className="text-sm leading-snug mb-1" style={{ color: '#e8eaf0' }}>{item.headline}</p>
+                <p className="text-sm leading-snug mb-1" style={{ color: '#eceef5' }}>{item.headline}</p>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-medium" style={{ color: '#3b82f6' }}>{item.source}</span>
-                  <span className="text-xs" style={{ color: '#4a5568' }}>{item.time}</span>
+                  <span className="text-xs" style={{ color: '#6b7a96' }}>{item.time}</span>
                 </div>
               </div>
             ))}
@@ -89,7 +89,7 @@ export default function GeopoliticalWatch() {
             {weeklyWatch.map((item, i) => (
               <div key={i} className="px-4 py-3 rounded-lg" style={{ background: '#111318', border: '1px solid #1e2330' }}>
                 <div className="flex items-start justify-between gap-2 flex-wrap">
-                  <p className="text-sm font-medium" style={{ color: '#e8eaf0' }}>{item.item}</p>
+                  <p className="text-sm font-medium" style={{ color: '#eceef5' }}>{item.item}</p>
                   {!item.confirmed && (
                     <span
                       className="text-xs font-semibold px-2 py-0.5 rounded flex-shrink-0"
@@ -99,11 +99,11 @@ export default function GeopoliticalWatch() {
                     </span>
                   )}
                 </div>
-                <p className="text-xs mt-1" style={{ color: '#8892a4' }}>{item.impact}</p>
+                <p className="text-xs mt-1" style={{ color: '#9aa8be' }}>{item.impact}</p>
               </div>
             ))}
           </div>
-          <p className="text-xs mt-3" style={{ color: '#4a5568' }}>
+          <p className="text-xs mt-3" style={{ color: '#6b7a96' }}>
             Items marked Unconfirmed are based on developing reports. Always verify independently before acting on any information.
           </p>
         </DetailSection>

@@ -4,10 +4,10 @@ import { Badge } from './UI'
 export function DetailSection({ title, children }) {
   return (
     <div className="rounded-xl p-5 border mb-4" style={{ background: '#161a22', borderColor: '#1e2330' }}>
-      <h3 className="text-sm font-semibold mb-3" style={{ fontFamily: 'Syne, sans-serif', color: '#e8eaf0' }}>
+      <h3 className="text-sm font-semibold mb-3" style={{ fontFamily: 'Syne, sans-serif', color: '#eceef5' }}>
         {title}
       </h3>
-      <div style={{ color: '#8892a4' }}>
+      <div style={{ color: '#9aa8be' }}>
         {children}
       </div>
     </div>
@@ -17,7 +17,7 @@ export function DetailSection({ title, children }) {
 export function DataRow({ label, value, valueColor }) {
   return (
     <div className="flex items-center justify-between py-2" style={{ borderBottom: '1px solid #1e2330' }}>
-      <span className="text-sm" style={{ color: '#8892a4' }}>{label}</span>
+      <span className="text-sm" style={{ color: '#9aa8be' }}>{label}</span>
       <span className="text-sm font-medium" style={{ color: valueColor || '#e8eaf0' }}>{value}</span>
     </div>
   )
@@ -45,11 +45,11 @@ export default function DetailPageLayout({ title, subtitle, badge, badgeColor, c
             <Badge color={badgeColor || 'blue'}>{badge}</Badge>
           </div>
         )}
-        <h1 className="text-2xl font-bold mb-1" style={{ fontFamily: 'Syne, sans-serif', color: '#e8eaf0' }}>
+        <h1 className="text-2xl font-bold mb-1" style={{ fontFamily: 'Syne, sans-serif', color: '#eceef5' }}>
           {title}
         </h1>
         {subtitle && (
-          <p className="text-sm leading-relaxed" style={{ color: '#8892a4' }}>{subtitle}</p>
+          <p className="text-sm leading-relaxed" style={{ color: '#9aa8be' }}>{subtitle}</p>
         )}
       </div>
       {children}

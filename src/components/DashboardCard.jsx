@@ -14,13 +14,13 @@ export default function DashboardCard({ card }) {
       onMouseLeave={e => e.currentTarget.style.borderColor = '#1e2330'}
     >
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold" style={{ color: '#e8eaf0' }}>{card.title}</h3>
+        <h3 className="text-sm font-semibold" style={{ color: '#eceef5' }}>{card.title}</h3>
       </div>
 
       <div className="space-y-2 flex-1">
         {card.data.map((item, i) => (
           <div key={i} className="flex items-center justify-between gap-2">
-            <span className="text-xs" style={{ color: '#8892a4' }}>{item.label}</span>
+            <span className="text-xs" style={{ color: '#9aa8be' }}>{item.label}</span>
             <span
               className="text-xs font-medium text-right"
               style={{

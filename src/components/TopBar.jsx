@@ -38,7 +38,7 @@ export default function TopBar() {
         <div className="w-8 lg:hidden" />
         <h1
           className="text-base font-semibold tracking-tight"
-          style={{ fontFamily: 'Syne, sans-serif', color: '#e8eaf0' }}
+          style={{ fontFamily: 'Syne, sans-serif', color: '#eceef5' }}
         >
           {title}
         </h1>

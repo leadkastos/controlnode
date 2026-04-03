@@ -10,7 +10,7 @@ export default function Dashboard() {
       <MorningBriefCard />
 
       <div className="mb-4">
-        <h2 className="text-xs font-semibold uppercase tracking-widest" style={{ color: '#4a5568' }}>
+        <h2 className="text-xs font-semibold uppercase tracking-widest" style={{ color: '#6b7a96' }}>
           Intelligence Modules
         </h2>
       </div>

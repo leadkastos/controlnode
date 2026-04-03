@@ -33,7 +33,7 @@ export default function OilVsYen() {
             "Ripple's ODL corridors run through Japan/Korea exchanges — corridor utilization is a data point to watch.",
             'Historical observation: Rising oil + weak yen has coincided with positive XRP price periods.',
           ]} />
-          <p className="text-xs mt-3" style={{ color: '#4a5568' }}>
+          <p className="text-xs mt-3" style={{ color: '#6b7a96' }}>
             Historical correlations are observational only and do not guarantee future outcomes.
           </p>
         </DetailSection>
@@ -45,7 +45,7 @@ export default function OilVsYen() {
             <DataRow label="Oil up + Yen strong" value="Mixed historical outcomes" />
             <DataRow label="Correlation Confidence" value="Moderate (6-month observation window)" />
           </div>
-          <p className="text-xs mt-3" style={{ color: '#4a5568' }}>
+          <p className="text-xs mt-3" style={{ color: '#6b7a96' }}>
             Past correlations are not predictive of future market behavior.
           </p>
         </DetailSection>
@@ -69,12 +69,12 @@ export default function OilVsYen() {
               { scenario: 'BOJ surprise rate hike', context: 'Yen strengthens, carry trade dynamics reverse — risk asset impact likely', color: '#ef4444' },
             ].map((s, i) => (
               <div key={i} className="p-3 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid #1e2330' }}>
-                <p className="text-xs font-semibold mb-1" style={{ color: '#e8eaf0' }}>{s.scenario}</p>
+                <p className="text-xs font-semibold mb-1" style={{ color: '#eceef5' }}>{s.scenario}</p>
                 <p className="text-xs" style={{ color: s.color }}>{s.context}</p>
               </div>
             ))}
           </div>
-          <p className="text-xs mt-3" style={{ color: '#4a5568' }}>
+          <p className="text-xs mt-3" style={{ color: '#6b7a96' }}>
             Scenarios are observational frameworks only — not predictions or recommendations.
           </p>
         </DetailSection>

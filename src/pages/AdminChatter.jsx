@@ -17,7 +17,7 @@ const emptyForm = {
 function Field({ label, children }) {
   return (
     <div className="mb-4">
-      <label className="block text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: '#4a5568' }}>
+      <label className="block text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: '#6b7a96' }}>
         {label}
       </label>
       {children}
@@ -33,7 +33,7 @@ function Input({ value, onChange, placeholder, type = 'text' }) {
       onChange={e => onChange(e.target.value)}
       placeholder={placeholder}
       className="w-full px-3 py-2.5 rounded-lg text-sm outline-none"
-      style={{ background: '#111318', border: '1px solid #1e2330', color: '#e8eaf0' }}
+      style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}
       onFocus={e => e.target.style.borderColor = '#8b5cf6'}
       onBlur={e => e.target.style.borderColor = '#1e2330'}
     />
@@ -48,7 +48,7 @@ function Textarea({ value, onChange, placeholder, rows = 4 }) {
       placeholder={placeholder}
       rows={rows}
       className="w-full px-3 py-2.5 rounded-lg text-sm outline-none resize-none"
-      style={{ background: '#111318', border: '1px solid #1e2330', color: '#e8eaf0' }}
+      style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}
       onFocus={e => e.target.style.borderColor = '#8b5cf6'}
       onBlur={e => e.target.style.borderColor = '#1e2330'}
     />
@@ -61,7 +61,7 @@ function Select({ value, onChange, options }) {
       value={value}
       onChange={e => onChange(e.target.value)}
       className="w-full px-3 py-2.5 rounded-lg text-sm outline-none"
-      style={{ background: '#111318', border: '1px solid #1e2330', color: '#e8eaf0' }}
+      style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}
     >
       {options.map(o => (
         <option key={o.value} value={o.value}>{o.label}</option>
@@ -122,10 +122,10 @@ export default function AdminChatter() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <div>
-            <h1 className="text-2xl font-bold" style={{ fontFamily: 'Syne, sans-serif', color: '#e8eaf0' }}>
+            <h1 className="text-2xl font-bold" style={{ fontFamily: 'Syne, sans-serif', color: '#eceef5' }}>
               Unconfirmed Market Chatter Manager
             </h1>
-            <p className="text-sm mt-1" style={{ color: '#8892a4' }}>
+            <p className="text-sm mt-1" style={{ color: '#9aa8be' }}>
               Add, manage, and publish unconfirmed chatter items visible to all members.
             </p>
           </div>
@@ -154,7 +154,7 @@ export default function AdminChatter() {
             className="rounded-xl p-5 border mb-6"
             style={{ background: '#161a22', borderColor: '#8b5cf6' }}
           >
-            <h2 className="text-sm font-semibold mb-4" style={{ color: '#e8eaf0' }}>New Chatter Item</h2>
+            <h2 className="text-sm font-semibold mb-4" style={{ color: '#eceef5' }}>New Chatter Item</h2>
 
             <Field label="Source URL *">
               <Input value={form.source_url} onChange={update('source_url')} placeholder="https://x.com/post/..." />
@@ -208,7 +208,7 @@ export default function AdminChatter() {
                   onChange={e => setForm(f => ({ ...f, is_featured: e.target.checked }))}
                   className="w-4 h-4 rounded"
                 />
-                <span className="text-sm" style={{ color: '#8892a4' }}>Mark as Featured</span>
+                <span className="text-sm" style={{ color: '#9aa8be' }}>Mark as Featured</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -217,13 +217,13 @@ export default function AdminChatter() {
                   onChange={e => setForm(f => ({ ...f, is_published: e.target.checked }))}
                   className="w-4 h-4 rounded"
                 />
-                <span className="text-sm" style={{ color: '#8892a4' }}>Publish immediately</span>
+                <span className="text-sm" style={{ color: '#9aa8be' }}>Publish immediately</span>
               </label>
             </div>
 
             <div
               className="rounded-lg px-4 py-3 mb-4 text-xs"
-              style={{ background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.15)', color: '#8892a4' }}
+              style={{ background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.15)', color: '#9aa8be' }}
             >
               <span style={{ color: '#ef4444', fontWeight: 600 }}>Reminder: </span>
               All items on this page are automatically labeled "Unconfirmed." Never present chatter as verified or endorsed by ControlNode.
@@ -240,7 +240,7 @@ export default function AdminChatter() {
               <button
                 onClick={() => { setForm(emptyForm); setShowForm(false) }}
                 className="px-5 py-2.5 rounded-lg text-sm font-medium border transition-colors"
-                style={{ color: '#8892a4', borderColor: '#1e2330' }}
+                style={{ color: '#9aa8be', borderColor: '#1e2330' }}
               >
                 Cancel
               </button>
@@ -251,14 +251,14 @@ export default function AdminChatter() {
         {/* Items list */}
         <div className="rounded-xl border overflow-hidden" style={{ background: '#161a22', borderColor: '#1e2330' }}>
           <div className="px-5 py-3" style={{ background: '#111318', borderBottom: '1px solid #1e2330' }}>
-            <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: '#4a5568' }}>
+            <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: '#6b7a96' }}>
               Published Items ({items.filter(i => i.is_published).length}) · Drafts ({items.filter(i => !i.is_published).length})
             </p>
           </div>
 
           {items.length === 0 ? (
             <div className="p-8 text-center">
-              <p className="text-sm" style={{ color: '#4a5568' }}>No chatter items yet. Click "Add New Item" to get started.</p>
+              <p className="text-sm" style={{ color: '#6b7a96' }}>No chatter items yet. Click "Add New Item" to get started.</p>
             </div>
           ) : (
             <div className="divide-y" style={{ borderColor: '#1e2330' }}>
@@ -273,9 +273,9 @@ export default function AdminChatter() {
                       >
                         {item.is_published ? 'Published' : 'Draft'}
                       </span>
-                      <span className="text-xs" style={{ color: '#4a5568' }}>{item.source_type} · {item.date_added}</span>
+                      <span className="text-xs" style={{ color: '#6b7a96' }}>{item.source_type} · {item.date_added}</span>
                     </div>
-                    <p className="text-sm font-medium truncate" style={{ color: '#e8eaf0' }}>{item.custom_headline}</p>
+                    <p className="text-sm font-medium truncate" style={{ color: '#eceef5' }}>{item.custom_headline}</p>
                   </div>
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <button
@@ -298,7 +298,7 @@ export default function AdminChatter() {
                       onClick={() => deleteItem(item.id)}
                       className="p-1.5 rounded-lg transition-colors hover:bg-red-500/10"
                       title="Delete"
-                      style={{ color: '#4a5568' }}
+                      style={{ color: '#6b7a96' }}
                     >
                       <Trash2 size={14} />
                     </button>

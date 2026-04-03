@@ -210,10 +210,10 @@ function DominoCard({ domino, isActive, onClick }) {
       style={{
         background:'none', border:'none', padding:0, cursor:'pointer',
         display:'flex', flexDirection:'column', alignItems:'center', gap:'4px',
-        width: TILE_W + 'px',
+        width: (TILE_W + 16) + 'px',
         borderRadius:'8px',
         outline: isActive ? `1px solid ${domino.color}50` : 'none',
-        paddingBottom:'2px',
+        paddingBottom:'4px',
       }}
     >
       <div style={{
@@ -226,20 +226,20 @@ function DominoCard({ domino, isActive, onClick }) {
       </div>
 
       <div style={{ display:'flex', alignItems:'center', gap:'4px' }}>
-        <div style={{ width:'6px', height:'6px', borderRadius:'50%', background:s.color, flexShrink:0,
+        <div style={{ width:'7px', height:'7px', borderRadius:'50%', background:s.color, flexShrink:0,
           boxShadow: domino.status !== 'not_started' ? `0 0 5px ${s.color}` : 'none' }}/>
-        <span style={{ fontSize:'9px', color:s.color, fontWeight:600 }}>{s.label}</span>
+        <span style={{ fontSize:'10px', color:s.color, fontWeight:600 }}>{s.label}</span>
       </div>
 
-      <p style={{ fontSize:'9px', color: isActive ? domino.color : '#5a6375',
-        fontWeight: isActive ? 600 : 400, textAlign:'center', lineHeight:1.3, margin:0 }}>
+      <p style={{ fontSize:'11px', color: isActive ? domino.color : '#a0abbe',
+        fontWeight: isActive ? 600 : 500, textAlign:'center', lineHeight:1.3, margin:0 }}>
         {domino.shortTitle}
       </p>
 
       <div style={{ width:'90%', height:'3px', background:'#1e2330', borderRadius:'2px', overflow:'hidden' }}>
         <div style={{ height:'100%', width:`${domino.confidence}%`, background:domino.color, borderRadius:'2px' }}/>
       </div>
-      <span style={{ fontSize:'8px', color:'#3a4252' }}>{domino.confidence}%</span>
+      <span style={{ fontSize:'10px', color:'#6b7a96', fontWeight:500 }}>{domino.confidence}%</span>
     </button>
   )
 }
@@ -352,7 +352,7 @@ export default function DominoTheory() {
       {/* Progress */}
       <div className="rounded-xl p-4 border mb-5" style={{ background:'#161a22', borderColor:'#1e2330' }}>
         <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-          <p className="text-xs font-semibold uppercase tracking-wide" style={{ color:'#4a5568' }}>Chain Reaction Progress</p>
+          <p className="text-xs font-semibold uppercase tracking-wide" style={{ color:'#7a8599' }}>Chain Reaction Progress</p>
           <div className="flex items-center gap-4 flex-wrap">
             {[{label:'Fallen',count:triggered,color:'#ef4444'},{label:'Tipping',count:inProgress,color:'#f59e0b'},{label:'Standing',count:dominoes.length-progressCount,color:'#4a5568'}].map(g=>(
               <div key={g.label} className="flex items-center gap-1.5">
@@ -374,13 +374,13 @@ export default function DominoTheory() {
 
       {/* Chain */}
       <div className="rounded-xl p-5 border mb-4" style={{ background:'#161a22', borderColor:'#1e2330' }}>
-        <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color:'#4a5568' }}>The Chain — Click Any Domino for Details</p>
-        <p className="text-xs mb-5" style={{ color:'#3a4252' }}>
+        <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color:'#7a8599' }}>The Chain — Click Any Domino for Details</p>
+        <p className="text-xs mb-5" style={{ color:'#6b7a96' }}>
           ⊘ = fallen · Tilted = tipping · Upright = standing
         </p>
-        <div style={{ display:'flex', flexWrap:'wrap', gap:'6px', alignItems:'flex-end' }}>
+        <div style={{ display:'flex', flexWrap:'wrap', gap:'16px', alignItems:'flex-end' }}>
           {dominoes.map((domino,i) => (
-            <div key={domino.id} style={{ display:'flex', alignItems:'flex-end', gap:'2px' }}>
+            <div key={domino.id} style={{ display:'flex', alignItems:'flex-end', gap:'4px' }}>
               <DominoCard domino={domino} isActive={activeDomino?.id===domino.id} onClick={()=>handleClick(domino)}/>
               {i < dominoes.length-1 && (
                 <ChevronRight size={10} style={{ color:'#2a3040', marginBottom:'40px', flexShrink:0 }}/>

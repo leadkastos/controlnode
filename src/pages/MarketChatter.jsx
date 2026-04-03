@@ -175,28 +175,28 @@ function ChatterCard({ item }) {
             Unconfirmed
           </span>
         </div>
-        <span className="text-xs flex-shrink-0" style={{ color: '#4a5568' }}>{item.date_added}</span>
+        <span className="text-xs flex-shrink-0" style={{ color: '#6b7a96' }}>{item.date_added}</span>
       </div>
 
       {/* Headline */}
-      <h3 className="text-sm font-semibold mb-2 leading-snug" style={{ color: '#e8eaf0' }}>
+      <h3 className="text-sm font-semibold mb-2 leading-snug" style={{ color: '#eceef5' }}>
         {item.custom_headline}
       </h3>
 
       {/* Summary */}
-      <p className="text-xs leading-relaxed mb-4" style={{ color: '#8892a4' }}>
+      <p className="text-xs leading-relaxed mb-4" style={{ color: '#9aa8be' }}>
         {item.admin_summary}
       </p>
 
       {/* Footer */}
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <span className="text-xs" style={{ color: '#2d3748' }}>Added by ControlNode Admin</span>
+        <span className="text-xs" style={{ color: '#4a5870' }}>Added by ControlNode Admin</span>
         <a
           href={item.source_url}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors hover:opacity-80"
-          style={{ background: '#111318', border: '1px solid #1e2330', color: '#8892a4' }}
+          style={{ background: '#111318', border: '1px solid #1e2330', color: '#9aa8be' }}
         >
           <ExternalLink size={11} />
           Open Source
@@ -226,7 +226,7 @@ export default function MarketChatter() {
       {/* Header */}
       <div className="mb-5">
         <div className="flex items-center gap-3 mb-1 flex-wrap">
-          <h1 className="text-2xl font-bold" style={{ fontFamily: 'Syne, sans-serif', color: '#e8eaf0' }}>
+          <h1 className="text-2xl font-bold" style={{ fontFamily: 'Syne, sans-serif', color: '#eceef5' }}>
             Unconfirmed Market Chatter
           </h1>
           <span
@@ -237,7 +237,7 @@ export default function MarketChatter() {
             Unverified Information
           </span>
         </div>
-        <p className="text-sm" style={{ color: '#8892a4' }}>
+        <p className="text-sm" style={{ color: '#9aa8be' }}>
           Unverified reports, rumors, social chatter, and third-party information being monitored by ControlNode.
         </p>
       </div>
@@ -250,7 +250,7 @@ export default function MarketChatter() {
         <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" style={{ color: '#ef4444' }} />
         <div>
           <p className="text-xs font-semibold mb-1" style={{ color: '#ef4444' }}>Important Disclaimer</p>
-          <p className="text-xs leading-relaxed" style={{ color: '#8892a4' }}>
+          <p className="text-xs leading-relaxed" style={{ color: '#9aa8be' }}>
             The content shown on this page is provided for informational purposes only. It may include unconfirmed reports, rumors, opinions, commentary, or third-party information that has not been independently verified by ControlNode. Users should conduct their own research and independently verify any information before relying on it or making any decisions based on it. Nothing on this page constitutes financial advice.
           </p>
         </div>
@@ -263,21 +263,21 @@ export default function MarketChatter() {
       >
         {/* Search */}
         <div className="relative">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#4a5568' }} />
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#6b7a96' }} />
           <input
             type="text"
             placeholder="Search chatter..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-4 py-2 rounded-lg text-sm outline-none"
-            style={{ background: '#111318', border: '1px solid #1e2330', color: '#e8eaf0' }}
+            style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}
           />
         </div>
 
         <div className="flex flex-wrap gap-3">
           {/* Source filter */}
           <div className="flex-1 min-w-0">
-            <p className="text-xs uppercase tracking-wide mb-1.5" style={{ color: '#4a5568' }}>Source</p>
+            <p className="text-xs uppercase tracking-wide mb-1.5" style={{ color: '#6b7a96' }}>Source</p>
             <div className="flex flex-wrap gap-1">
               {sourceTypes.map(s => (
                 <button
@@ -298,12 +298,12 @@ export default function MarketChatter() {
 
           {/* Sort */}
           <div>
-            <p className="text-xs uppercase tracking-wide mb-1.5" style={{ color: '#4a5568' }}>Sort</p>
+            <p className="text-xs uppercase tracking-wide mb-1.5" style={{ color: '#6b7a96' }}>Sort</p>
             <select
               value={sortOrder}
               onChange={e => setSortOrder(e.target.value)}
               className="px-3 py-1.5 rounded-lg text-xs outline-none"
-              style={{ background: '#111318', border: '1px solid #1e2330', color: '#8892a4' }}
+              style={{ background: '#111318', border: '1px solid #1e2330', color: '#9aa8be' }}
             >
               <option value="newest">Newest First</option>
               <option value="oldest">Oldest First</option>
@@ -314,7 +314,7 @@ export default function MarketChatter() {
 
         {/* Category filter */}
         <div>
-          <p className="text-xs uppercase tracking-wide mb-1.5" style={{ color: '#4a5568' }}>Category</p>
+          <p className="text-xs uppercase tracking-wide mb-1.5" style={{ color: '#6b7a96' }}>Category</p>
           <div className="flex flex-wrap gap-1">
             {categories.map(c => (
               <button
@@ -340,9 +340,9 @@ export default function MarketChatter() {
           className="rounded-xl p-10 text-center border"
           style={{ background: '#161a22', borderColor: '#1e2330' }}
         >
-          <MessageCircleWarning size={32} className="mx-auto mb-3" style={{ color: '#2d3748' }} />
-          <p className="text-sm font-medium mb-1" style={{ color: '#4a5568' }}>No chatter found</p>
-          <p className="text-xs" style={{ color: '#2d3748' }}>
+          <MessageCircleWarning size={32} className="mx-auto mb-3" style={{ color: '#4a5870' }} />
+          <p className="text-sm font-medium mb-1" style={{ color: '#6b7a96' }}>No chatter found</p>
+          <p className="text-xs" style={{ color: '#4a5870' }}>
             Try adjusting your filters or check back later.
           </p>
         </div>
@@ -355,7 +355,7 @@ export default function MarketChatter() {
       )}
 
       <div className="mt-6 text-center">
-        <p className="text-xs" style={{ color: '#2d3748' }}>
+        <p className="text-xs" style={{ color: '#4a5870' }}>
           {filtered.length} item{filtered.length !== 1 ? 's' : ''} shown · All content unverified · ControlNode does not endorse any chatter content
         </p>
       </div>

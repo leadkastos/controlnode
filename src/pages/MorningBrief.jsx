@@ -17,10 +17,10 @@ export default function MorningBrief() {
           style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', color: '#92400e' }}
         >
           <span style={{ color: '#f59e0b', fontWeight: 600 }}>Informational Only: </span>
-          <span style={{ color: '#8892a4' }}>This brief is for educational and informational purposes only. Nothing here constitutes financial advice or a recommendation to buy or sell any asset.</span>
+          <span style={{ color: '#9aa8be' }}>This brief is for educational and informational purposes only. Nothing here constitutes financial advice or a recommendation to buy or sell any asset.</span>
         </div>
 
-        <p className="text-xs mb-6" style={{ color: '#4a5568' }}>Monday, March 23, 2026 · Published 6:45 AM CT</p>
+        <p className="text-xs mb-6" style={{ color: '#6b7a96' }}>Monday, March 23, 2026 · Published 6:45 AM CT</p>
 
         <DetailSection title="⚡ Key Catalysts">
           <BulletList items={[
@@ -60,7 +60,7 @@ export default function MorningBrief() {
             <DataRow label="Extended Resistance" value="$2.55" />
             <DataRow label="Range Context" value="$2.05 – $2.55 observed range" />
           </div>
-          <p className="text-xs mt-3" style={{ color: '#4a5568' }}>
+          <p className="text-xs mt-3" style={{ color: '#6b7a96' }}>
             Technical levels are observational reference points only. They do not represent buy or sell signals.
           </p>
         </DetailSection>
@@ -103,13 +103,13 @@ export default function MorningBrief() {
             className="rounded-lg p-4"
             style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)' }}
           >
-            <p className="text-sm leading-relaxed" style={{ color: '#e8eaf0' }}>
+            <p className="text-sm leading-relaxed" style={{ color: '#eceef5' }}>
               The current macro setup — yen weakness, oil strength, and BRICS digital settlement language — aligns with the contextual conditions outlined in the Domino Theory Stage 3 framework. The $2.18 area continues to be a technically significant reference point that market participants appear to be watching.
             </p>
-            <p className="text-sm leading-relaxed mt-3" style={{ color: '#e8eaf0' }}>
+            <p className="text-sm leading-relaxed mt-3" style={{ color: '#eceef5' }}>
               The $2.40 overhead level represents the next significant technical reference. Price behavior around these levels may provide context for the next directional move.
             </p>
-            <p className="text-xs mt-3 font-semibold" style={{ color: '#4a5568' }}>
+            <p className="text-xs mt-3 font-semibold" style={{ color: '#6b7a96' }}>
               This is market context and observation only — not a recommendation or financial advice.
             </p>
           </div>

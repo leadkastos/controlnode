@@ -22,7 +22,7 @@ export default function NotificationBell() {
       <button
         onClick={() => setOpen(!open)}
         className="relative p-2 rounded-lg transition-colors"
-        style={{ color: '#8892a4', background: open ? '#161a22' : 'transparent' }}
+        style={{ color: '#9aa8be', background: open ? '#161a22' : 'transparent' }}
       >
         <Bell size={18} strokeWidth={1.8} />
         {unreadCount > 0 && (
@@ -42,7 +42,7 @@ export default function NotificationBell() {
         >
           <div className="px-4 py-3" style={{ borderBottom: '1px solid #1e2330' }}>
             <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold" style={{ color: '#e8eaf0' }}>Notifications</span>
+              <span className="text-sm font-semibold" style={{ color: '#eceef5' }}>Notifications</span>
               <span
                 className="text-xs px-2 py-0.5 rounded-full"
                 style={{ background: 'rgba(59,130,246,0.15)', color: '#3b82f6' }}
@@ -63,9 +63,9 @@ export default function NotificationBell() {
                 )}
                 {!n.unread && <div className="mt-1.5 w-1.5 h-1.5 flex-shrink-0" />}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate" style={{ color: '#e8eaf0' }}>{n.title}</p>
-                  <p className="text-xs mt-0.5 leading-snug" style={{ color: '#8892a4' }}>{n.snippet}</p>
-                  <p className="text-xs mt-1" style={{ color: '#4a5568' }}>{n.time}</p>
+                  <p className="text-sm font-medium truncate" style={{ color: '#eceef5' }}>{n.title}</p>
+                  <p className="text-xs mt-0.5 leading-snug" style={{ color: '#9aa8be' }}>{n.snippet}</p>
+                  <p className="text-xs mt-1" style={{ color: '#6b7a96' }}>{n.time}</p>
                 </div>
               </button>
             ))}

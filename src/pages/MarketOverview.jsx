@@ -33,7 +33,7 @@ export default function MarketOverview() {
 
         <DetailSection title="Top Assets">
           <div className="space-y-2">
-            <div className="grid grid-cols-4 gap-2 pb-2 text-xs font-semibold uppercase tracking-wide" style={{ color: '#4a5568', borderBottom: '1px solid #1e2330' }}>
+            <div className="grid grid-cols-4 gap-2 pb-2 text-xs font-semibold uppercase tracking-wide" style={{ color: '#6b7a96', borderBottom: '1px solid #1e2330' }}>
               <span>Asset</span>
               <span className="text-right">Price</span>
               <span className="text-right">24h</span>
@@ -41,10 +41,10 @@ export default function MarketOverview() {
             </div>
             {assets.map(a => (
               <div key={a.name} className="grid grid-cols-4 gap-2 py-1.5 text-sm" style={{ borderBottom: '1px solid rgba(30,35,48,0.5)' }}>
-                <span style={{ color: '#e8eaf0' }}>{a.name}</span>
-                <span className="text-right" style={{ color: '#e8eaf0' }}>{a.price}</span>
+                <span style={{ color: '#eceef5' }}>{a.name}</span>
+                <span className="text-right" style={{ color: '#eceef5' }}>{a.price}</span>
                 <span className="text-right" style={{ color: a.up ? '#10b981' : '#ef4444' }}>{a.change}</span>
-                <span className="text-right" style={{ color: '#8892a4' }}>{a.mktCap}</span>
+                <span className="text-right" style={{ color: '#9aa8be' }}>{a.mktCap}</span>
               </div>
             ))}
           </div>
