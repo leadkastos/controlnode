@@ -225,3 +225,105 @@ export function AdminUpdates() {
     </AppLayout>
   )
 }
+
+export function AdminDominoTheory() {
+  const [dominoStatuses, setDominoStatuses] = React.useState({
+    1: { status: 'triggered', notes: 'Brent Crude at $87.40 — elevated but not at shock levels. Middle East tensions elevated.' },
+    2: { status: 'in_progress', notes: 'BOJ held at 0.1% — surprise hold. Yield pressure building. 10Y at 0.84%.' },
+    3: { status: 'in_progress', notes: 'USD/JPY at 153.4 — yen weak but carry trade still active.' },
+    4: { status: 'not_started', notes: 'Treasury market functioning normally. Repo rates stable.' },
+    5: { status: 'not_started', notes: 'Stablecoins stable. USDT at $1.00. No stress signals.' },
+    6: { status: 'not_started', notes: 'BTC at $67,420. ETF flows positive. No stress signals.' },
+    7: { status: 'not_started', notes: 'XRP positioned. ODL volume growing. ETF filings active.' },
+  })
+
+  const dominoTitles = {
+    1: '🛢️ Global Oil Shock',
+    2: '🏦 Japan Interest Rate Shift',
+    3: '💴 Yen Carry Trade Unwind',
+    4: '🌊 Global Liquidity Crisis',
+    5: '💵 Treasury + Stablecoin Stress',
+    6: '₿ Bitcoin & Risk Asset Collapse',
+    7: '⚡ XRP Liquidity Solution',
+  }
+
+  const [saved, setSaved] = React.useState(false)
+
+  function handleSave() {
+    setSaved(true)
+    setTimeout(() => setSaved(false), 3000)
+  }
+
+  return (
+    <AppLayout hideRightSidebar>
+      <div className="max-w-3xl">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold" style={{ fontFamily: 'Syne, sans-serif', color: '#e8eaf0' }}>
+            Domino Theory Manager
+          </h1>
+          <p className="text-sm mt-1" style={{ color: '#8892a4' }}>
+            Update the status and notes for each domino. Changes go live immediately for all members.
+          </p>
+        </div>
+
+        {saved && (
+          <div className="rounded-xl p-3 mb-4 text-sm font-medium text-center" style={{ background: 'rgba(16,185,129,0.12)', color: '#10b981', border: '1px solid rgba(16,185,129,0.2)' }}>
+            ✓ Domino Theory updated successfully
+          </div>
+        )}
+
+        <div className="space-y-4">
+          {Object.entries(dominoTitles).map(([id, title]) => {
+            const d = dominoStatuses[id]
+            return (
+              <div key={id} className="rounded-xl p-5 border" style={{ background: '#161a22', borderColor: '#1e2330' }}>
+                <h3 className="text-sm font-semibold mb-3" style={{ color: '#e8eaf0' }}>{title}</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: '#4a5568' }}>Status</label>
+                    <select
+                      value={d.status}
+                      onChange={e => setDominoStatuses(prev => ({ ...prev, [id]: { ...prev[id], status: e.target.value } }))}
+                      className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                      style={{ background: '#111318', border: '1px solid #1e2330', color: '#e8eaf0' }}
+                    >
+                      <option value="not_started">Monitoring</option>
+                      <option value="in_progress">In Progress</option>
+                      <option value="triggered">Triggered</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: '#4a5568' }}>ControlNode Assessment</label>
+                    <textarea
+                      value={d.notes}
+                      onChange={e => setDominoStatuses(prev => ({ ...prev, [id]: { ...prev[id], notes: e.target.value } }))}
+                      rows={2}
+                      className="w-full px-3 py-2 rounded-lg text-sm outline-none resize-none"
+                      style={{ background: '#111318', border: '1px solid #1e2330', color: '#e8eaf0' }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        <div className="flex gap-3 mt-6">
+          <button
+            onClick={handleSave}
+            className="px-6 py-2.5 rounded-lg text-sm font-semibold"
+            style={{ background: '#8b5cf6', color: '#fff' }}
+          >
+            Save & Publish Updates
+          </button>
+          <button
+            className="px-6 py-2.5 rounded-lg text-sm font-medium border"
+            style={{ color: '#8892a4', borderColor: '#1e2330' }}
+          >
+            Preview Changes
+          </button>
+        </div>
+      </div>
+    </AppLayout>
+  )
+}
