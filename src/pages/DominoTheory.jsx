@@ -98,13 +98,13 @@ function DominoSVG({ domino, isActive, state }) {
               r={2} fill={domino.color} opacity={0.35}/>
           ))}
 
-          {/* ⊘  No-entry / fallen symbol — red circle with diagonal line */}
+          {/* ✓ Fallen/completed symbol — green circle with diagonal line */}
           <circle cx={cx} cy={FY + FH/2} r={8}
-            fill="rgba(239,68,68,0.15)" stroke="#ef4444" strokeWidth={1.8}/>
+            fill="rgba(16,185,129,0.15)" stroke="#10b981" strokeWidth={1.8}/>
           <line
             x1={cx - 5.5} y1={FY + FH/2 - 5.5}
             x2={cx + 5.5} y2={FY + FH/2 + 5.5}
-            stroke="#ef4444" strokeWidth={1.8} strokeLinecap="round"/>
+            stroke="#10b981" strokeWidth={1.8} strokeLinecap="round"/>
         </g>
       )}
 
@@ -376,7 +376,7 @@ export default function DominoTheory() {
       <div className="rounded-xl p-5 border mb-4" style={{ background:'#161a22', borderColor:'#1e2330' }}>
         <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color:'#7a8599' }}>The Chain — Click Any Domino for Details</p>
         <p className="text-xs mb-5" style={{ color:'#6b7a96' }}>
-          ⊘ = fallen · Tilted = tipping · Upright = standing
+          ⊘ = fallen (triggered) · Tilted = tipping · Upright = standing
         </p>
         <div style={{ display:'flex', flexWrap:'wrap', gap:'16px', alignItems:'flex-end' }}>
           {dominoes.map((domino,i) => (
