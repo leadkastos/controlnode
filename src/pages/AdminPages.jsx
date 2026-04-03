@@ -228,23 +228,33 @@ export function AdminUpdates() {
 
 export function AdminDominoTheory() {
   const [dominoStatuses, setDominoStatuses] = React.useState({
-    1: { status: 'triggered', notes: 'Brent Crude at $87.40 — elevated but not at shock levels. Middle East tensions elevated.' },
-    2: { status: 'in_progress', notes: 'BOJ held at 0.1% — surprise hold. Yield pressure building. 10Y at 0.84%.' },
+    1: { status: 'triggered',   notes: 'Brent Crude at $87.40 — elevated. Middle East tensions elevated. Monitor closely.' },
+    2: { status: 'in_progress', notes: 'BOJ held at 0.1% — surprise hold. 10Y yield at 0.84% and rising.' },
     3: { status: 'in_progress', notes: 'USD/JPY at 153.4 — yen weak but carry trade still active.' },
-    4: { status: 'not_started', notes: 'Treasury market functioning normally. Repo rates stable.' },
-    5: { status: 'not_started', notes: 'Stablecoins stable. USDT at $1.00. No stress signals.' },
-    6: { status: 'not_started', notes: 'BTC at $67,420. ETF flows positive. No stress signals.' },
-    7: { status: 'not_started', notes: 'XRP positioned. ODL volume growing. ETF filings active.' },
+    4: { status: 'not_started', notes: 'Treasury market functioning normally. Auctions stable. Critical domino to watch.' },
+    5: { status: 'not_started', notes: 'Stablecoin bills progressing in Senate. USDT at $110B market cap. Early stage.' },
+    6: { status: 'in_progress', notes: 'BTC ETF flows positive but slowing. Traditional ETF redemptions elevated. Late-stage accelerator.' },
+    7: { status: 'not_started', notes: 'BTC at $67,420. Equities elevated. No liquidation cascade signals yet.' },
+    8: { status: 'not_started', notes: 'USDT stable at $1.00. No peg stress. High-risk if triggered.' },
+    9: { status: 'not_started', notes: 'The final domino. XRP positioned. ODL volume growing. ETF filings active.' },
   })
 
   const dominoTitles = {
-    1: '🛢️ Global Oil Shock',
-    2: '🏦 Japan Interest Rate Shift',
+    1: '🛢️ Global Oil & Energy Shock',
+    2: '🏦 Japan Rate & Yield Break',
     3: '💴 Yen Carry Trade Unwind',
-    4: '🌊 Global Liquidity Crisis',
-    5: '💵 Treasury + Stablecoin Stress',
-    6: '₿ Bitcoin & Risk Asset Collapse',
-    7: '⚡ XRP Liquidity Solution',
+    4: '📊 U.S. Treasury Stress',
+    5: '💵 Stablecoin Absorption',
+    6: '📉 ETF Liquidity Stress',
+    7: '🌊 Global Asset Liquidation',
+    8: '⚠️ Tether Instability',
+    9: '⚡ XRP Liquidity Bridge',
+  }
+
+  const statusColors = {
+    triggered:   '#ef4444',
+    in_progress: '#f59e0b',
+    not_started: '#6b7280',
   }
 
   const [saved, setSaved] = React.useState(false)
@@ -262,34 +272,44 @@ export function AdminDominoTheory() {
             Domino Theory Manager
           </h1>
           <p className="text-sm mt-1" style={{ color: '#9aa8be' }}>
-            Update the status and notes for each domino. Changes go live immediately for all members.
+            Two controls per domino — Status and your Assessment. Changes go live instantly for all members and trigger a bell notification.
           </p>
+          <div className="mt-3 rounded-lg px-4 py-3 text-xs" style={{ background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)', color: '#9aa8be' }}>
+            <span style={{ color: '#8b5cf6', fontWeight: 600 }}>How to use: </span>
+            When a real-world event occurs — BOJ hikes rates, Treasury auction fails, BTC drops 20% — open this panel, update the relevant domino status, write one sentence of context, and hit Save. Members are notified automatically.
+          </div>
         </div>
 
         {saved && (
           <div className="rounded-xl p-3 mb-4 text-sm font-medium text-center" style={{ background: 'rgba(16,185,129,0.12)', color: '#10b981', border: '1px solid rgba(16,185,129,0.2)' }}>
-            ✓ Domino Theory updated successfully
+            ✓ Domino Theory updated — all members notified
           </div>
         )}
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           {Object.entries(dominoTitles).map(([id, title]) => {
             const d = dominoStatuses[id]
+            const statusColor = statusColors[d.status]
             return (
-              <div key={id} className="rounded-xl p-5 border" style={{ background: '#161a22', borderColor: '#1e2330' }}>
-                <h3 className="text-sm font-semibold mb-3" style={{ color: '#eceef5' }}>{title}</h3>
-                <div className="grid grid-cols-2 gap-4">
+              <div key={id} className="rounded-xl p-5 border" style={{ background: '#161a22', borderColor: '#1e2330', borderLeft: `3px solid ${statusColor}` }}>
+                <div className="flex items-center gap-2 mb-3">
+                  <h3 className="text-sm font-semibold" style={{ color: '#eceef5' }}>{title}</h3>
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded" style={{ background: `${statusColor}18`, color: statusColor }}>
+                    {d.status === 'triggered' ? 'Fallen' : d.status === 'in_progress' ? 'Tipping' : 'Standing'}
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: '#6b7a96' }}>Status</label>
                     <select
                       value={d.status}
                       onChange={e => setDominoStatuses(prev => ({ ...prev, [id]: { ...prev[id], status: e.target.value } }))}
-                      className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                      className="w-full px-3 py-2.5 rounded-lg text-sm outline-none"
                       style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}
                     >
-                      <option value="not_started">Monitoring</option>
-                      <option value="in_progress">In Progress</option>
-                      <option value="triggered">Triggered</option>
+                      <option value="not_started">Standing — Monitoring</option>
+                      <option value="in_progress">Tipping — In Progress</option>
+                      <option value="triggered">Fallen — Triggered</option>
                     </select>
                   </div>
                   <div>
@@ -298,8 +318,11 @@ export function AdminDominoTheory() {
                       value={d.notes}
                       onChange={e => setDominoStatuses(prev => ({ ...prev, [id]: { ...prev[id], notes: e.target.value } }))}
                       rows={2}
+                      placeholder="One sentence describing current conditions..."
                       className="w-full px-3 py-2 rounded-lg text-sm outline-none resize-none"
                       style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}
+                      onFocus={e => e.target.style.borderColor = '#8b5cf6'}
+                      onBlur={e => e.target.style.borderColor = '#1e2330'}
                     />
                   </div>
                 </div>
@@ -311,18 +334,16 @@ export function AdminDominoTheory() {
         <div className="flex gap-3 mt-6">
           <button
             onClick={handleSave}
-            className="px-6 py-2.5 rounded-lg text-sm font-semibold"
-            style={{ background: '#8b5cf6', color: '#fff' }}
+            className="px-6 py-2.5 rounded-lg text-sm font-semibold transition-all"
+            style={{ background: saved ? '#10b981' : '#8b5cf6', color: '#fff' }}
           >
-            Save & Publish Updates
-          </button>
-          <button
-            className="px-6 py-2.5 rounded-lg text-sm font-medium border"
-            style={{ color: '#9aa8be', borderColor: '#1e2330' }}
-          >
-            Preview Changes
+            {saved ? '✓ Published — Members Notified' : 'Save & Publish Updates'}
           </button>
         </div>
+
+        <p className="text-xs mt-4" style={{ color: '#4a5870' }}>
+          Tip: Visit <a href="/domino-theory" style={{ color: '#8b5cf6' }}>/domino-theory</a> after saving to confirm changes look correct before sharing with members.
+        </p>
       </div>
     </AppLayout>
   )
