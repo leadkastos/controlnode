@@ -1,5 +1,8 @@
 import React from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import ProtectedRoute from './components/ProtectedRoute'
+import Login from './pages/auth/Login'
+import Signup from './pages/auth/Signup'
 import Dashboard from './pages/Dashboard'
 import MorningBrief from './pages/MorningBrief'
 import MarketOverview from './pages/MarketOverview'
@@ -13,34 +16,36 @@ import Watchlist from './pages/Watchlist'
 import YouTubeIntel from './pages/YouTubeIntel'
 import MarketChatter from './pages/MarketChatter'
 import { Account, Billing, Settings } from './pages/AccountPages'
-import { Admin, AdminMorningBrief, AdminUpdates } from './pages/AdminPages'
-import { AdminDominoTheory } from './pages/AdminPages'
+import { Admin, AdminMorningBrief, AdminUpdates, AdminDominoTheory } from './pages/AdminPages'
 import AdminChatter from './pages/AdminChatter'
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/morning-brief" element={<MorningBrief />} />
-        <Route path="/market-overview" element={<MarketOverview />} />
-        <Route path="/xrp-intelligence" element={<XRPIntelligence />} />
-        <Route path="/domino-theory" element={<DominoTheory />} />
-        <Route path="/geopolitical-watch" element={<GeopoliticalWatch />} />
-        <Route path="/oil-vs-yen" element={<OilVsYen />} /> {/* Display name: Energy Intel */}
-        <Route path="/media-narratives" element={<MediaNarratives />} />
-        <Route path="/etf-flows" element={<ETFFlows />} />
-        <Route path="/watchlist" element={<Watchlist />} />
-        <Route path="/youtube-intel" element={<YouTubeIntel />} />
-        <Route path="/market-chatter" element={<MarketChatter />} />
-        <Route path="/account" element={<Account />} />
-        <Route path="/billing" element={<Billing />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/admin" element={<Admin />} />
-        <Route path="/admin/morning-brief" element={<AdminMorningBrief />} />
-        <Route path="/admin/updates" element={<AdminUpdates />} />
-        <Route path="/admin/domino-theory" element={<AdminDominoTheory />} />
-        <Route path="/admin/chatter" element={<AdminChatter />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/morning-brief" element={<ProtectedRoute><MorningBrief /></ProtectedRoute>} />
+        <Route path="/market-overview" element={<ProtectedRoute><MarketOverview /></ProtectedRoute>} />
+        <Route path="/xrp-intelligence" element={<ProtectedRoute><XRPIntelligence /></ProtectedRoute>} />
+        <Route path="/domino-theory" element={<ProtectedRoute><DominoTheory /></ProtectedRoute>} />
+        <Route path="/geopolitical-watch" element={<ProtectedRoute><GeopoliticalWatch /></ProtectedRoute>} />
+        <Route path="/oil-vs-yen" element={<ProtectedRoute><OilVsYen /></ProtectedRoute>} />
+        <Route path="/media-narratives" element={<ProtectedRoute><MediaNarratives /></ProtectedRoute>} />
+        <Route path="/etf-flows" element={<ProtectedRoute><ETFFlows /></ProtectedRoute>} />
+        <Route path="/watchlist" element={<ProtectedRoute><Watchlist /></ProtectedRoute>} />
+        <Route path="/youtube-intel" element={<ProtectedRoute><YouTubeIntel /></ProtectedRoute>} />
+        <Route path="/market-chatter" element={<ProtectedRoute><MarketChatter /></ProtectedRoute>} />
+        <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
+        <Route path="/billing" element={<ProtectedRoute><Billing /></ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+        <Route path="/admin" element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
+        <Route path="/admin/morning-brief" element={<ProtectedRoute adminOnly><AdminMorningBrief /></ProtectedRoute>} />
+        <Route path="/admin/updates" element={<ProtectedRoute adminOnly><AdminUpdates /></ProtectedRoute>} />
+        <Route path="/admin/domino-theory" element={<ProtectedRoute adminOnly><AdminDominoTheory /></ProtectedRoute>} />
+        <Route path="/admin/chatter" element={<ProtectedRoute adminOnly><AdminChatter /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   )
