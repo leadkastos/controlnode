@@ -57,7 +57,7 @@ const tickerStyle = `
   .cn-dash-track {
     display: inline-flex;
     gap: 36px;
-    animation: cn-dash-ticker 45s linear infinite;
+    animation: cn-dash-ticker 50s linear infinite;
     flex-shrink: 0;
     align-items: center;
     white-space: nowrap;
