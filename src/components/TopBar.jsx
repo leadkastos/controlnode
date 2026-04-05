@@ -9,7 +9,7 @@ const routeTitles = {
   '/xrp-intelligence': 'XRP Intelligence',
   '/domino-theory': 'Domino Theory',
   '/geopolitical-watch': 'Geopolitical Watch',
-  '/oil-vs-yen': 'Oil vs Yen',
+  '/oil-vs-yen': 'Energy Intel',
   '/media-narratives': 'Media & Narratives',
   '/etf-flows': 'XRP ETF Flow Tracker',
   '/watchlist': 'Watchlist',
@@ -31,6 +31,7 @@ const tickerItems = [
   { sym: 'USD/JPY',      price: '153.4',   chg: '-0.3%',   up: false },
   { sym: 'BRENT CRUDE',  price: '$87.40',  chg: '+1.1%',   up: true  },
   { sym: 'WTI CRUDE',    price: '$83.20',  chg: '+0.9%',   up: true  },
+  { sym: 'OIL/JPY',       price: '¥17,888', chg: '+1.4%',   up: true  },
   { sym: 'GOLD',         price: '$2,318',  chg: '+0.4%',   up: true  },
   { sym: 'DXY',          price: '104.2',   chg: '-0.2%',   up: false },
   { sym: 'JAPAN 10Y',    price: '0.72%',   chg: '+0.03%',  up: true  },
@@ -56,7 +57,7 @@ const tickerStyle = `
   .cn-dash-track {
     display: flex;
     gap: 36px;
-    animation: cn-dash-ticker 20s linear infinite;
+    animation: cn-dash-ticker 60s linear infinite;
     flex-shrink: 0;
     align-items: center;
     white-space: nowrap;
