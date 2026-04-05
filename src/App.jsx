@@ -1,6 +1,5 @@
 import React from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-
 import Dashboard from './pages/Dashboard'
 import MorningBrief from './pages/MorningBrief'
 import MarketOverview from './pages/MarketOverview'
@@ -28,7 +27,7 @@ export default function App() {
         <Route path="/xrp-intelligence" element={<XRPIntelligence />} />
         <Route path="/domino-theory" element={<DominoTheory />} />
         <Route path="/geopolitical-watch" element={<GeopoliticalWatch />} />
-        <Route path="/oil-vs-yen" element={<OilVsYen />} />
+        <Route path="/oil-vs-yen" element={<OilVsYen />} /> {/* Display name: Energy Intel */}
         <Route path="/media-narratives" element={<MediaNarratives />} />
         <Route path="/etf-flows" element={<ETFFlows />} />
         <Route path="/watchlist" element={<Watchlist />} />
