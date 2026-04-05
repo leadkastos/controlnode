@@ -9,7 +9,7 @@ const routeTitles = {
   '/xrp-intelligence': 'XRP Intelligence',
   '/domino-theory': 'Domino Theory',
   '/geopolitical-watch': 'Geopolitical Watch',
-  '/oil-vs-yen': 'Energy Intel',
+  '/oil-vs-yen': 'Oil vs Yen',
   '/media-narratives': 'Media & Narratives',
   '/etf-flows': 'XRP ETF Flow Tracker',
   '/watchlist': 'Watchlist',
@@ -55,15 +55,21 @@ const tickerStyle = `
     100% { transform: translateX(-50%); }
   }
   .cn-dash-track {
-    display: flex;
+    display: inline-flex;
     gap: 36px;
-    animation: cn-dash-ticker 20s linear infinite;
+    animation: cn-dash-ticker 45s linear infinite;
     flex-shrink: 0;
     align-items: center;
     white-space: nowrap;
+    will-change: transform;
   }
   .cn-dash-track:hover {
     animation-play-state: paused;
+  }
+  .cn-dash-wrapper {
+    overflow: hidden;
+    flex: 1;
+    display: flex;
   }
 `
 
@@ -95,7 +101,6 @@ export default function TopBar() {
         {/* Scrolling ticker — center, with padding on both sides */}
         <div
           className="hidden lg:flex flex-1 items-center overflow-hidden mx-8"
-          style={{ maxWidth: '780px' }}
         >
           {/* LIVE label */}
           <span
@@ -110,7 +115,7 @@ export default function TopBar() {
           </span>
 
           {/* Ticker track wrapper — clips overflow */}
-          <div className="overflow-hidden flex-1">
+          <div className="cn-dash-wrapper">
             <div className="cn-dash-track">
               {/* Items x2 for seamless infinite loop */}
               {[...tickerItems, ...tickerItems].map((item, i) => (
