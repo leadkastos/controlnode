@@ -64,7 +64,7 @@ function TextArea({ value, onChange, placeholder, rows = 5 }) {
   )
 }
 
-function SaveButton({ onClick, loading, label = 'Publish' }) {
+function SaveButton({ onClick, loading, label }) {
   return (
     <button
       onClick={onClick}
@@ -89,39 +89,37 @@ function Toast({ message, type }) {
   )
 }
 
-// ─── ADMIN HOME ───────────────────────────────────────────────────────────────
 export function Admin() {
-const links = [
-    { label: 'Morning Brief', route: '/admin/morning-brief', desc: "Publish today's morning brief" },
-    { label: 'Daily Wrap', route: '/admin/daily-wrap', desc: "Publish today's daily wrap" },
-    { label: 'Domino Theory', route: '/admin/domino-theory', desc: "Update domino statuses and notes" },
-    { label: 'Top Headlines', route: '/admin/headlines', desc: "Manage headline feed" },
-    { label: 'Master Watchlist', route: '/admin/watchlist', desc: "Manage suggested symbols" },
-    { label: 'Market Chatter', route: '/admin/chatter', desc: "Moderate member posts" },
-    { label: 'XRP ETF Flows', route: '/admin/etf-flows', desc: "Manual override for ETF flow data" },
+  const links = [
+    { label: 'Morning Brief', route: '/admin/morning-brief', desc: 'Publish the morning brief' },
+    { label: 'Daily Wrap', route: '/admin/daily-wrap', desc: 'Publish the daily wrap' },
+    { label: 'Domino Theory', route: '/admin/domino-theory', desc: 'Update domino statuses and notes' },
+    { label: 'Top Headlines', route: '/admin/headlines', desc: 'Manage headline feed' },
+    { label: 'Master Watchlist', route: '/admin/watchlist', desc: 'Manage suggested symbols' },
+    { label: 'Market Chatter', route: '/admin/chatter', desc: 'Moderate member posts' },
+    { label: 'XRP ETF Flows', route: '/admin/etf-flows', desc: 'Manual override for ETF flow data' },
   ]
   return (
     <AdminLayout title="Admin Panel">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {links.map(l => (
-          
-            key={l.route}
-            href={l.route}
-            className="rounded-xl p-5 block transition-all"
-            style={{ background: '#0d1117', border: '1px solid #1e2330' }}
-            onMouseEnter={e => e.currentTarget.style.borderColor = '#3b82f6'}
-            onMouseLeave={e => e.currentTarget.style.borderColor = '#1e2330'}
-          >
-            <p className="font-semibold mb-1" style={{ color: '#eceef5' }}>{l.label}</p>
-            <p className="text-sm" style={{ color: '#6b7a96' }}>{l.desc}</p>
-          </a>
-        ))}
+        {links.map(function(l) {
+          return (
+            
+              key={l.label}
+              href={l.route}
+              className="rounded-xl p-5 block"
+              style={{ background: '#0d1117', border: '1px solid #1e2330' }}
+            >
+              <p className="font-semibold mb-1" style={{ color: '#eceef5' }}>{l.label}</p>
+              <p className="text-sm" style={{ color: '#6b7a96' }}>{l.desc}</p>
+            </a>
+          )
+        })}
       </div>
     </AdminLayout>
   )
 }
 
-// ─── MORNING BRIEF ────────────────────────────────────────────────────────────
 export function AdminMorningBrief() {
   const [date, setDate] = useState('')
   const [headline, setHeadline] = useState('')
@@ -130,25 +128,19 @@ export function AdminMorningBrief() {
   const [loading, setLoading] = useState(false)
   const [toast, setToast] = useState({ message: '', type: '' })
 
-  function showToast(message, type = 'success') {
-    setToast({ message, type })
-    setTimeout(() => setToast({ message: '', type: '' }), 3000)
+  function showToast(message, type) {
+    setToast({ message, type: type || 'success' })
+    setTimeout(function() { setToast({ message: '', type: '' }) }, 3000)
   }
 
   async function publish() {
     if (!date || !headline || !summary) return showToast('Date, headline, and summary are required.', 'error')
     setLoading(true)
-    const catalystArray = catalysts.split('\n').map(c => c.trim()).filter(Boolean)
-    const { error } = await supabase.from('morning_briefs').insert({
-      date,
-      headline,
-      summary,
-      catalysts: catalystArray,
-      published: true,
-    })
+    const catalystArray = catalysts.split('\n').map(function(c) { return c.trim() }).filter(Boolean)
+    const { error } = await supabase.from('morning_briefs').insert({ date, headline, summary, catalysts: catalystArray, published: true })
     setLoading(false)
     if (error) return showToast('Error: ' + error.message, 'error')
-    showToast('Morning Brief published!')
+    showToast('Morning Brief published!', 'success')
     setDate(''); setHeadline(''); setSummary(''); setCatalysts('')
   }
 
@@ -158,15 +150,14 @@ export function AdminMorningBrief() {
         <Field label="Date"><TextInput value={date} onChange={setDate} placeholder="Monday, April 7, 2026" /></Field>
         <Field label="Headline"><TextInput value={headline} onChange={setHeadline} placeholder="Brief headline..." /></Field>
         <Field label="Summary"><TextArea value={summary} onChange={setSummary} placeholder="Summary paragraph..." /></Field>
-        <Field label="Catalysts (one per line)"><TextArea value={catalysts} onChange={setCatalysts} placeholder={"Catalyst one\nCatalyst two\nCatalyst three"} rows={4} /></Field>
-        <SaveButton onClick={publish} loading={loading} />
+        <Field label="Catalysts (one per line)"><TextArea value={catalysts} onChange={setCatalysts} placeholder="Catalyst one" rows={4} /></Field>
+        <SaveButton onClick={publish} loading={loading} label="Publish" />
       </AdminCard>
-      <Toast {...toast} />
+      <Toast message={toast.message} type={toast.type} />
     </AdminLayout>
   )
 }
 
-// ─── DAILY WRAP ───────────────────────────────────────────────────────────────
 export function AdminDailyWrap() {
   const [date, setDate] = useState('')
   const [headline, setHeadline] = useState('')
@@ -175,25 +166,19 @@ export function AdminDailyWrap() {
   const [loading, setLoading] = useState(false)
   const [toast, setToast] = useState({ message: '', type: '' })
 
-  function showToast(message, type = 'success') {
-    setToast({ message, type })
-    setTimeout(() => setToast({ message: '', type: '' }), 3000)
+  function showToast(message, type) {
+    setToast({ message, type: type || 'success' })
+    setTimeout(function() { setToast({ message: '', type: '' }) }, 3000)
   }
 
   async function publish() {
     if (!date || !headline || !summary) return showToast('Date, headline, and summary are required.', 'error')
     setLoading(true)
-    const catalystArray = catalysts.split('\n').map(c => c.trim()).filter(Boolean)
-    const { error } = await supabase.from('daily_wraps').insert({
-      date,
-      headline,
-      summary,
-      catalysts: catalystArray,
-      published: true,
-    })
+    const catalystArray = catalysts.split('\n').map(function(c) { return c.trim() }).filter(Boolean)
+    const { error } = await supabase.from('daily_wraps').insert({ date, headline, summary, catalysts: catalystArray, published: true })
     setLoading(false)
     if (error) return showToast('Error: ' + error.message, 'error')
-    showToast('Daily Wrap published!')
+    showToast('Daily Wrap published!', 'success')
     setDate(''); setHeadline(''); setSummary(''); setCatalysts('')
   }
 
@@ -203,80 +188,79 @@ export function AdminDailyWrap() {
         <Field label="Date"><TextInput value={date} onChange={setDate} placeholder="Monday, April 7, 2026" /></Field>
         <Field label="Headline"><TextInput value={headline} onChange={setHeadline} placeholder="Wrap headline..." /></Field>
         <Field label="Summary"><TextArea value={summary} onChange={setSummary} placeholder="Summary paragraph..." /></Field>
-        <Field label="Catalysts (one per line)"><TextArea value={catalysts} onChange={setCatalysts} placeholder={"Catalyst one\nCatalyst two\nCatalyst three"} rows={4} /></Field>
-        <SaveButton onClick={publish} loading={loading} />
+        <Field label="Catalysts (one per line)"><TextArea value={catalysts} onChange={setCatalysts} placeholder="Catalyst one" rows={4} /></Field>
+        <SaveButton onClick={publish} loading={loading} label="Publish" />
       </AdminCard>
-      <Toast {...toast} />
+      <Toast message={toast.message} type={toast.type} />
     </AdminLayout>
   )
 }
 
-// ─── DOMINO THEORY ────────────────────────────────────────────────────────────
 export function AdminDominoTheory() {
   const [dominoes, setDominoes] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(null)
   const [toast, setToast] = useState({ message: '', type: '' })
 
-  function showToast(message, type = 'success') {
-    setToast({ message, type })
-    setTimeout(() => setToast({ message: '', type: '' }), 3000)
+  function showToast(message, type) {
+    setToast({ message, type: type || 'success' })
+    setTimeout(function() { setToast({ message: '', type: '' }) }, 3000)
   }
 
-  useEffect(() => {
-    supabase.from('domino_theory').select('*').order('order_index').then(({ data }) => {
-      if (data) setDominoes(data)
+  useEffect(function() {
+    supabase.from('domino_theory').select('*').order('order_index').then(function(res) {
+      if (res.data) setDominoes(res.data)
       setLoading(false)
     })
   }, [])
 
   function updateField(id, field, value) {
-    setDominoes(prev => prev.map(d => d.id === id ? { ...d, [field]: value } : d))
+    setDominoes(function(prev) {
+      return prev.map(function(d) { return d.id === id ? Object.assign({}, d, { [field]: value }) : d })
+    })
   }
 
   async function save(domino) {
     setSaving(domino.id)
-    const { error } = await supabase.from('domino_theory').update({
-      status: domino.status,
-      assessment: domino.assessment,
-    }).eq('id', domino.id)
+    const { error } = await supabase.from('domino_theory').update({ status: domino.status, assessment: domino.assessment }).eq('id', domino.id)
     setSaving(null)
     if (error) return showToast('Error: ' + error.message, 'error')
-    showToast(`${domino.name} saved!`)
+    showToast(domino.name + ' saved!', 'success')
   }
 
   return (
     <AdminLayout title="Domino Theory">
       {loading ? (
-        <p style={{ color: '#6b7a96' }}>Loading dominoes...</p>
+        <p style={{ color: '#6b7a96' }}>Loading...</p>
       ) : (
-        dominoes.map(d => (
-          <AdminCard key={d.id} title={`Domino ${d.order_index} — ${d.name}`}>
-            <Field label="Status">
-              <select
-                value={d.status}
-                onChange={e => updateField(d.id, 'status', e.target.value)}
-                className="w-full px-3 py-2.5 rounded-lg text-sm outline-none"
-                style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}
-              >
-                <option value="standing">Standing</option>
-                <option value="tipping">Tipping</option>
-                <option value="fallen">Fallen</option>
-              </select>
-            </Field>
-            <Field label="Assessment Notes">
-              <TextArea value={d.assessment || ''} onChange={v => updateField(d.id, 'assessment', v)} placeholder="Assessment notes..." rows={3} />
-            </Field>
-            <SaveButton onClick={() => save(d)} loading={saving === d.id} label="Save" />
-          </AdminCard>
-        ))
+        dominoes.map(function(d) {
+          return (
+            <AdminCard key={d.id} title={'Domino ' + d.order_index + ' — ' + d.name}>
+              <Field label="Status">
+                <select
+                  value={d.status}
+                  onChange={function(e) { updateField(d.id, 'status', e.target.value) }}
+                  className="w-full px-3 py-2.5 rounded-lg text-sm outline-none"
+                  style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}
+                >
+                  <option value="standing">Standing</option>
+                  <option value="tipping">Tipping</option>
+                  <option value="fallen">Fallen</option>
+                </select>
+              </Field>
+              <Field label="Assessment Notes">
+                <TextArea value={d.assessment || ''} onChange={function(v) { updateField(d.id, 'assessment', v) }} placeholder="Assessment notes..." rows={3} />
+              </Field>
+              <SaveButton onClick={function() { save(d) }} loading={saving === d.id} label="Save" />
+            </AdminCard>
+          )
+        })
       )}
-      <Toast {...toast} />
+      <Toast message={toast.message} type={toast.type} />
     </AdminLayout>
   )
 }
 
-// ─── TOP HEADLINES ────────────────────────────────────────────────────────────
 export function AdminHeadlines() {
   const [headlines, setHeadlines] = useState([])
   const [loading, setLoading] = useState(true)
@@ -284,9 +268,9 @@ export function AdminHeadlines() {
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState({ message: '', type: '' })
 
-  function showToast(message, type = 'success') {
-    setToast({ message, type })
-    setTimeout(() => setToast({ message: '', type: '' }), 3000)
+  function showToast(message, type) {
+    setToast({ message, type: type || 'success' })
+    setTimeout(function() { setToast({ message: '', type: '' }) }, 3000)
   }
 
   async function load() {
@@ -295,7 +279,7 @@ export function AdminHeadlines() {
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(function() { load() }, [])
 
   async function add() {
     if (!form.headline || !form.source) return showToast('Headline and source are required.', 'error')
@@ -303,47 +287,48 @@ export function AdminHeadlines() {
     const { error } = await supabase.from('top_headlines').insert(form)
     setSaving(false)
     if (error) return showToast('Error: ' + error.message, 'error')
-    showToast('Headline added!')
+    showToast('Headline added!', 'success')
     setForm({ headline: '', source: '', category: '', url: '' })
     load()
   }
 
   async function remove(id) {
     await supabase.from('top_headlines').delete().eq('id', id)
-    showToast('Headline removed.')
+    showToast('Headline removed.', 'success')
     load()
   }
 
   return (
     <AdminLayout title="Top Headlines">
       <AdminCard title="Add Headline">
-        <Field label="Headline"><TextInput value={form.headline} onChange={v => setForm(f => ({ ...f, headline: v }))} placeholder="Headline text..." /></Field>
-        <Field label="Source"><TextInput value={form.source} onChange={v => setForm(f => ({ ...f, source: v }))} placeholder="Reuters, Bloomberg..." /></Field>
-        <Field label="Category"><TextInput value={form.category} onChange={v => setForm(f => ({ ...f, category: v }))} placeholder="Regulatory, Macro, ETF..." /></Field>
-        <Field label="URL"><TextInput value={form.url} onChange={v => setForm(f => ({ ...f, url: v }))} placeholder="https://..." /></Field>
+        <Field label="Headline"><TextInput value={form.headline} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { headline: v }) }) }} placeholder="Headline text..." /></Field>
+        <Field label="Source"><TextInput value={form.source} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { source: v }) }) }} placeholder="Reuters, Bloomberg..." /></Field>
+        <Field label="Category"><TextInput value={form.category} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { category: v }) }) }} placeholder="Regulatory, Macro, ETF..." /></Field>
+        <Field label="URL"><TextInput value={form.url} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { url: v }) }) }} placeholder="https://..." /></Field>
         <SaveButton onClick={add} loading={saving} label="Add Headline" />
       </AdminCard>
       <AdminCard title="Current Headlines">
         {loading ? <p style={{ color: '#6b7a96' }}>Loading...</p> : headlines.length === 0 ? <p style={{ color: '#6b7a96' }}>No headlines yet.</p> : (
           <div className="space-y-2">
-            {headlines.map(h => (
-              <div key={h.id} className="flex items-start justify-between gap-3 py-2" style={{ borderBottom: '1px solid #1e2330' }}>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium" style={{ color: '#eceef5' }}>{h.headline}</p>
-                  <p className="text-xs mt-0.5" style={{ color: '#6b7a96' }}>{h.source} · {h.category}</p>
+            {headlines.map(function(h) {
+              return (
+                <div key={h.id} className="flex items-start justify-between gap-3 py-2" style={{ borderBottom: '1px solid #1e2330' }}>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium" style={{ color: '#eceef5' }}>{h.headline}</p>
+                    <p className="text-xs mt-0.5" style={{ color: '#6b7a96' }}>{h.source} · {h.category}</p>
+                  </div>
+                  <button onClick={function() { remove(h.id) }} className="text-xs px-3 py-1 rounded" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>Remove</button>
                 </div>
-                <button onClick={() => remove(h.id)} className="text-xs px-3 py-1 rounded" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>Remove</button>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </AdminCard>
-      <Toast {...toast} />
+      <Toast message={toast.message} type={toast.type} />
     </AdminLayout>
   )
 }
 
-// ─── MASTER WATCHLIST ─────────────────────────────────────────────────────────
 export function AdminWatchlist() {
   const [symbols, setSymbols] = useState([])
   const [loading, setLoading] = useState(true)
@@ -351,9 +336,9 @@ export function AdminWatchlist() {
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState({ message: '', type: '' })
 
-  function showToast(message, type = 'success') {
-    setToast({ message, type })
-    setTimeout(() => setToast({ message: '', type: '' }), 3000)
+  function showToast(message, type) {
+    setToast({ message, type: type || 'success' })
+    setTimeout(function() { setToast({ message: '', type: '' }) }, 3000)
   }
 
   async function load() {
@@ -362,63 +347,64 @@ export function AdminWatchlist() {
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(function() { load() }, [])
 
   async function add() {
     if (!form.symbol) return showToast('Symbol is required.', 'error')
     setSaving(true)
-    const { error } = await supabase.from('master_watchlist').insert({ ...form, symbol: form.symbol.toUpperCase() })
+    const { error } = await supabase.from('master_watchlist').insert(Object.assign({}, form, { symbol: form.symbol.toUpperCase() }))
     setSaving(false)
     if (error) return showToast('Error: ' + error.message, 'error')
-    showToast('Symbol added!')
+    showToast('Symbol added!', 'success')
     setForm({ symbol: '', name: '', category: '' })
     load()
   }
 
   async function remove(id) {
     await supabase.from('master_watchlist').delete().eq('id', id)
-    showToast('Symbol removed.')
+    showToast('Symbol removed.', 'success')
     load()
   }
 
   return (
     <AdminLayout title="Master Watchlist">
       <AdminCard title="Add Symbol">
-        <Field label="Symbol"><TextInput value={form.symbol} onChange={v => setForm(f => ({ ...f, symbol: v }))} placeholder="XRP" /></Field>
-        <Field label="Name"><TextInput value={form.name} onChange={v => setForm(f => ({ ...f, name: v }))} placeholder="XRP / USD" /></Field>
-        <Field label="Category"><TextInput value={form.category} onChange={v => setForm(f => ({ ...f, category: v }))} placeholder="Crypto, Forex, Commodity..." /></Field>
+        <Field label="Symbol"><TextInput value={form.symbol} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { symbol: v }) }) }} placeholder="XRP" /></Field>
+        <Field label="Name"><TextInput value={form.name} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { name: v }) }) }} placeholder="XRP / USD" /></Field>
+        <Field label="Category"><TextInput value={form.category} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { category: v }) }) }} placeholder="Crypto, Forex, Commodity..." /></Field>
         <SaveButton onClick={add} loading={saving} label="Add Symbol" />
       </AdminCard>
       <AdminCard title="Current Symbols">
         {loading ? <p style={{ color: '#6b7a96' }}>Loading...</p> : symbols.length === 0 ? <p style={{ color: '#6b7a96' }}>No symbols yet.</p> : (
           <div className="space-y-2">
-            {symbols.map(s => (
-              <div key={s.id} className="flex items-center justify-between py-2" style={{ borderBottom: '1px solid #1e2330' }}>
-                <div>
-                  <span className="text-sm font-bold mr-2" style={{ color: '#3b82f6' }}>{s.symbol}</span>
-                  <span className="text-sm" style={{ color: '#eceef5' }}>{s.name}</span>
-                  <span className="text-xs ml-2" style={{ color: '#6b7a96' }}>{s.category}</span>
+            {symbols.map(function(s) {
+              return (
+                <div key={s.id} className="flex items-center justify-between py-2" style={{ borderBottom: '1px solid #1e2330' }}>
+                  <div>
+                    <span className="text-sm font-bold mr-2" style={{ color: '#3b82f6' }}>{s.symbol}</span>
+                    <span className="text-sm" style={{ color: '#eceef5' }}>{s.name}</span>
+                    <span className="text-xs ml-2" style={{ color: '#6b7a96' }}>{s.category}</span>
+                  </div>
+                  <button onClick={function() { remove(s.id) }} className="text-xs px-3 py-1 rounded" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>Remove</button>
                 </div>
-                <button onClick={() => remove(s.id)} className="text-xs px-3 py-1 rounded" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>Remove</button>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </AdminCard>
-      <Toast {...toast} />
+      <Toast message={toast.message} type={toast.type} />
     </AdminLayout>
   )
 }
 
-// ─── MARKET CHATTER MODERATION ────────────────────────────────────────────────
 export function AdminChatter() {
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState({ message: '', type: '' })
 
-  function showToast(message, type = 'success') {
-    setToast({ message, type })
-    setTimeout(() => setToast({ message: '', type: '' }), 3000)
+  function showToast(message, type) {
+    setToast({ message, type: type || 'success' })
+    setTimeout(function() { setToast({ message: '', type: '' }) }, 3000)
   }
 
   async function load() {
@@ -427,24 +413,23 @@ export function AdminChatter() {
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(function() { load() }, [])
 
   async function warn(post) {
     await supabase.from('market_chatter').update({ flagged: true }).eq('id', post.id)
-    await supabase.from('profiles').update({ warning_count: (post.warning_count || 0) + 1 }).eq('id', post.user_id)
-    showToast('Warning issued.')
+    showToast('Warning issued.', 'success')
     load()
   }
 
   async function remove(id) {
     await supabase.from('market_chatter').delete().eq('id', id)
-    showToast('Post removed.')
+    showToast('Post removed.', 'success')
     load()
   }
 
   async function ban(userId) {
     await supabase.from('profiles').update({ is_banned: true }).eq('id', userId)
-    showToast('User banned.')
+    showToast('User banned.', 'success')
     load()
   }
 
@@ -453,39 +438,36 @@ export function AdminChatter() {
       <AdminCard title="Recent Posts">
         {loading ? <p style={{ color: '#6b7a96' }}>Loading...</p> : posts.length === 0 ? <p style={{ color: '#6b7a96' }}>No posts yet.</p> : (
           <div className="space-y-3">
-            {posts.map(p => (
-              <div key={p.id} className="rounded-lg p-4" style={{ background: '#111318', border: `1px solid ${p.flagged ? 'rgba(239,68,68,0.3)' : '#1e2330'}` }}>
-                <div className="flex items-start justify-between gap-3 mb-2">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs mb-1" style={{ color: '#6b7a96' }}>{p.user_id} · {new Date(p.created_at).toLocaleString()}</p>
-                    <p className="text-sm" style={{ color: '#eceef5' }}>{p.content}</p>
-                    {p.flagged && <span className="text-xs mt-1 inline-block px-2 py-0.5 rounded" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>Flagged</span>}
+            {posts.map(function(p) {
+              return (
+                <div key={p.id} className="rounded-lg p-4" style={{ background: '#111318', border: '1px solid ' + (p.flagged ? 'rgba(239,68,68,0.3)' : '#1e2330') }}>
+                  <p className="text-xs mb-1" style={{ color: '#6b7a96' }}>{p.user_id} · {new Date(p.created_at).toLocaleString()}</p>
+                  <p className="text-sm mb-2" style={{ color: '#eceef5' }}>{p.content}</p>
+                  {p.flagged && <span className="text-xs px-2 py-0.5 rounded" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>Flagged</span>}
+                  <div className="flex gap-2 flex-wrap mt-2">
+                    <button onClick={function() { warn(p) }} className="text-xs px-3 py-1.5 rounded" style={{ background: 'rgba(234,179,8,0.1)', color: '#eab308' }}>Warn</button>
+                    <button onClick={function() { remove(p.id) }} className="text-xs px-3 py-1.5 rounded" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>Remove Post</button>
+                    <button onClick={function() { ban(p.user_id) }} className="text-xs px-3 py-1.5 rounded" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', fontWeight: 600 }}>Ban User</button>
                   </div>
                 </div>
-                <div className="flex gap-2 flex-wrap">
-                  <button onClick={() => warn(p)} className="text-xs px-3 py-1.5 rounded" style={{ background: 'rgba(234,179,8,0.1)', color: '#eab308' }}>Warn</button>
-                  <button onClick={() => remove(p.id)} className="text-xs px-3 py-1.5 rounded" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>Remove Post</button>
-                  <button onClick={() => ban(p.user_id)} className="text-xs px-3 py-1.5 rounded" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', fontWeight: 600 }}>Ban User</button>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </AdminCard>
-      <Toast {...toast} />
+      <Toast message={toast.message} type={toast.type} />
     </AdminLayout>
   )
 }
 
-// ─── XRP ETF FLOWS ────────────────────────────────────────────────────────────
 export function AdminETFFlows() {
   const [form, setForm] = useState({ date: '', net_flow: '', total_aum: '', institutions: '', notes: '' })
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState({ message: '', type: '' })
 
-  function showToast(message, type = 'success') {
-    setToast({ message, type })
-    setTimeout(() => setToast({ message: '', type: '' }), 3000)
+  function showToast(message, type) {
+    setToast({ message, type: type || 'success' })
+    setTimeout(function() { setToast({ message: '', type: '' }) }, 3000)
   }
 
   async function save() {
@@ -494,24 +476,23 @@ export function AdminETFFlows() {
     const { error } = await supabase.from('xrp_etf_flows').insert(form)
     setSaving(false)
     if (error) return showToast('Error: ' + error.message, 'error')
-    showToast('ETF flow data saved!')
+    showToast('ETF flow data saved!', 'success')
     setForm({ date: '', net_flow: '', total_aum: '', institutions: '', notes: '' })
   }
 
   return (
     <AdminLayout title="XRP ETF Flows">
       <AdminCard title="Manual Override — ETF Flow Entry">
-        <Field label="Date"><TextInput value={form.date} onChange={v => setForm(f => ({ ...f, date: v }))} placeholder="2026-04-07" /></Field>
-        <Field label="Net Flow (USD)"><TextInput value={form.net_flow} onChange={v => setForm(f => ({ ...f, net_flow: v }))} placeholder="1200000" /></Field>
-        <Field label="Total AUM (USD)"><TextInput value={form.total_aum} onChange={v => setForm(f => ({ ...f, total_aum: v }))} placeholder="5000000000" /></Field>
-        <Field label="Institutions"><TextInput value={form.institutions} onChange={v => setForm(f => ({ ...f, institutions: v }))} placeholder="3" /></Field>
-        <Field label="Notes"><TextArea value={form.notes} onChange={v => setForm(f => ({ ...f, notes: v }))} placeholder="Any notes about this entry..." rows={3} /></Field>
+        <Field label="Date"><TextInput value={form.date} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { date: v }) }) }} placeholder="2026-04-07" /></Field>
+        <Field label="Net Flow (USD)"><TextInput value={form.net_flow} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { net_flow: v }) }) }} placeholder="1200000" /></Field>
+        <Field label="Total AUM (USD)"><TextInput value={form.total_aum} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { total_aum: v }) }) }} placeholder="5000000000" /></Field>
+        <Field label="Institutions"><TextInput value={form.institutions} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { institutions: v }) }) }} placeholder="3" /></Field>
+        <Field label="Notes"><TextArea value={form.notes} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { notes: v }) }) }} placeholder="Any notes..." rows={3} /></Field>
         <SaveButton onClick={save} loading={saving} label="Save Entry" />
       </AdminCard>
-      <Toast {...toast} />
+      <Toast message={toast.message} type={toast.type} />
     </AdminLayout>
   )
 }
 
-// ─── LEGACY EXPORTS (keep App.jsx happy) ──────────────────────────────────────
 export function AdminUpdates() { return <AdminDailyWrap /> }
