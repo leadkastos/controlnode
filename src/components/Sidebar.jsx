@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
-import { NavLink, useLocation } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, TrendingUp, Zap, GitBranch, Globe,
   BarChart2, Newspaper, LineChart, Star, User, CreditCard,
-  Settings, Menu, X, Youtube, MessageCircleWarning
+  Settings, Menu, X, Youtube, MessageCircleWarning, LogOut
 } from 'lucide-react'
+import { useAuth } from '../contexts/AuthContext'
 
 const mainNav = [
   { label: 'Dashboard', icon: LayoutDashboard, path: '/', color: '#3b82f6' },
@@ -33,11 +34,7 @@ function NavItem({ item, onClose }) {
     : location.pathname.startsWith(item.path)
 
   return (
-    <NavLink
-      to={item.path}
-      onClick={onClose}
-      style={{ textDecoration: 'none' }}
-    >
+    <NavLink to={item.path} onClick={onClose} style={{ textDecoration: 'none' }}>
       <div
         className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer"
         style={{
@@ -46,11 +43,7 @@ function NavItem({ item, onClose }) {
           borderLeft: isActive ? `2px solid ${item.color}` : '2px solid transparent',
         }}
       >
-        <item.icon
-          size={16}
-          strokeWidth={1.8}
-          style={{ color: isActive ? item.color : item.color + '99', flexShrink: 0 }}
-        />
+        <item.icon size={16} strokeWidth={1.8} style={{ color: isActive ? item.color : item.color + '99', flexShrink: 0 }} />
         <span>{item.label}</span>
       </div>
     </NavLink>
@@ -58,6 +51,14 @@ function NavItem({ item, onClose }) {
 }
 
 function SidebarContent({ onClose }) {
+  const { signOut, profile } = useAuth()
+  const navigate = useNavigate()
+
+  const handleLogout = async () => {
+    await signOut()
+    navigate('/login')
+  }
+
   return (
     <>
       <div className="px-4 py-5 flex items-center justify-between" style={{ borderBottom: '1px solid #1e2330' }}>
@@ -103,6 +104,23 @@ function SidebarContent({ onClose }) {
         {bottomNav.map((item) => (
           <NavItem key={item.path} item={item} onClose={onClose} />
         ))}
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer hover:bg-red-500/10"
+          style={{ color: '#6b7a96', borderLeft: '2px solid transparent' }}
+        >
+          <LogOut size={16} strokeWidth={1.8} style={{ color: '#6b7a96', flexShrink: 0 }} />
+          <span>Sign Out</span>
+        </button>
+        {profile?.role === 'super_admin' && (
+          <NavLink to="/admin" style={{ textDecoration: 'none' }}>
+            <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer hover:bg-yellow-500/10"
+              style={{ color: '#f59e0b', borderLeft: '2px solid transparent' }}>
+              <Settings size={16} strokeWidth={1.8} style={{ color: '#f59e0b', flexShrink: 0 }} />
+              <span>Admin Panel</span>
+            </div>
+          </NavLink>
+        )}
       </div>
     </>
   )
@@ -122,28 +140,19 @@ export default function Sidebar() {
       </button>
 
       {mobileOpen && (
-        <div
-          className="fixed inset-0 z-40 lg:hidden"
-          style={{ background: 'rgba(0,0,0,0.7)' }}
-          onClick={() => setMobileOpen(false)}
-        />
+        <div className="fixed inset-0 z-40 lg:hidden" style={{ background: 'rgba(0,0,0,0.7)' }}
+          onClick={() => setMobileOpen(false)} />
       )}
 
       <aside
         className="fixed left-0 top-0 h-screen w-64 flex flex-col z-50 transition-transform duration-300 lg:hidden"
-        style={{
-          background: '#0d0f14',
-          borderRight: '1px solid #1e2330',
-          transform: mobileOpen ? 'translateX(0)' : 'translateX(-100%)',
-        }}
+        style={{ background: '#0d0f14', borderRight: '1px solid #1e2330', transform: mobileOpen ? 'translateX(0)' : 'translateX(-100%)' }}
       >
         <SidebarContent onClose={() => setMobileOpen(false)} />
       </aside>
 
-      <aside
-        className="hidden lg:flex fixed left-0 top-0 h-screen w-56 flex-col z-30"
-        style={{ background: '#0d0f14', borderRight: '1px solid #1e2330' }}
-      >
+      <aside className="hidden lg:flex fixed left-0 top-0 h-screen w-56 flex-col z-30"
+        style={{ background: '#0d0f14', borderRight: '1px solid #1e2330' }}>
         <SidebarContent />
       </aside>
     </>
