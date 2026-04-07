@@ -18,8 +18,17 @@ import Watchlist from './pages/Watchlist'
 import YouTubeIntel from './pages/YouTubeIntel'
 import MarketChatter from './pages/MarketChatter'
 import { Account, Billing, Settings } from './pages/AccountPages'
-import { Admin, AdminMorningBrief, AdminUpdates, AdminDominoTheory } from './pages/AdminPages'
-import AdminChatter from './pages/AdminChatter'
+import {
+  Admin,
+  AdminMorningBrief,
+  AdminDailyWrap,
+  AdminDominoTheory,
+  AdminHeadlines,
+  AdminWatchlist,
+  AdminChatter,
+  AdminETFFlows,
+  AdminUpdates,
+} from './pages/AdminPages'
 
 export default function App() {
   return (
@@ -47,9 +56,13 @@ export default function App() {
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
         <Route path="/admin/morning-brief" element={<ProtectedRoute adminOnly><AdminMorningBrief /></ProtectedRoute>} />
-        <Route path="/admin/updates" element={<ProtectedRoute adminOnly><AdminUpdates /></ProtectedRoute>} />
+        <Route path="/admin/daily-wrap" element={<ProtectedRoute adminOnly><AdminDailyWrap /></ProtectedRoute>} />
         <Route path="/admin/domino-theory" element={<ProtectedRoute adminOnly><AdminDominoTheory /></ProtectedRoute>} />
+        <Route path="/admin/headlines" element={<ProtectedRoute adminOnly><AdminHeadlines /></ProtectedRoute>} />
+        <Route path="/admin/watchlist" element={<ProtectedRoute adminOnly><AdminWatchlist /></ProtectedRoute>} />
         <Route path="/admin/chatter" element={<ProtectedRoute adminOnly><AdminChatter /></ProtectedRoute>} />
+        <Route path="/admin/etf-flows" element={<ProtectedRoute adminOnly><AdminETFFlows /></ProtectedRoute>} />
+        <Route path="/admin/updates" element={<ProtectedRoute adminOnly><AdminUpdates /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   )
