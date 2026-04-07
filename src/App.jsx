@@ -7,6 +7,7 @@ import ForgotPassword from './pages/auth/ForgotPassword'
 import ResetPassword from './pages/auth/ResetPassword'
 import Dashboard from './pages/Dashboard'
 import MorningBrief from './pages/MorningBrief'
+import DailyWrap from './pages/DailyWrap'
 import MarketOverview from './pages/MarketOverview'
 import XRPIntelligence from './pages/XRPIntelligence'
 import DominoTheory from './pages/DominoTheory'
@@ -41,6 +42,7 @@ export default function App() {
         <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/morning-brief" element={<ProtectedRoute><MorningBrief /></ProtectedRoute>} />
+        <Route path="/daily-wrap" element={<ProtectedRoute><DailyWrap /></ProtectedRoute>} />
         <Route path="/market-overview" element={<ProtectedRoute><MarketOverview /></ProtectedRoute>} />
         <Route path="/xrp-intelligence" element={<ProtectedRoute><XRPIntelligence /></ProtectedRoute>} />
         <Route path="/domino-theory" element={<ProtectedRoute><DominoTheory /></ProtectedRoute>} />
