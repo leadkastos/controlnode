@@ -6,7 +6,7 @@ export default function DailyWrapCard() {
   const nav = useNavigate()
   return (
     <div
-      className="relative rounded-xl p-5 lg:p-6 overflow-hidden cursor-pointer h-full"
+      className="relative rounded-xl p-5 lg:p-6 overflow-hidden cursor-pointer h-full flex flex-col"
       style={{
         background: 'linear-gradient(135deg, #0f1724 0%, #111827 40%, #0d1520 100%)',
         border: '1px solid rgba(139,92,246,0.3)',
@@ -20,7 +20,7 @@ export default function DailyWrapCard() {
           transform: 'translate(30%, -30%)',
         }}
       />
-      <div className="relative z-10">
+      <div className="relative z-10 flex flex-col flex-1">
         <div className="flex items-center gap-2 mb-3 flex-wrap">
           <div
             className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold"
@@ -48,7 +48,7 @@ export default function DailyWrapCard() {
             </div>
           ))}
         </div>
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-3 flex-wrap mt-auto">
           <button
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold"
             style={{ background: '#8b5cf6', color: '#fff' }}
@@ -57,9 +57,4 @@ export default function DailyWrapCard() {
             View Full Wrap
             <ArrowRight size={14} />
           </button>
-          <span className="text-xs" style={{ color: '#6b7a96' }}>For informational purposes only</span>
-        </div>
-      </div>
-    </div>
-  )
-}
+          <span className="text-xs" style={{ color: '#6b7a96' }
