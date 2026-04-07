@@ -82,36 +82,42 @@ function Toast({ message, type }) {
   return (
     <div
       className="fixed bottom-6 right-6 px-5 py-3 rounded-lg text-sm font-medium z-50"
-      style={{ background: type === 'error' ? '#ef4444' : '#10b981', color: '#fff' }}
-    >
-      {message}
-    </div>
-  )
-}
-
-export function Admin() {
-  const links = [
-    { label: 'Morning Brief', route: '/admin/morning-brief', desc: 'Publish the morning brief' },
-    { label: 'Daily Wrap', route: '/admin/daily-wrap', desc: 'Publish the daily wrap' },
-    { label: 'Domino Theory', route: '/admin/domino-theory', desc: 'Update domino statuses and notes' },
-    { label: 'Top Headlines', route: '/admin/headlines', desc: 'Manage headline feed' },
-    { label: 'Master Watchlist', route: '/admin/watchlist', desc: 'Manage suggested symbols' },
-    { label: 'Market Chatter', route: '/admin/chatter', desc: 'Moderate member posts' },
-    { label: 'XRP ETF Flows', route: '/admin/etf-flows', desc: 'Manual override for ETF flow data' },
-  ]
+ export function Admin() {
   return (
     <AdminLayout title="Admin Panel">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {links.map(function(l) {
-          return (
-            
-              key={l.label}
-              href={l.route}
-              className="rounded-xl p-5 block"
-              style={{ background: '#0d1117', border: '1px solid #1e2330' }}
-            >
-              <p className="font-semibold mb-1" style={{ color: '#eceef5' }}>{l.label}</p>
-              <p className="text-sm" style={{ color: '#6b7a96' }}>{l.desc}</p>
+        <a href="/admin/morning-brief" className="rounded-xl p-5 block" style={{ background: '#0d1117', border: '1px solid #1e2330' }}>
+          <p className="font-semibold mb-1" style={{ color: '#eceef5' }}>Morning Brief</p>
+          <p className="text-sm" style={{ color: '#6b7a96' }}>Publish the morning brief</p>
+        </a>
+        <a href="/admin/daily-wrap" className="rounded-xl p-5 block" style={{ background: '#0d1117', border: '1px solid #1e2330' }}>
+          <p className="font-semibold mb-1" style={{ color: '#eceef5' }}>Daily Wrap</p>
+          <p className="text-sm" style={{ color: '#6b7a96' }}>Publish the daily wrap</p>
+        </a>
+        <a href="/admin/domino-theory" className="rounded-xl p-5 block" style={{ background: '#0d1117', border: '1px solid #1e2330' }}>
+          <p className="font-semibold mb-1" style={{ color: '#eceef5' }}>Domino Theory</p>
+          <p className="text-sm" style={{ color: '#6b7a96' }}>Update domino statuses and notes</p>
+        </a>
+        <a href="/admin/headlines" className="rounded-xl p-5 block" style={{ background: '#0d1117', border: '1px solid #1e2330' }}>
+          <p className="font-semibold mb-1" style={{ color: '#eceef5' }}>Top Headlines</p>
+          <p className="text-sm" style={{ color: '#6b7a96' }}>Manage headline feed</p>
+        </a>
+        <a href="/admin/watchlist" className="rounded-xl p-5 block" style={{ background: '#0d1117', border: '1px solid #1e2330' }}>
+          <p className="font-semibold mb-1" style={{ color: '#eceef5' }}>Master Watchlist</p>
+          <p className="text-sm" style={{ color: '#6b7a96' }}>Manage suggested symbols</p>
+        </a>
+        <a href="/admin/chatter" className="rounded-xl p-5 block" style={{ background: '#0d1117', border: '1px solid #1e2330' }}>
+          <p className="font-semibold mb-1" style={{ color: '#eceef5' }}>Market Chatter</p>
+          <p className="text-sm" style={{ color: '#6b7a96' }}>Moderate member posts</p>
+        </a>
+        <a href="/admin/etf-flows" className="rounded-xl p-5 block" style={{ background: '#0d1117', border: '1px solid #1e2330' }}>
+          <p className="font-semibold mb-1" style={{ color: '#eceef5' }}>XRP ETF Flows</p>
+          <p className="text-sm" style={{ color: '#6b7a96' }}>Manual override for ETF flow data</p>
+        </a>
+      </div>
+    </AdminLayout>
+  )
+}
             </a>
           )
         })}
