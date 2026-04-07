@@ -82,6 +82,14 @@ function Toast({ message, type }) {
   return (
     <div
       className="fixed bottom-6 right-6 px-5 py-3 rounded-lg text-sm font-medium z-50"
+      style={{ background: type === 'error' ? '#ef4444' : '#10b981', color: '#fff' }}
+    >
+      {message}
+    </div>
+  )
+}
+
+export function Admin() {
  export function Admin() {
   return (
     <AdminLayout title="Admin Panel">
