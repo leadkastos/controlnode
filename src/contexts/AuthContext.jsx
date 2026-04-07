@@ -7,13 +7,20 @@ export const AuthProvider = ({ children }) => {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const fetchProfile = async (userId) => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
-    setProfile(data)
-    setLoading(false)
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single()
+      if (error) console.error('Profile fetch error:', error)
+      setProfile(data ?? null)
+    } catch (e) {
+      console.error('Profile fetch exception:', e)
+      setProfile(null)
+    } finally {
+      setLoading(false)
+    }
   }
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -34,11 +41,7 @@ export const AuthProvider = ({ children }) => {
     return () => subscription.unsubscribe()
   }, [])
   const signUp = async (email, password, fullName) => {
-    return await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { full_name: fullName } }
-    })
+    return await supabase.auth.signUp({ email, password, options: { data: { full_name: fullName } } })
   }
   const signIn = async (email, password) => {
     return await supabase.auth.signInWithPassword({ email, password })
