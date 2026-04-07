@@ -39,27 +39,27 @@ function TextInput({ value, onChange, placeholder }) {
     <input
       type="text"
       value={value}
-      onChange={e => onChange(e.target.value)}
+      onChange={function(e) { onChange(e.target.value) }}
       placeholder={placeholder}
       className="w-full px-3 py-2.5 rounded-lg text-sm outline-none"
       style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}
-      onFocus={e => e.target.style.borderColor = '#3b82f6'}
-      onBlur={e => e.target.style.borderColor = '#1e2330'}
+      onFocus={function(e) { e.target.style.borderColor = '#3b82f6' }}
+      onBlur={function(e) { e.target.style.borderColor = '#1e2330' }}
     />
   )
 }
 
-function TextArea({ value, onChange, placeholder, rows = 5 }) {
+function TextArea({ value, onChange, placeholder, rows }) {
   return (
     <textarea
       value={value}
-      onChange={e => onChange(e.target.value)}
+      onChange={function(e) { onChange(e.target.value) }}
       placeholder={placeholder}
-      rows={rows}
+      rows={rows || 5}
       className="w-full px-3 py-2.5 rounded-lg text-sm outline-none resize-none"
       style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}
-      onFocus={e => e.target.style.borderColor = '#3b82f6'}
-      onBlur={e => e.target.style.borderColor = '#1e2330'}
+      onFocus={function(e) { e.target.style.borderColor = '#3b82f6' }}
+      onBlur={function(e) { e.target.style.borderColor = '#1e2330' }}
     />
   )
 }
@@ -89,7 +89,7 @@ function Toast({ message, type }) {
   )
 }
 
- export function Admin() {
+export function Admin() {
   return (
     <AdminLayout title="Admin Panel">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -125,34 +125,39 @@ function Toast({ message, type }) {
     </AdminLayout>
   )
 }
-            </a>
-          )
-        })}
-      </div>
-    </AdminLayout>
-  )
-}
 
 export function AdminMorningBrief() {
-  const [date, setDate] = useState('')
-  const [headline, setHeadline] = useState('')
-  const [summary, setSummary] = useState('')
-  const [catalysts, setCatalysts] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [toast, setToast] = useState({ message: '', type: '' })
+  var dateState = useState('')
+  var date = dateState[0]
+  var setDate = dateState[1]
+  var headlineState = useState('')
+  var headline = headlineState[0]
+  var setHeadline = headlineState[1]
+  var summaryState = useState('')
+  var summary = summaryState[0]
+  var setSummary = summaryState[1]
+  var catalystsState = useState('')
+  var catalysts = catalystsState[0]
+  var setCatalysts = catalystsState[1]
+  var loadingState = useState(false)
+  var loading = loadingState[0]
+  var setLoading = loadingState[1]
+  var toastState = useState({ message: '', type: '' })
+  var toast = toastState[0]
+  var setToast = toastState[1]
 
   function showToast(message, type) {
-    setToast({ message, type: type || 'success' })
+    setToast({ message: message, type: type || 'success' })
     setTimeout(function() { setToast({ message: '', type: '' }) }, 3000)
   }
 
   async function publish() {
-    if (!date || !headline || !summary) return showToast('Date, headline, and summary are required.', 'error')
+    if (!date || !headline || !summary) { showToast('Date, headline, and summary are required.', 'error'); return }
     setLoading(true)
-    const catalystArray = catalysts.split('\n').map(function(c) { return c.trim() }).filter(Boolean)
-    const { error } = await supabase.from('morning_briefs').insert({ date, headline, summary, catalysts: catalystArray, published: true })
+    var catalystArray = catalysts.split('\n').map(function(c) { return c.trim() }).filter(Boolean)
+    var result = await supabase.from('morning_briefs').insert({ date: date, headline: headline, summary: summary, catalysts: catalystArray, published: true })
     setLoading(false)
-    if (error) return showToast('Error: ' + error.message, 'error')
+    if (result.error) { showToast('Error: ' + result.error.message, 'error'); return }
     showToast('Morning Brief published!', 'success')
     setDate(''); setHeadline(''); setSummary(''); setCatalysts('')
   }
@@ -162,7 +167,7 @@ export function AdminMorningBrief() {
       <AdminCard title="Publish New Morning Brief">
         <Field label="Date"><TextInput value={date} onChange={setDate} placeholder="Monday, April 7, 2026" /></Field>
         <Field label="Headline"><TextInput value={headline} onChange={setHeadline} placeholder="Brief headline..." /></Field>
-        <Field label="Summary"><TextArea value={summary} onChange={setSummary} placeholder="Summary paragraph..." /></Field>
+        <Field label="Summary"><TextArea value={summary} onChange={setSummary} placeholder="Summary paragraph..." rows={5} /></Field>
         <Field label="Catalysts (one per line)"><TextArea value={catalysts} onChange={setCatalysts} placeholder="Catalyst one" rows={4} /></Field>
         <SaveButton onClick={publish} loading={loading} label="Publish" />
       </AdminCard>
@@ -172,25 +177,37 @@ export function AdminMorningBrief() {
 }
 
 export function AdminDailyWrap() {
-  const [date, setDate] = useState('')
-  const [headline, setHeadline] = useState('')
-  const [summary, setSummary] = useState('')
-  const [catalysts, setCatalysts] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [toast, setToast] = useState({ message: '', type: '' })
+  var dateState = useState('')
+  var date = dateState[0]
+  var setDate = dateState[1]
+  var headlineState = useState('')
+  var headline = headlineState[0]
+  var setHeadline = headlineState[1]
+  var summaryState = useState('')
+  var summary = summaryState[0]
+  var setSummary = summaryState[1]
+  var catalystsState = useState('')
+  var catalysts = catalystsState[0]
+  var setCatalysts = catalystsState[1]
+  var loadingState = useState(false)
+  var loading = loadingState[0]
+  var setLoading = loadingState[1]
+  var toastState = useState({ message: '', type: '' })
+  var toast = toastState[0]
+  var setToast = toastState[1]
 
   function showToast(message, type) {
-    setToast({ message, type: type || 'success' })
+    setToast({ message: message, type: type || 'success' })
     setTimeout(function() { setToast({ message: '', type: '' }) }, 3000)
   }
 
   async function publish() {
-    if (!date || !headline || !summary) return showToast('Date, headline, and summary are required.', 'error')
+    if (!date || !headline || !summary) { showToast('Date, headline, and summary are required.', 'error'); return }
     setLoading(true)
-    const catalystArray = catalysts.split('\n').map(function(c) { return c.trim() }).filter(Boolean)
-    const { error } = await supabase.from('daily_wraps').insert({ date, headline, summary, catalysts: catalystArray, published: true })
+    var catalystArray = catalysts.split('\n').map(function(c) { return c.trim() }).filter(Boolean)
+    var result = await supabase.from('daily_wraps').insert({ date: date, headline: headline, summary: summary, catalysts: catalystArray, published: true })
     setLoading(false)
-    if (error) return showToast('Error: ' + error.message, 'error')
+    if (result.error) { showToast('Error: ' + result.error.message, 'error'); return }
     showToast('Daily Wrap published!', 'success')
     setDate(''); setHeadline(''); setSummary(''); setCatalysts('')
   }
@@ -200,7 +217,7 @@ export function AdminDailyWrap() {
       <AdminCard title="Publish New Daily Wrap">
         <Field label="Date"><TextInput value={date} onChange={setDate} placeholder="Monday, April 7, 2026" /></Field>
         <Field label="Headline"><TextInput value={headline} onChange={setHeadline} placeholder="Wrap headline..." /></Field>
-        <Field label="Summary"><TextArea value={summary} onChange={setSummary} placeholder="Summary paragraph..." /></Field>
+        <Field label="Summary"><TextArea value={summary} onChange={setSummary} placeholder="Summary paragraph..." rows={5} /></Field>
         <Field label="Catalysts (one per line)"><TextArea value={catalysts} onChange={setCatalysts} placeholder="Catalyst one" rows={4} /></Field>
         <SaveButton onClick={publish} loading={loading} label="Publish" />
       </AdminCard>
@@ -210,13 +227,21 @@ export function AdminDailyWrap() {
 }
 
 export function AdminDominoTheory() {
-  const [dominoes, setDominoes] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(null)
-  const [toast, setToast] = useState({ message: '', type: '' })
+  var dominoesState = useState([])
+  var dominoes = dominoesState[0]
+  var setDominoes = dominoesState[1]
+  var loadingState = useState(true)
+  var loading = loadingState[0]
+  var setLoading = loadingState[1]
+  var savingState = useState(null)
+  var saving = savingState[0]
+  var setSaving = savingState[1]
+  var toastState = useState({ message: '', type: '' })
+  var toast = toastState[0]
+  var setToast = toastState[1]
 
   function showToast(message, type) {
-    setToast({ message, type: type || 'success' })
+    setToast({ message: message, type: type || 'success' })
     setTimeout(function() { setToast({ message: '', type: '' }) }, 3000)
   }
 
@@ -229,77 +254,86 @@ export function AdminDominoTheory() {
 
   function updateField(id, field, value) {
     setDominoes(function(prev) {
-      return prev.map(function(d) { return d.id === id ? Object.assign({}, d, { [field]: value }) : d })
+      return prev.map(function(d) {
+        if (d.id === id) { var u = Object.assign({}, d); u[field] = value; return u }
+        return d
+      })
     })
   }
 
   async function save(domino) {
     setSaving(domino.id)
-    const { error } = await supabase.from('domino_theory').update({ status: domino.status, assessment: domino.assessment }).eq('id', domino.id)
+    var result = await supabase.from('domino_theory').update({ status: domino.status, assessment: domino.assessment }).eq('id', domino.id)
     setSaving(null)
-    if (error) return showToast('Error: ' + error.message, 'error')
+    if (result.error) { showToast('Error: ' + result.error.message, 'error'); return }
     showToast(domino.name + ' saved!', 'success')
   }
 
   return (
     <AdminLayout title="Domino Theory">
-      {loading ? (
-        <p style={{ color: '#6b7a96' }}>Loading...</p>
-      ) : (
-        dominoes.map(function(d) {
-          return (
-            <AdminCard key={d.id} title={'Domino ' + d.order_index + ' — ' + d.name}>
-              <Field label="Status">
-                <select
-                  value={d.status}
-                  onChange={function(e) { updateField(d.id, 'status', e.target.value) }}
-                  className="w-full px-3 py-2.5 rounded-lg text-sm outline-none"
-                  style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}
-                >
-                  <option value="standing">Standing</option>
-                  <option value="tipping">Tipping</option>
-                  <option value="fallen">Fallen</option>
-                </select>
-              </Field>
-              <Field label="Assessment Notes">
-                <TextArea value={d.assessment || ''} onChange={function(v) { updateField(d.id, 'assessment', v) }} placeholder="Assessment notes..." rows={3} />
-              </Field>
-              <SaveButton onClick={function() { save(d) }} loading={saving === d.id} label="Save" />
-            </AdminCard>
-          )
-        })
-      )}
+      {loading ? (<p style={{ color: '#6b7a96' }}>Loading...</p>) : dominoes.map(function(d) {
+        return (
+          <AdminCard key={d.id} title={'Domino ' + d.order_index + ' — ' + d.name}>
+            <Field label="Status">
+              <select
+                value={d.status}
+                onChange={function(e) { updateField(d.id, 'status', e.target.value) }}
+                className="w-full px-3 py-2.5 rounded-lg text-sm outline-none"
+                style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}
+              >
+                <option value="standing">Standing</option>
+                <option value="tipping">Tipping</option>
+                <option value="fallen">Fallen</option>
+              </select>
+            </Field>
+            <Field label="Assessment Notes">
+              <TextArea value={d.assessment || ''} onChange={function(v) { updateField(d.id, 'assessment', v) }} placeholder="Assessment notes..." rows={3} />
+            </Field>
+            <SaveButton onClick={function() { save(d) }} loading={saving === d.id} label="Save" />
+          </AdminCard>
+        )
+      })}
       <Toast message={toast.message} type={toast.type} />
     </AdminLayout>
   )
 }
 
 export function AdminHeadlines() {
-  const [headlines, setHeadlines] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [form, setForm] = useState({ headline: '', source: '', category: '', url: '' })
-  const [saving, setSaving] = useState(false)
-  const [toast, setToast] = useState({ message: '', type: '' })
+  var headlinesState = useState([])
+  var headlines = headlinesState[0]
+  var setHeadlines = headlinesState[1]
+  var loadingState = useState(true)
+  var loading = loadingState[0]
+  var setLoading = loadingState[1]
+  var formState = useState({ headline: '', source: '', category: '', url: '' })
+  var form = formState[0]
+  var setForm = formState[1]
+  var savingState = useState(false)
+  var saving = savingState[0]
+  var setSaving = savingState[1]
+  var toastState = useState({ message: '', type: '' })
+  var toast = toastState[0]
+  var setToast = toastState[1]
 
   function showToast(message, type) {
-    setToast({ message, type: type || 'success' })
+    setToast({ message: message, type: type || 'success' })
     setTimeout(function() { setToast({ message: '', type: '' }) }, 3000)
   }
 
   async function load() {
-    const { data } = await supabase.from('top_headlines').select('*').order('created_at', { ascending: false }).limit(20)
-    if (data) setHeadlines(data)
+    var res = await supabase.from('top_headlines').select('*').order('created_at', { ascending: false }).limit(20)
+    if (res.data) setHeadlines(res.data)
     setLoading(false)
   }
 
   useEffect(function() { load() }, [])
 
   async function add() {
-    if (!form.headline || !form.source) return showToast('Headline and source are required.', 'error')
+    if (!form.headline || !form.source) { showToast('Headline and source are required.', 'error'); return }
     setSaving(true)
-    const { error } = await supabase.from('top_headlines').insert(form)
+    var result = await supabase.from('top_headlines').insert(form)
     setSaving(false)
-    if (error) return showToast('Error: ' + error.message, 'error')
+    if (result.error) { showToast('Error: ' + result.error.message, 'error'); return }
     showToast('Headline added!', 'success')
     setForm({ headline: '', source: '', category: '', url: '' })
     load()
@@ -321,7 +355,7 @@ export function AdminHeadlines() {
         <SaveButton onClick={add} loading={saving} label="Add Headline" />
       </AdminCard>
       <AdminCard title="Current Headlines">
-        {loading ? <p style={{ color: '#6b7a96' }}>Loading...</p> : headlines.length === 0 ? <p style={{ color: '#6b7a96' }}>No headlines yet.</p> : (
+        {loading ? (<p style={{ color: '#6b7a96' }}>Loading...</p>) : headlines.length === 0 ? (<p style={{ color: '#6b7a96' }}>No headlines yet.</p>) : (
           <div className="space-y-2">
             {headlines.map(function(h) {
               return (
@@ -343,31 +377,41 @@ export function AdminHeadlines() {
 }
 
 export function AdminWatchlist() {
-  const [symbols, setSymbols] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [form, setForm] = useState({ symbol: '', name: '', category: '' })
-  const [saving, setSaving] = useState(false)
-  const [toast, setToast] = useState({ message: '', type: '' })
+  var symbolsState = useState([])
+  var symbols = symbolsState[0]
+  var setSymbols = symbolsState[1]
+  var loadingState = useState(true)
+  var loading = loadingState[0]
+  var setLoading = loadingState[1]
+  var formState = useState({ symbol: '', name: '', category: '' })
+  var form = formState[0]
+  var setForm = formState[1]
+  var savingState = useState(false)
+  var saving = savingState[0]
+  var setSaving = savingState[1]
+  var toastState = useState({ message: '', type: '' })
+  var toast = toastState[0]
+  var setToast = toastState[1]
 
   function showToast(message, type) {
-    setToast({ message, type: type || 'success' })
+    setToast({ message: message, type: type || 'success' })
     setTimeout(function() { setToast({ message: '', type: '' }) }, 3000)
   }
 
   async function load() {
-    const { data } = await supabase.from('master_watchlist').select('*').order('symbol')
-    if (data) setSymbols(data)
+    var res = await supabase.from('master_watchlist').select('*').order('symbol')
+    if (res.data) setSymbols(res.data)
     setLoading(false)
   }
 
   useEffect(function() { load() }, [])
 
   async function add() {
-    if (!form.symbol) return showToast('Symbol is required.', 'error')
+    if (!form.symbol) { showToast('Symbol is required.', 'error'); return }
     setSaving(true)
-    const { error } = await supabase.from('master_watchlist').insert(Object.assign({}, form, { symbol: form.symbol.toUpperCase() }))
+    var result = await supabase.from('master_watchlist').insert(Object.assign({}, form, { symbol: form.symbol.toUpperCase() }))
     setSaving(false)
-    if (error) return showToast('Error: ' + error.message, 'error')
+    if (result.error) { showToast('Error: ' + result.error.message, 'error'); return }
     showToast('Symbol added!', 'success')
     setForm({ symbol: '', name: '', category: '' })
     load()
@@ -388,7 +432,7 @@ export function AdminWatchlist() {
         <SaveButton onClick={add} loading={saving} label="Add Symbol" />
       </AdminCard>
       <AdminCard title="Current Symbols">
-        {loading ? <p style={{ color: '#6b7a96' }}>Loading...</p> : symbols.length === 0 ? <p style={{ color: '#6b7a96' }}>No symbols yet.</p> : (
+        {loading ? (<p style={{ color: '#6b7a96' }}>Loading...</p>) : symbols.length === 0 ? (<p style={{ color: '#6b7a96' }}>No symbols yet.</p>) : (
           <div className="space-y-2">
             {symbols.map(function(s) {
               return (
@@ -411,18 +455,24 @@ export function AdminWatchlist() {
 }
 
 export function AdminChatter() {
-  const [posts, setPosts] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [toast, setToast] = useState({ message: '', type: '' })
+  var postsState = useState([])
+  var posts = postsState[0]
+  var setPosts = postsState[1]
+  var loadingState = useState(true)
+  var loading = loadingState[0]
+  var setLoading = loadingState[1]
+  var toastState = useState({ message: '', type: '' })
+  var toast = toastState[0]
+  var setToast = toastState[1]
 
   function showToast(message, type) {
-    setToast({ message, type: type || 'success' })
+    setToast({ message: message, type: type || 'success' })
     setTimeout(function() { setToast({ message: '', type: '' }) }, 3000)
   }
 
   async function load() {
-    const { data } = await supabase.from('market_chatter').select('*').order('created_at', { ascending: false }).limit(50)
-    if (data) setPosts(data)
+    var res = await supabase.from('market_chatter').select('*').order('created_at', { ascending: false }).limit(50)
+    if (res.data) setPosts(res.data)
     setLoading(false)
   }
 
@@ -449,18 +499,18 @@ export function AdminChatter() {
   return (
     <AdminLayout title="Market Chatter Moderation">
       <AdminCard title="Recent Posts">
-        {loading ? <p style={{ color: '#6b7a96' }}>Loading...</p> : posts.length === 0 ? <p style={{ color: '#6b7a96' }}>No posts yet.</p> : (
+        {loading ? (<p style={{ color: '#6b7a96' }}>Loading...</p>) : posts.length === 0 ? (<p style={{ color: '#6b7a96' }}>No posts yet.</p>) : (
           <div className="space-y-3">
             {posts.map(function(p) {
               return (
                 <div key={p.id} className="rounded-lg p-4" style={{ background: '#111318', border: '1px solid ' + (p.flagged ? 'rgba(239,68,68,0.3)' : '#1e2330') }}>
                   <p className="text-xs mb-1" style={{ color: '#6b7a96' }}>{p.user_id} · {new Date(p.created_at).toLocaleString()}</p>
                   <p className="text-sm mb-2" style={{ color: '#eceef5' }}>{p.content}</p>
-                  {p.flagged && <span className="text-xs px-2 py-0.5 rounded" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>Flagged</span>}
+                  {p.flagged && (<span className="text-xs px-2 py-0.5 rounded" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>Flagged</span>)}
                   <div className="flex gap-2 flex-wrap mt-2">
                     <button onClick={function() { warn(p) }} className="text-xs px-3 py-1.5 rounded" style={{ background: 'rgba(234,179,8,0.1)', color: '#eab308' }}>Warn</button>
                     <button onClick={function() { remove(p.id) }} className="text-xs px-3 py-1.5 rounded" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>Remove Post</button>
-                    <button onClick={function() { ban(p.user_id) }} className="text-xs px-3 py-1.5 rounded" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', fontWeight: 600 }}>Ban User</button>
+                    <button onClick={function() { ban(p.user_id) }} className="text-xs px-3 py-1.5 rounded" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444' }}>Ban User</button>
                   </div>
                 </div>
               )
@@ -474,21 +524,27 @@ export function AdminChatter() {
 }
 
 export function AdminETFFlows() {
-  const [form, setForm] = useState({ date: '', net_flow: '', total_aum: '', institutions: '', notes: '' })
-  const [saving, setSaving] = useState(false)
-  const [toast, setToast] = useState({ message: '', type: '' })
+  var formState = useState({ date: '', net_flow: '', total_aum: '', institutions: '', notes: '' })
+  var form = formState[0]
+  var setForm = formState[1]
+  var savingState = useState(false)
+  var saving = savingState[0]
+  var setSaving = savingState[1]
+  var toastState = useState({ message: '', type: '' })
+  var toast = toastState[0]
+  var setToast = toastState[1]
 
   function showToast(message, type) {
-    setToast({ message, type: type || 'success' })
+    setToast({ message: message, type: type || 'success' })
     setTimeout(function() { setToast({ message: '', type: '' }) }, 3000)
   }
 
   async function save() {
-    if (!form.date) return showToast('Date is required.', 'error')
+    if (!form.date) { showToast('Date is required.', 'error'); return }
     setSaving(true)
-    const { error } = await supabase.from('xrp_etf_flows').insert(form)
+    var result = await supabase.from('xrp_etf_flows').insert(form)
     setSaving(false)
-    if (error) return showToast('Error: ' + error.message, 'error')
+    if (result.error) { showToast('Error: ' + result.error.message, 'error'); return }
     showToast('ETF flow data saved!', 'success')
     setForm({ date: '', net_flow: '', total_aum: '', institutions: '', notes: '' })
   }
