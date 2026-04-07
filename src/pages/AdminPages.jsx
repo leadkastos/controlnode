@@ -91,14 +91,14 @@ function Toast({ message, type }) {
 
 // ─── ADMIN HOME ───────────────────────────────────────────────────────────────
 export function Admin() {
-  const links = [
-    { label: 'Morning Brief', route: '/admin/morning-brief', desc: 'Publish today\'s morning brief' },
-    { label: 'Daily Wrap', route: '/admin/daily-wrap', desc: 'Publish today\'s daily wrap' },
-    { label: 'Domino Theory', route: '/admin/domino-theory', desc: 'Update domino statuses and notes' },
-    { label: 'Top Headlines', route: '/admin/headlines', desc: 'Manage headline feed' },
-    { label: 'Master Watchlist', route: '/admin/watchlist', desc: 'Manage suggested symbols' },
-    { label: 'Market Chatter', route: '/admin/chatter', desc: 'Moderate member posts' },
-    { label: 'XRP ETF Flows', route: '/admin/etf-flows', desc: 'Manual override for ETF flow data' },
+const links = [
+    { label: 'Morning Brief', route: '/admin/morning-brief', desc: "Publish today's morning brief" },
+    { label: 'Daily Wrap', route: '/admin/daily-wrap', desc: "Publish today's daily wrap" },
+    { label: 'Domino Theory', route: '/admin/domino-theory', desc: "Update domino statuses and notes" },
+    { label: 'Top Headlines', route: '/admin/headlines', desc: "Manage headline feed" },
+    { label: 'Master Watchlist', route: '/admin/watchlist', desc: "Manage suggested symbols" },
+    { label: 'Market Chatter', route: '/admin/chatter', desc: "Moderate member posts" },
+    { label: 'XRP ETF Flows', route: '/admin/etf-flows', desc: "Manual override for ETF flow data" },
   ]
   return (
     <AdminLayout title="Admin Panel">
