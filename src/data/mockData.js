@@ -89,6 +89,17 @@ export const morningBriefSnippet = {
   ],
 }
 
+export const dailyWrapSnippet = {
+  date: 'Monday, March 23, 2026',
+  headline: 'Markets Close Mixed — XRP Holds Structure Into the Bell',
+  snippet: 'A choppy session ended with XRP retaining its key reference zone. Bond markets reacted to BOJ commentary, and ETF flow data showed continued institutional interest despite the risk-off tone.',
+  catalysts: [
+    'XRP closed at $2.28 — held above $2.18 reference zone for third consecutive session',
+    'Japan 10Y yield ticked up to 0.91% — BOJ credibility watch continues',
+    'XRP ETF net flows positive for the week despite broader crypto selloff',
+  ],
+}
+
 export const dashboardCards = [
   {
     id: 'xrp-price',
