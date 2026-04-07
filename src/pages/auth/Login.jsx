@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 
@@ -7,8 +7,12 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const { signIn } = useAuth()
+  const { signIn, user } = useAuth()
   const navigate = useNavigate()
+
+  useEffect(() => {
+    if (user) navigate('/dashboard', { replace: true })
+  }, [user, navigate])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -16,7 +20,7 @@ export default function Login() {
     setLoading(true)
     const { error } = await signIn(email, password)
     if (error) { setError(error.message); setLoading(false) }
-    else navigate('/dashboard')
+    else navigate('/dashboard', { replace: true })
   }
 
   return (
@@ -41,7 +45,10 @@ export default function Login() {
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
-          <p className="text-center text-gray-400 text-sm mt-6">
+          <div className="text-center mt-4">
+            <Link to="/forgot-password" className="text-sm text-gray-500 hover:text-yellow-500 transition-colors">Forgot your password?</Link>
+          </div>
+          <p className="text-center text-gray-400 text-sm mt-3">
             Don't have an account? <Link to="/signup" className="text-yellow-500 hover:text-yellow-400">Start free trial</Link>
           </p>
         </div>
