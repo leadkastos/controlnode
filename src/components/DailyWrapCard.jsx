@@ -6,7 +6,7 @@ export default function DailyWrapCard() {
   const nav = useNavigate()
   return (
     <div
-      className="relative rounded-xl p-5 lg:p-6 overflow-hidden cursor-pointer"
+      className="relative rounded-xl p-5 lg:p-6 overflow-hidden cursor-pointer h-full"
       style={{
         background: 'linear-gradient(135deg, #0f1724 0%, #111827 40%, #0d1520 100%)',
         border: '1px solid rgba(139,92,246,0.3)',
