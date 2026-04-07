@@ -89,7 +89,6 @@ function Toast({ message, type }) {
   )
 }
 
-export function Admin() {
  export function Admin() {
   return (
     <AdminLayout title="Admin Panel">
