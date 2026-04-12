@@ -1,8 +1,10 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import AppLayout from '../components/AppLayout'
 import DetailPageLayout, { DetailSection } from '../components/DetailPageLayout'
 import { Badge } from '../components/UI'
 import { ExternalLink } from 'lucide-react'
+
+const CRYPTOCOMPARE_KEY = import.meta.env.VITE_CRYPTOCOMPARE_API_KEY
 
 const headlines = [
   { source: 'Reuters', headline: 'SEC Drops Final XRP Lawsuit Appeal — Ripple Fully Cleared to Operate', time: '2 hrs ago', category: 'Regulatory', url: '#', confirmed: true },
@@ -31,6 +33,97 @@ const categoryColors = {
   Institutional: { bg: 'rgba(16,185,129,0.12)', text: '#10b981' },
 }
 
+function SentimentSection() {
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(function() {
+    fetch('https://min-api.cryptocompare.com/data/social/coin/latest?coinId=5031&api_key=' + CRYPTOCOMPARE_KEY)
+      .then(function(r) { return r.json() })
+      .then(function(json) {
+        if (json && json.Data) setData(json.Data)
+        setLoading(false)
+      })
+      .catch(function() { setLoading(false) })
+  }, [])
+
+  function formatNum(n) {
+    if (!n) return '—'
+    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M'
+    if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K'
+    return n.toString()
+  }
+
+  return (
+    <DetailSection title="XRP Social Sentiment">
+      <div
+        className="rounded-lg px-4 py-3 mb-4 text-xs leading-relaxed"
+        style={{ background: 'rgba(16,185,129,0.07)', border: '1px solid rgba(16,185,129,0.15)', color: '#9aa8be' }}
+      >
+        <span style={{ color: '#10b981', fontWeight: 600 }}>What is this? </span>
+        Live social activity data for XRP across Reddit and Twitter. High mention volume often precedes price movement. Sourced from CryptoCompare.
+      </div>
+      {loading ? (
+        <p style={{ color: '#6b7a96' }}>Loading sentiment data...</p>
+      ) : !data ? (
+        <p style={{ color: '#6b7a96' }}>Sentiment data unavailable.</p>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {data.Reddit && (
+            <div className="rounded-lg p-4" style={{ background: '#111318', border: '1px solid #1e2330' }}>
+              <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#6b7a96' }}>Reddit</p>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-xs" style={{ color: '#9aa8be' }}>Subscribers</span>
+                  <span className="text-xs font-mono" style={{ color: '#eceef5' }}>{formatNum(data.Reddit.subscribers)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-xs" style={{ color: '#9aa8be' }}>Active Users</span>
+                  <span className="text-xs font-mono" style={{ color: '#eceef5' }}>{formatNum(data.Reddit.active_users)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-xs" style={{ color: '#9aa8be' }}>Posts (24h)</span>
+                  <span className="text-xs font-mono" style={{ color: '#eceef5' }}>{formatNum(data.Reddit.posts_per_day)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-xs" style={{ color: '#9aa8be' }}>Comments (24h)</span>
+                  <span className="text-xs font-mono" style={{ color: '#eceef5' }}>{formatNum(data.Reddit.comments_per_day)}</span>
+                </div>
+              </div>
+            </div>
+          )}
+          {data.Twitter && (
+            <div className="rounded-lg p-4" style={{ background: '#111318', border: '1px solid #1e2330' }}>
+              <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#6b7a96' }}>X (Twitter)</p>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-xs" style={{ color: '#9aa8be' }}>Followers</span>
+                  <span className="text-xs font-mono" style={{ color: '#eceef5' }}>{formatNum(data.Twitter.followers)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-xs" style={{ color: '#9aa8be' }}>Statuses</span>
+                  <span className="text-xs font-mono" style={{ color: '#eceef5' }}>{formatNum(data.Twitter.statuses)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-xs" style={{ color: '#9aa8be' }}>Favourites</span>
+                  <span className="text-xs font-mono" style={{ color: '#eceef5' }}>{formatNum(data.Twitter.favourites)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-xs" style={{ color: '#9aa8be' }}>Following</span>
+                  <span className="text-xs font-mono" style={{ color: '#eceef5' }}>{formatNum(data.Twitter.following)}</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+      <p className="text-xs mt-3" style={{ color: '#6b7a96' }}>
+        Source: CryptoCompare · For informational purposes only.
+      </p>
+    </DetailSection>
+  )
+}
+
 export default function MediaNarratives() {
   return (
     <AppLayout>
@@ -40,12 +133,14 @@ export default function MediaNarratives() {
         badge="LAST 48 HOURS"
         badgeColor="blue"
       >
+        <SentimentSection />
+
         <DetailSection title="Top Headlines">
           <div className="space-y-1">
             {headlines.map((item, i) => {
               const cat = categoryColors[item.category] || categoryColors['XRP']
               return (
-                <a
+                
                   key={i}
                   href={item.url}
                   target="_blank"
