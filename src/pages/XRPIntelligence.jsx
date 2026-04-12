@@ -3,83 +3,61 @@ import AppLayout from '../components/AppLayout'
 import DetailPageLayout, { DetailSection, DataRow, BulletList } from '../components/DetailPageLayout'
 import { Badge } from '../components/UI'
 
-const COINGLASS_KEY = import.meta.env.VITE_COINGLASS_API_KEY
-
 function MarketPositioningSection() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
 
   useEffect(function() {
-    async function fetchData() {
-      try {
-        const res = await fetch('https://open-api.coinglass.com/public/v2/indicator/open_interest?symbol=XRP&interval=0', {
-          headers: { 'coinglassSecret': COINGLASS_KEY }
-        })
-        const json = await res.json()
-        if (json && json.data) {
-          setData(json.data)
-        } else {
-          setError(true)
-        }
-      } catch(e) {
-        setError(true)
-      }
-      setLoading(false)
-    }
-    fetchData()
+    fetch('https://api.coingecko.com/api/v3/coins/ripple?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false')
+      .then(function(r) { return r.json() })
+      .then(function(json) {
+        if (json && json.market_data) setData(json.market_data)
+        setLoading(false)
+      })
+      .catch(function() { setLoading(false) })
   }, [])
 
   const fmt = function(n) {
     if (!n) return '—'
     if (Math.abs(n) >= 1e9) return '$' + (n/1e9).toFixed(2) + 'B'
     if (Math.abs(n) >= 1e6) return '$' + (n/1e6).toFixed(0) + 'M'
-    return '$' + n
+    return '$' + n.toFixed(2)
   }
 
   return (
-    <DetailSection title="Market Positioning">
+    <DetailSection title="Live Market Data">
       <div
         className="rounded-lg px-4 py-3 mb-4 text-xs leading-relaxed"
         style={{ background: 'rgba(139,92,246,0.07)', border: '1px solid rgba(139,92,246,0.15)', color: '#9aa8be' }}
       >
-        <span style={{ color: '#8b5cf6', fontWeight: 600 }}>What is this? </span>
-        Open interest shows how much money is currently bet on XRP futures contracts. Long/short ratio shows whether traders are positioned for price to go up or down. Data sourced from CoinGlass.
+        <span style={{ color: '#8b5cf6', fontWeight: 600 }}>Live data: </span>
+        Real-time XRP market data including price, volume, market cap, and price changes. Sourced from CoinGecko.
       </div>
       {loading ? (
-        <p style={{ color: '#6b7a96' }}>Loading positioning data...</p>
-      ) : error ? (
-        <div className="space-y-0">
-          <DataRow label="Open Interest" value="Data unavailable" />
-          <DataRow label="Long/Short Ratio" value="Data unavailable" />
-          <DataRow label="Source" value="CoinGlass" />
-        </div>
+        <p style={{ color: '#6b7a96' }}>Loading market data...</p>
+      ) : !data ? (
+        <p style={{ color: '#6b7a96' }}>Data unavailable.</p>
       ) : (
         <div className="space-y-0">
-          {data.openInterest && <DataRow label="Total Open Interest" value={fmt(data.openInterest)} />}
-          {data.longRate && data.shortRate && (
-            <>
-              <DataRow
-                label="Long Positions"
-                value={data.longRate + '%'}
-                valueColor="#10b981"
-              />
-              <DataRow
-                label="Short Positions"
-                value={data.shortRate + '%'}
-                valueColor="#ef4444"
-              />
-              <DataRow
-                label="Market Bias"
-                value={parseFloat(data.longRate) > 55 ? 'Bullish Lean' : parseFloat(data.shortRate) > 55 ? 'Bearish Lean' : 'Neutral'}
-                valueColor={parseFloat(data.longRate) > 55 ? '#10b981' : parseFloat(data.shortRate) > 55 ? '#ef4444' : '#f59e0b'}
-              />
-            </>
-          )}
+          <DataRow label="Current Price" value={fmt(data.current_price?.usd)} valueColor="#eceef5" />
+          <DataRow
+            label="24h Change"
+            value={(data.price_change_percentage_24h >= 0 ? '+' : '') + data.price_change_percentage_24h?.toFixed(2) + '%'}
+            valueColor={data.price_change_percentage_24h >= 0 ? '#10b981' : '#ef4444'}
+          />
+          <DataRow
+            label="7d Change"
+            value={(data.price_change_percentage_7d >= 0 ? '+' : '') + data.price_change_percentage_7d?.toFixed(2) + '%'}
+            valueColor={data.price_change_percentage_7d >= 0 ? '#10b981' : '#ef4444'}
+          />
+          <DataRow label="Market Cap" value={fmt(data.market_cap?.usd)} />
+          <DataRow label="24h Volume" value={fmt(data.total_volume?.usd)} />
+          <DataRow label="Circulating Supply" value={data.circulating_supply ? (data.circulating_supply / 1e9).toFixed(2) + 'B XRP' : '—'} />
+          <DataRow label="All Time High" value={fmt(data.ath?.usd)} />
         </div>
       )}
       <p className="text-xs mt-3" style={{ color: '#6b7a96' }}>
-        Source: CoinGlass · Updates every 15 minutes · For informational purposes only.
+        Source: CoinGecko · Live data · For informational purposes only.
       </p>
     </DetailSection>
   )
