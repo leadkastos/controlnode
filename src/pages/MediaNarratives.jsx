@@ -56,10 +56,7 @@ function SentimentSection() {
 
   return (
     <DetailSection title="XRP Social Sentiment">
-      <div
-        className="rounded-lg px-4 py-3 mb-4 text-xs leading-relaxed"
-        style={{ background: 'rgba(16,185,129,0.07)', border: '1px solid rgba(16,185,129,0.15)', color: '#9aa8be' }}
-      >
+      <div className="rounded-lg px-4 py-3 mb-4 text-xs leading-relaxed" style={{ background: 'rgba(16,185,129,0.07)', border: '1px solid rgba(16,185,129,0.15)', color: '#9aa8be' }}>
         <span style={{ color: '#10b981', fontWeight: 600 }}>What is this? </span>
         Live social activity data for XRP across Reddit and Twitter. High mention volume often precedes price movement. Sourced from CryptoCompare.
       </div>
@@ -73,22 +70,10 @@ function SentimentSection() {
             <div className="rounded-lg p-4" style={{ background: '#111318', border: '1px solid #1e2330' }}>
               <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#6b7a96' }}>Reddit</p>
               <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-xs" style={{ color: '#9aa8be' }}>Subscribers</span>
-                  <span className="text-xs font-mono" style={{ color: '#eceef5' }}>{formatNum(data.Reddit.subscribers)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-xs" style={{ color: '#9aa8be' }}>Active Users</span>
-                  <span className="text-xs font-mono" style={{ color: '#eceef5' }}>{formatNum(data.Reddit.active_users)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-xs" style={{ color: '#9aa8be' }}>Posts (24h)</span>
-                  <span className="text-xs font-mono" style={{ color: '#eceef5' }}>{formatNum(data.Reddit.posts_per_day)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-xs" style={{ color: '#9aa8be' }}>Comments (24h)</span>
-                  <span className="text-xs font-mono" style={{ color: '#eceef5' }}>{formatNum(data.Reddit.comments_per_day)}</span>
-                </div>
+                <div className="flex justify-between"><span className="text-xs" style={{ color: '#9aa8be' }}>Subscribers</span><span className="text-xs font-mono" style={{ color: '#eceef5' }}>{formatNum(data.Reddit.subscribers)}</span></div>
+                <div className="flex justify-between"><span className="text-xs" style={{ color: '#9aa8be' }}>Active Users</span><span className="text-xs font-mono" style={{ color: '#eceef5' }}>{formatNum(data.Reddit.active_users)}</span></div>
+                <div className="flex justify-between"><span className="text-xs" style={{ color: '#9aa8be' }}>Posts (24h)</span><span className="text-xs font-mono" style={{ color: '#eceef5' }}>{formatNum(data.Reddit.posts_per_day)}</span></div>
+                <div className="flex justify-between"><span className="text-xs" style={{ color: '#9aa8be' }}>Comments (24h)</span><span className="text-xs font-mono" style={{ color: '#eceef5' }}>{formatNum(data.Reddit.comments_per_day)}</span></div>
               </div>
             </div>
           )}
@@ -96,30 +81,16 @@ function SentimentSection() {
             <div className="rounded-lg p-4" style={{ background: '#111318', border: '1px solid #1e2330' }}>
               <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#6b7a96' }}>X (Twitter)</p>
               <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-xs" style={{ color: '#9aa8be' }}>Followers</span>
-                  <span className="text-xs font-mono" style={{ color: '#eceef5' }}>{formatNum(data.Twitter.followers)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-xs" style={{ color: '#9aa8be' }}>Statuses</span>
-                  <span className="text-xs font-mono" style={{ color: '#eceef5' }}>{formatNum(data.Twitter.statuses)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-xs" style={{ color: '#9aa8be' }}>Favourites</span>
-                  <span className="text-xs font-mono" style={{ color: '#eceef5' }}>{formatNum(data.Twitter.favourites)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-xs" style={{ color: '#9aa8be' }}>Following</span>
-                  <span className="text-xs font-mono" style={{ color: '#eceef5' }}>{formatNum(data.Twitter.following)}</span>
-                </div>
+                <div className="flex justify-between"><span className="text-xs" style={{ color: '#9aa8be' }}>Followers</span><span className="text-xs font-mono" style={{ color: '#eceef5' }}>{formatNum(data.Twitter.followers)}</span></div>
+                <div className="flex justify-between"><span className="text-xs" style={{ color: '#9aa8be' }}>Statuses</span><span className="text-xs font-mono" style={{ color: '#eceef5' }}>{formatNum(data.Twitter.statuses)}</span></div>
+                <div className="flex justify-between"><span className="text-xs" style={{ color: '#9aa8be' }}>Favourites</span><span className="text-xs font-mono" style={{ color: '#eceef5' }}>{formatNum(data.Twitter.favourites)}</span></div>
+                <div className="flex justify-between"><span className="text-xs" style={{ color: '#9aa8be' }}>Following</span><span className="text-xs font-mono" style={{ color: '#eceef5' }}>{formatNum(data.Twitter.following)}</span></div>
               </div>
             </div>
           )}
         </div>
       )}
-      <p className="text-xs mt-3" style={{ color: '#6b7a96' }}>
-        Source: CryptoCompare · For informational purposes only.
-      </p>
+      <p className="text-xs mt-3" style={{ color: '#6b7a96' }}>Source: CryptoCompare · For informational purposes only.</p>
     </DetailSection>
   )
 }
@@ -127,47 +98,20 @@ function SentimentSection() {
 export default function MediaNarratives() {
   return (
     <AppLayout>
-      <DetailPageLayout
-        title="Media & Narratives"
-        subtitle="Top headlines from the last 48 hours — reputable sources only. For informational purposes only."
-        badge="LAST 48 HOURS"
-        badgeColor="blue"
-      >
+      <DetailPageLayout title="Media & Narratives" subtitle="Top headlines from the last 48 hours — reputable sources only. For informational purposes only." badge="LAST 48 HOURS" badgeColor="blue">
         <SentimentSection />
-
         <DetailSection title="Top Headlines">
           <div className="space-y-1">
-            {headlines.map((item, i) => {
+            {headlines.map(function(item, i) {
               const cat = categoryColors[item.category] || categoryColors['XRP']
               return (
-                
-                  key={i}
-                  href={item.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-start gap-3 px-4 py-3 rounded-lg transition-colors hover:bg-white/5 block"
-                  style={{ textDecoration: 'none', borderBottom: '1px solid #1e2330' }}
-                >
+                <a href={item.url} target="_blank" rel="noopener noreferrer" key={i} className="flex items-start gap-3 px-4 py-3 rounded-lg transition-colors hover:bg-white/5 block" style={{ textDecoration: 'none', borderBottom: '1px solid #1e2330' }}>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                      <span
-                        className="text-xs font-semibold px-2 py-0.5 rounded"
-                        style={{ background: cat.bg, color: cat.text }}
-                      >
-                        {item.category}
-                      </span>
-                      {!item.confirmed && (
-                        <span
-                          className="text-xs font-semibold px-2 py-0.5 rounded"
-                          style={{ background: 'rgba(239,68,68,0.12)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' }}
-                        >
-                          Unconfirmed
-                        </span>
-                      )}
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded" style={{ background: cat.bg, color: cat.text }}>{item.category}</span>
+                      {!item.confirmed && (<span className="text-xs font-semibold px-2 py-0.5 rounded" style={{ background: 'rgba(239,68,68,0.12)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' }}>Unconfirmed</span>)}
                     </div>
-                    <p className="text-sm leading-snug mb-1.5" style={{ color: '#eceef5' }}>
-                      {item.headline}
-                    </p>
+                    <p className="text-sm leading-snug mb-1.5" style={{ color: '#eceef5' }}>{item.headline}</p>
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-medium" style={{ color: '#3b82f6' }}>{item.source}</span>
                       <span className="text-xs" style={{ color: '#6b7a96' }}>{item.time}</span>
@@ -179,11 +123,7 @@ export default function MediaNarratives() {
             })}
           </div>
         </DetailSection>
-
-        <div
-          className="rounded-lg px-4 py-3 mt-2 text-xs text-center"
-          style={{ color: '#6b7a96' }}
-        >
+        <div className="rounded-lg px-4 py-3 mt-2 text-xs text-center" style={{ color: '#6b7a96' }}>
           Headlines sourced from Reuters, Bloomberg, WSJ, Financial Times, CoinDesk, The Block, Forbes, Decrypt, and official government sources only. Unconfirmed items are flagged in red — always verify independently.
         </div>
       </DetailPageLayout>
