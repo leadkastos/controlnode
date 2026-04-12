@@ -1,7 +1,89 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import AppLayout from '../components/AppLayout'
 import DetailPageLayout, { DetailSection, DataRow, BulletList } from '../components/DetailPageLayout'
 import { Badge } from '../components/UI'
+
+const COINGLASS_KEY = import.meta.env.VITE_COINGLASS_API_KEY
+
+function MarketPositioningSection() {
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
+
+  useEffect(function() {
+    async function fetchData() {
+      try {
+        const res = await fetch('https://open-api.coinglass.com/public/v2/indicator/open_interest?symbol=XRP&interval=0', {
+          headers: { 'coinglassSecret': COINGLASS_KEY }
+        })
+        const json = await res.json()
+        if (json && json.data) {
+          setData(json.data)
+        } else {
+          setError(true)
+        }
+      } catch(e) {
+        setError(true)
+      }
+      setLoading(false)
+    }
+    fetchData()
+  }, [])
+
+  const fmt = function(n) {
+    if (!n) return '—'
+    if (Math.abs(n) >= 1e9) return '$' + (n/1e9).toFixed(2) + 'B'
+    if (Math.abs(n) >= 1e6) return '$' + (n/1e6).toFixed(0) + 'M'
+    return '$' + n
+  }
+
+  return (
+    <DetailSection title="Market Positioning">
+      <div
+        className="rounded-lg px-4 py-3 mb-4 text-xs leading-relaxed"
+        style={{ background: 'rgba(139,92,246,0.07)', border: '1px solid rgba(139,92,246,0.15)', color: '#9aa8be' }}
+      >
+        <span style={{ color: '#8b5cf6', fontWeight: 600 }}>What is this? </span>
+        Open interest shows how much money is currently bet on XRP futures contracts. Long/short ratio shows whether traders are positioned for price to go up or down. Data sourced from CoinGlass.
+      </div>
+      {loading ? (
+        <p style={{ color: '#6b7a96' }}>Loading positioning data...</p>
+      ) : error ? (
+        <div className="space-y-0">
+          <DataRow label="Open Interest" value="Data unavailable" />
+          <DataRow label="Long/Short Ratio" value="Data unavailable" />
+          <DataRow label="Source" value="CoinGlass" />
+        </div>
+      ) : (
+        <div className="space-y-0">
+          {data.openInterest && <DataRow label="Total Open Interest" value={fmt(data.openInterest)} />}
+          {data.longRate && data.shortRate && (
+            <>
+              <DataRow
+                label="Long Positions"
+                value={data.longRate + '%'}
+                valueColor="#10b981"
+              />
+              <DataRow
+                label="Short Positions"
+                value={data.shortRate + '%'}
+                valueColor="#ef4444"
+              />
+              <DataRow
+                label="Market Bias"
+                value={parseFloat(data.longRate) > 55 ? 'Bullish Lean' : parseFloat(data.shortRate) > 55 ? 'Bearish Lean' : 'Neutral'}
+                valueColor={parseFloat(data.longRate) > 55 ? '#10b981' : parseFloat(data.shortRate) > 55 ? '#ef4444' : '#f59e0b'}
+              />
+            </>
+          )}
+        </div>
+      )}
+      <p className="text-xs mt-3" style={{ color: '#6b7a96' }}>
+        Source: CoinGlass · Updates every 15 minutes · For informational purposes only.
+      </p>
+    </DetailSection>
+  )
+}
 
 export default function XRPIntelligence() {
   return (
@@ -12,8 +94,6 @@ export default function XRPIntelligence() {
         badge="XRP FOCUS"
         badgeColor="blue"
       >
-
-        {/* Price & Technicals */}
         <DetailSection title="Price & Technical Structure">
           <div className="space-y-0">
             <DataRow label="Current Price" value="$2.31" valueColor="#e8eaf0" />
@@ -27,7 +107,6 @@ export default function XRPIntelligence() {
           </div>
         </DetailSection>
 
-        {/* Technical Levels */}
         <DetailSection title="Technical Reference Levels">
           <div className="space-y-0">
             <DataRow label="Lower Reference Zone" value="$2.05" />
@@ -41,28 +120,28 @@ export default function XRPIntelligence() {
           </p>
         </DetailSection>
 
-        {/* On-Chain */}
+        <MarketPositioningSection />
+
         <DetailSection title="On-Chain Observations">
           <div
             className="rounded-lg px-4 py-3 mb-4 text-xs leading-relaxed"
             style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.15)', color: '#9aa8be' }}
           >
             <span style={{ color: '#3b82f6', fontWeight: 600 }}>What is on-chain data? </span>
-            On-chain data refers to publicly recorded activity on the XRP Ledger blockchain itself — things like how many wallets are active, how much XRP is moving on exchanges, and how whales (large holders) are behaving. This data is sourced from the XRP Ledger directly and from analytics platforms like Santiment and Glassnode.
+            On-chain data refers to publicly recorded activity on the XRP Ledger blockchain itself — things like how many wallets are active, how much XRP is moving on exchanges, and how whales (large holders) are behaving.
           </div>
           <BulletList items={[
             'Exchange inflows declining — net outflow trend observed, consistent with longer-term holding behavior. (Source: XRP Ledger / Santiment)',
             'Large wallet addresses (holding 1M+ XRP) increased holdings by ~2.3% over the past 7 days. (Source: Glassnode)',
-            'ODL (On-Demand Liquidity) volume up 18% week-over-week — measures real-world XRP usage for cross-border payments. (Source: Ripple)',
-            'Active addresses: 380K/day — at 30-day high, indicating expanding network usage. (Source: XRP Ledger)',
-            'XRP in Ripple escrow: 39.4B — Ripple releases up to 1B XRP monthly per their public escrow schedule. (Source: Ripple)',
+            'ODL (On-Demand Liquidity) volume up 18% week-over-week. (Source: Ripple)',
+            'Active addresses: 380K/day — at 30-day high. (Source: XRP Ledger)',
+            'XRP in Ripple escrow: 39.4B XRP. (Source: Ripple)',
           ]} />
         </DetailSection>
 
-        {/* Ripple News */}
         <DetailSection title="Ripple News">
           <p className="text-xs mb-4" style={{ color: '#6b7a96' }}>
-            Latest Ripple corporate developments from reputable global news sources. Updated continuously.
+            Latest Ripple corporate developments from reputable global news sources.
           </p>
           <div className="space-y-3">
             {[
@@ -86,7 +165,6 @@ export default function XRPIntelligence() {
           </div>
         </DetailSection>
 
-        {/* XRP Market News */}
         <DetailSection title="XRP Market News">
           <p className="text-xs mb-4" style={{ color: '#6b7a96' }}>
             XRP price, market structure, and ecosystem news from reputable sources globally.
@@ -111,7 +189,6 @@ export default function XRPIntelligence() {
             ))}
           </div>
         </DetailSection>
-
       </DetailPageLayout>
     </AppLayout>
   )
