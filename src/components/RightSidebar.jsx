@@ -1,12 +1,18 @@
-import React from 'react'
-import { mockWatchlist, mockSignals, mockNewsFeed } from '../data/mockData'
+import React, { useState, useEffect } from 'react'
 import { TrendingUp, TrendingDown, ExternalLink } from 'lucide-react'
+import { supabase } from '../lib/supabase'
+import { useAuth } from '../contexts/AuthContext'
 
-const signalColors = {
-  green: { bg: 'rgba(16,185,129,0.12)', text: '#10b981' },
-  yellow: { bg: 'rgba(245,158,11,0.12)', text: '#f59e0b' },
-  red: { bg: 'rgba(239,68,68,0.12)', text: '#ef4444' },
+const COINGECKO_IDS = {
+  XRP: 'ripple', BTC: 'bitcoin', ETH: 'ethereum', SOL: 'solana',
+  XLM: 'stellar', HBAR: 'hedera-hashgraph', ADA: 'cardano',
+  DOT: 'polkadot', MATIC: 'matic-network', AVAX: 'avalanche-2',
+  LINK: 'chainlink', LTC: 'litecoin', DOGE: 'dogecoin',
+  SHIB: 'shiba-inu', TRX: 'tron', TON: 'the-open-network',
+  SUI: 'sui', APT: 'aptos', OP: 'optimism', ARB: 'arbitrum',
 }
+
+const DEFAULT_SYMBOLS = ['XRP', 'BTC', 'SOL', 'ETH', 'HBAR', 'XLM']
 
 const categoryColors = {
   Regulatory: { bg: 'rgba(139,92,246,0.12)', text: '#8b5cf6' },
@@ -16,44 +22,156 @@ const categoryColors = {
   Macro: { bg: 'rgba(239,68,68,0.12)', text: '#ef4444' },
   XRP: { bg: 'rgba(59,130,246,0.12)', text: '#3b82f6' },
   Ripple: { bg: 'rgba(139,92,246,0.12)', text: '#8b5cf6' },
+  Business: { bg: 'rgba(16,185,129,0.12)', text: '#10b981' },
+  Technology: { bg: 'rgba(6,182,212,0.12)', text: '#06b6d4' },
+}
+
+function fmt(n) {
+  if (n === null || n === undefined) return '—'
+  if (n >= 1000) return '$' + n.toLocaleString('en-US', { maximumFractionDigits: 0 })
+  if (n >= 1) return '$' + n.toFixed(2)
+  return '$' + n.toFixed(4)
+}
+
+function timeAgo(ts) {
+  const diff = Math.floor((Date.now() - ts * 1000) / 60000)
+  if (diff < 60) return diff + ' min ago'
+  if (diff < 1440) return Math.floor(diff / 60) + ' hrs ago'
+  return Math.floor(diff / 1440) + ' days ago'
+}
+
+const mockSignals = [
+  { label: 'XRP Momentum', value: 'Bullish', color: 'green' },
+  { label: 'BTC Dominance', value: 'Neutral', color: 'yellow' },
+  { label: 'Risk Appetite', value: 'Cautious', color: 'red' },
+]
+
+const signalColors = {
+  green: { bg: 'rgba(16,185,129,0.12)', text: '#10b981' },
+  yellow: { bg: 'rgba(245,158,11,0.12)', text: '#f59e0b' },
+  red: { bg: 'rgba(239,68,68,0.12)', text: '#ef4444' },
 }
 
 export default function RightSidebar() {
+  const { user } = useAuth()
+  const [symbols, setSymbols] = useState(DEFAULT_SYMBOLS)
+  const [prices, setPrices] = useState({})
+  const [news, setNews] = useState([])
+
+  // Load user watchlist from Supabase
+  useEffect(function () {
+    if (!user) return
+    async function loadWatchlist() {
+      const { data } = await supabase
+        .from('user_watchlist')
+        .select('symbol')
+        .eq('user_id', user.id)
+        .order('added_at', { ascending: true })
+      if (data && data.length > 0) {
+        setSymbols(data.map(function (d) { return d.symbol }))
+      }
+    }
+    loadWatchlist()
+  }, [user])
+
+  // Fetch live prices from CoinGecko
+  useEffect(function () {
+    if (symbols.length === 0) return
+    async function fetchPrices() {
+      const ids = symbols
+        .map(function (s) { return COINGECKO_IDS[s] })
+        .filter(Boolean)
+        .join(',')
+      if (!ids) return
+      try {
+        const res = await fetch(
+          `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`
+        )
+        const data = await res.json()
+        setPrices(data)
+      } catch (e) {
+        console.error('RightSidebar CoinGecko error:', e)
+      }
+    }
+    fetchPrices()
+    const interval = setInterval(fetchPrices, 60 * 1000)
+    return function () { clearInterval(interval) }
+  }, [symbols])
+
+  // Fetch live news from CryptoCompare
+  useEffect(function () {
+    async function fetchNews() {
+      try {
+        const key = import.meta.env.VITE_CRYPTOCOMPARE_API_KEY
+        const res = await fetch(
+          `https://min-api.cryptocompare.com/data/v2/news/?categories=XRP,Ripple,Regulation&excludeCategories=Sponsored&lang=EN&api_key=${key}`
+        )
+        const data = await res.json()
+        if (data?.Data) {
+          setNews(data.Data.slice(0, 6))
+        }
+      } catch (e) {
+        console.error('News fetch error:', e)
+      }
+    }
+    fetchNews()
+    const interval = setInterval(fetchNews, 5 * 60 * 1000)
+    return function () { clearInterval(interval) }
+  }, [])
+
+  function getCategoryColor(categories) {
+    if (!categories) return categoryColors['XRP']
+    const cats = categories.split('|')
+    for (const cat of cats) {
+      const trimmed = cat.trim()
+      if (categoryColors[trimmed]) return categoryColors[trimmed]
+    }
+    return categoryColors['XRP']
+  }
+
   return (
     <aside
       className="hidden lg:flex fixed right-0 top-0 h-screen w-64 flex-col z-30"
       style={{ background: '#0d0f14', borderLeft: '1px solid #1e2330' }}
     >
-      {/* Spacer for topbar height */}
       <div style={{ height: '56px', flexShrink: 0, borderBottom: '1px solid #1e2330' }} />
 
-      {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto py-4 px-4 space-y-5">
+
         {/* Watchlist */}
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#6b7a96' }}>
             Watchlist
           </p>
           <div className="space-y-1.5">
-            {mockWatchlist.map((item) => (
-              <div
-                key={item.symbol}
-                className="flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition-colors hover:bg-white/5"
-                style={{ background: '#161a22', border: '1px solid #1e2330' }}
-              >
-                <div className="flex items-center gap-2">
-                  {item.up
-                    ? <TrendingUp size={13} style={{ color: '#10b981' }} />
-                    : <TrendingDown size={13} style={{ color: '#ef4444' }} />
-                  }
-                  <span className="text-sm font-semibold" style={{ color: '#eceef5' }}>{item.symbol}</span>
+            {symbols.map(function (symbol) {
+              const cgId = COINGECKO_IDS[symbol]
+              const p = cgId ? prices[cgId] : null
+              const price = p?.usd ?? null
+              const change = p?.usd_24h_change ?? null
+              const up = (change ?? 0) >= 0
+              return (
+                <div
+                  key={symbol}
+                  className="flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition-colors hover:bg-white/5"
+                  style={{ background: '#161a22', border: '1px solid #1e2330' }}
+                >
+                  <div className="flex items-center gap-2">
+                    {up
+                      ? <TrendingUp size={13} style={{ color: '#10b981' }} />
+                      : <TrendingDown size={13} style={{ color: '#ef4444' }} />
+                    }
+                    <span className="text-sm font-semibold" style={{ color: '#eceef5' }}>{symbol}</span>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs font-medium" style={{ color: '#eceef5' }}>{fmt(price)}</p>
+                    <p className="text-xs" style={{ color: up ? '#10b981' : '#ef4444' }}>
+                      {change !== null ? (up ? '+' : '') + change.toFixed(2) + '%' : '—'}
+                    </p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-xs font-medium" style={{ color: '#eceef5' }}>{item.price}</p>
-                  <p className="text-xs" style={{ color: item.up ? '#10b981' : '#ef4444' }}>{item.change}</p>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
 
@@ -63,21 +181,23 @@ export default function RightSidebar() {
             Market Signals
           </p>
           <div className="space-y-2">
-            {mockSignals.map((s) => (
-              <div
-                key={s.label}
-                className="flex items-center justify-between px-3 py-2 rounded-lg"
-                style={{ background: '#161a22', border: '1px solid #1e2330' }}
-              >
-                <span className="text-xs" style={{ color: '#9aa8be' }}>{s.label}</span>
-                <span
-                  className="text-xs font-semibold px-2 py-0.5 rounded"
-                  style={{ background: signalColors[s.color].bg, color: signalColors[s.color].text }}
+            {mockSignals.map(function (s) {
+              return (
+                <div
+                  key={s.label}
+                  className="flex items-center justify-between px-3 py-2 rounded-lg"
+                  style={{ background: '#161a22', border: '1px solid #1e2330' }}
                 >
-                  {s.value}
-                </span>
-              </div>
-            ))}
+                  <span className="text-xs" style={{ color: '#9aa8be' }}>{s.label}</span>
+                  <span
+                    className="text-xs font-semibold px-2 py-0.5 rounded"
+                    style={{ background: signalColors[s.color].bg, color: signalColors[s.color].text }}
+                  >
+                    {s.value}
+                  </span>
+                </div>
+              )
+            })}
           </div>
         </div>
 
@@ -87,31 +207,47 @@ export default function RightSidebar() {
             News Feed
           </p>
           <div className="space-y-2">
-            {mockNewsFeed.map((item) => {
-              const cat = categoryColors[item.category] || categoryColors['XRP']
-              return (
-                <a
-                  key={item.id}
-                  href={item.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block px-3 py-3 rounded-lg transition-colors hover:bg-white/5"
-                  style={{ background: '#161a22', border: '1px solid #1e2330', textDecoration: 'none' }}
-                >
-                  <div className="flex items-center justify-between gap-1 mb-1.5">
-                    <span className="text-xs font-semibold px-1.5 py-0.5 rounded" style={{ background: cat.bg, color: cat.text }}>
-                      {item.category}
-                    </span>
-                    <ExternalLink size={10} style={{ color: '#6b7a96', flexShrink: 0 }} />
-                  </div>
-                  <p className="text-xs leading-snug mb-1" style={{ color: '#eceef5' }}>{item.headline}</p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium" style={{ color: '#3b82f6' }}>{item.source}</span>
-                    <span className="text-xs" style={{ color: '#6b7a96' }}>{item.time}</span>
-                  </div>
-                </a>
-              )
-            })}
+            {news.length === 0 ? (
+              <div className="space-y-2">
+                {[1, 2, 3].map(function (i) {
+                  return (
+                    <div key={i} className="px-3 py-3 rounded-lg" style={{ background: '#161a22', border: '1px solid #1e2330' }}>
+                      <div className="h-3 rounded animate-pulse mb-2" style={{ background: '#1e2330', width: '60%' }} />
+                      <div className="h-3 rounded animate-pulse mb-1" style={{ background: '#1e2330' }} />
+                      <div className="h-3 rounded animate-pulse" style={{ background: '#1e2330', width: '80%' }} />
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              news.map(function (item) {
+                const cat = getCategoryColor(item.categories)
+                const catLabel = (item.categories || 'XRP').split('|')[0].trim()
+                return (
+                  
+                    key={item.id}
+                    href={item.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block px-3 py-3 rounded-lg transition-colors hover:bg-white/5"
+                    style={{ background: '#161a22', border: '1px solid #1e2330', textDecoration: 'none' }}
+                  >
+                    <div className="flex items-center justify-between gap-1 mb-1.5">
+                      <span className="text-xs font-semibold px-1.5 py-0.5 rounded"
+                        style={{ background: cat.bg, color: cat.text }}>
+                        {catLabel}
+                      </span>
+                      <ExternalLink size={10} style={{ color: '#6b7a96', flexShrink: 0 }} />
+                    </div>
+                    <p className="text-xs leading-snug mb-1" style={{ color: '#eceef5' }}>{item.title}</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium" style={{ color: '#3b82f6' }}>{item.source_info?.name || item.source}</span>
+                      <span className="text-xs" style={{ color: '#6b7a96' }}>{timeAgo(item.published_on)}</span>
+                    </div>
+                  </a>
+                )
+              })
+            )}
           </div>
         </div>
 
