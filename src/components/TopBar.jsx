@@ -57,16 +57,11 @@ function fmt(val, prefix = '', suffix = '', decimals = 2) {
   return prefix + n.toFixed(decimals) + suffix
 }
 
-function chgColor(val) {
-  if (val === null || val === undefined) return '#9aa8be'
-  return parseFloat(val) >= 0 ? '#10b981' : '#ef4444'
-}
-
-function chgLabel(val, suffix = '%') {
+function chgLabel(val) {
   if (val === null || val === undefined) return '—'
   const n = parseFloat(val)
   if (isNaN(n)) return '—'
-  return (n >= 0 ? '+' : '') + n.toFixed(2) + suffix
+  return (n >= 0 ? '+' : '') + n.toFixed(2) + '%'
 }
 
 export default function TopBar() {
@@ -78,40 +73,40 @@ export default function TopBar() {
   useEffect(function () {
     async function fetchAll() {
       try {
-        // 1. CoinGecko — XRP, BTC, ETH (no key needed)
+        const tdKey = import.meta.env.VITE_TWELVE_DATA_API_KEY
+
+        // Batch 1: CoinGecko — XRP, BTC, ETH, XLM (no key needed)
         const cgRes = await fetch(
-          'https://api.coingecko.com/api/v3/simple/price?ids=ripple,bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true'
+          'https://api.coingecko.com/api/v3/simple/price?ids=ripple,bitcoin,ethereum,stellar&vs_currencies=usd&include_24hr_change=true'
         )
         const cg = await cgRes.json()
 
-        // 2. Twelve Data — all macro symbols in one call
-        const tdKey = import.meta.env.VITE_TWELVE_DATA_API_KEY
-        const symbols = 'XAU/USD,USOIL,WTI/USD,DXY,EUR/USD,USD/JPY,SPX,US10Y,JP10Y'
+        // Batch 2: Twelve Data — all macro + ETF symbols in one call
+        const tdSymbols = 'XAU/USD,USOIL,BRENT,DXY,EUR/USD,USD/JPY,SPX,US10Y,JP10Y,XRPC,XRPZ,TOXR'
         const tdRes = await fetch(
-          `https://api.twelvedata.com/price?symbol=${symbols}&apikey=${tdKey}`
+          `https://api.twelvedata.com/price?symbol=${tdSymbols}&apikey=${tdKey}`
         )
         const td = await tdRes.json()
 
-        // 3. Fear & Greed
+        // Batch 3: Fear & Greed
         const fgRes = await fetch('https://api.alternative.me/fng/?limit=1')
         const fg = await fgRes.json()
         const fgVal = fg?.data?.[0]?.value
         const fgClass = fg?.data?.[0]?.value_classification
 
-        // Helper to get Twelve Data price
         function tdp(sym) {
           return td?.[sym]?.price ?? null
         }
 
-        // Build oil/JPY cross
-        const oilUsd = parseFloat(td?.['USOIL']?.price ?? td?.['WTI/USD']?.price ?? null)
-        const usdjpy = parseFloat(td?.['USD/JPY']?.price ?? null)
+        // Oil/JPY cross calculation
+        const oilUsd = parseFloat(tdp('USOIL') ?? tdp('BRENT') ?? null)
+        const usdjpy = parseFloat(tdp('USD/JPY') ?? null)
         const oilJpy = (!isNaN(oilUsd) && !isNaN(usdjpy)) ? (oilUsd * usdjpy) : null
 
         const items = [
           {
             sym: 'XRP',
-            price: fmt(cg?.ripple?.usd, '$'),
+            price: fmt(cg?.ripple?.usd, '$', '', 4),
             chg: chgLabel(cg?.ripple?.usd_24h_change),
             up: (cg?.ripple?.usd_24h_change ?? 0) >= 0,
           },
@@ -128,6 +123,12 @@ export default function TopBar() {
             up: (cg?.ethereum?.usd_24h_change ?? 0) >= 0,
           },
           {
+            sym: 'XLM',
+            price: fmt(cg?.stellar?.usd, '$', '', 4),
+            chg: chgLabel(cg?.stellar?.usd_24h_change),
+            up: (cg?.stellar?.usd_24h_change ?? 0) >= 0,
+          },
+          {
             sym: 'GOLD',
             price: fmt(tdp('XAU/USD'), '$', '', 0),
             chg: '—',
@@ -135,7 +136,13 @@ export default function TopBar() {
           },
           {
             sym: 'BRENT CRUDE',
-            price: fmt(tdp('USOIL'), '$'),
+            price: fmt(tdp('BRENT'), '$', '', 2),
+            chg: '—',
+            up: true,
+          },
+          {
+            sym: 'WTI CRUDE',
+            price: fmt(tdp('USOIL'), '$', '', 2),
             chg: '—',
             up: true,
           },
@@ -182,6 +189,24 @@ export default function TopBar() {
             up: true,
           },
           {
+            sym: 'XRPC ETF',
+            price: fmt(tdp('XRPC'), '$', '', 2),
+            chg: '—',
+            up: true,
+          },
+          {
+            sym: 'XRPZ ETF',
+            price: fmt(tdp('XRPZ'), '$', '', 2),
+            chg: '—',
+            up: true,
+          },
+          {
+            sym: 'TOXR ETF',
+            price: fmt(tdp('TOXR'), '$', '', 2),
+            chg: '—',
+            up: true,
+          },
+          {
             sym: 'F&G INDEX',
             price: fgVal ?? '—',
             chg: fgClass ?? '—',
@@ -196,11 +221,9 @@ export default function TopBar() {
     }
 
     fetchAll()
-    const interval = setInterval(fetchAll, 5 * 60 * 1000) // refresh every 5 min
+    const interval = setInterval(fetchAll, 5 * 60 * 1000)
     return function () { clearInterval(interval) }
   }, [])
-
-  const displayTickers = tickers.length > 0 ? tickers : []
 
   return (
     <header
@@ -233,11 +256,11 @@ export default function TopBar() {
           </span>
 
           <div className="cn-dash-wrapper">
-            {displayTickers.length === 0 ? (
+            {tickers.length === 0 ? (
               <span className="text-xs" style={{ color: '#6b7a96' }}>Loading market data...</span>
             ) : (
               <div className="cn-dash-track">
-                {[...displayTickers, ...displayTickers].map((item, i) => (
+                {[...tickers, ...tickers].map((item, i) => (
                   <span key={i} className="inline-flex items-center gap-2 flex-shrink-0">
                     <span
                       className="text-xs font-bold"
