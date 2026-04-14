@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import NotificationBell from './NotificationBell'
 
@@ -14,6 +14,7 @@ const routeTitles = {
   '/etf-flows': 'XRP ETF Flow Tracker',
   '/watchlist': 'Watchlist',
   '/youtube-intel': 'YouTube Intel',
+  '/smart-money-flow': 'Smart Money Flow',
   '/market-chatter': 'Unconfirmed Market Chatter',
   '/admin/chatter': 'Admin — Market Chatter',
   '/account': 'My Profile',
@@ -24,31 +25,6 @@ const routeTitles = {
   '/admin/updates': 'Admin — Updates',
 }
 
-const tickerItems = [
-  { sym: 'XRP',          price: '$2.31',   chg: '+3.4%',   up: true  },
-  { sym: 'BTC',          price: '$67,420', chg: '-1.2%',   up: false },
-  { sym: 'ETH',          price: '$3,480',  chg: '+0.8%',   up: true  },
-  { sym: 'USD/JPY',      price: '153.4',   chg: '-0.3%',   up: false },
-  { sym: 'BRENT CRUDE',  price: '$87.40',  chg: '+1.1%',   up: true  },
-  { sym: 'WTI CRUDE',    price: '$83.20',  chg: '+0.9%',   up: true  },
-  { sym: 'OIL/JPY',       price: '¥17,888', chg: '+1.4%',   up: true  },
-  { sym: 'GOLD',         price: '$2,318',  chg: '+0.4%',   up: true  },
-  { sym: 'DXY',          price: '104.2',   chg: '-0.2%',   up: false },
-  { sym: 'JAPAN 10Y',    price: '0.72%',   chg: '+0.03%',  up: true  },
-  { sym: 'US 10Y',       price: '4.38%',   chg: '-0.04%',  up: false },
-  { sym: 'EUR/USD',      price: '1.084',   chg: '+0.1%',   up: true  },
-  { sym: 'S&P 500',      price: '5,204',   chg: '-0.3%',   up: false },
-  { sym: 'XRPC ETF',     price: '$24.18',  chg: '+2.1%',   up: true  },
-  { sym: 'XRP ETF',      price: '$31.40',  chg: '+1.8%',   up: true  },
-  { sym: 'XRPZ ETF',     price: '$18.92',  chg: '+2.4%',   up: true  },
-  { sym: 'GXRP ETF',     price: '$12.55',  chg: '+1.5%',   up: true  },
-  { sym: 'TOXR ETF',     price: '$9.87',   chg: '+1.2%',   up: true  },
-  { sym: 'XRPR ETF',     price: '$22.34',  chg: '+1.9%',   up: true  },
-  { sym: 'UXRP ETF',     price: '$15.61',  chg: '+2.2%',   up: true  },
-  { sym: 'XRP ETF AUM',  price: '$1.0B',   chg: '+2.3%',   up: true  },
-  { sym: 'F&G INDEX',    price: '62',      chg: 'Greed',   up: true  },
-]
-
 const tickerStyle = `
   @keyframes cn-dash-ticker {
     0%   { transform: translateX(0); }
@@ -57,7 +33,7 @@ const tickerStyle = `
   .cn-dash-track {
     display: inline-flex;
     gap: 36px;
-    animation: cn-dash-ticker 45s linear infinite;
+    animation: cn-dash-ticker 60s linear infinite;
     flex-shrink: 0;
     align-items: center;
     white-space: nowrap;
@@ -73,10 +49,158 @@ const tickerStyle = `
   }
 `
 
+function fmt(val, prefix = '', suffix = '', decimals = 2) {
+  if (val === null || val === undefined) return '—'
+  const n = parseFloat(val)
+  if (isNaN(n)) return '—'
+  if (Math.abs(n) >= 1000) return prefix + n.toLocaleString('en-US', { maximumFractionDigits: decimals }) + suffix
+  return prefix + n.toFixed(decimals) + suffix
+}
+
+function chgColor(val) {
+  if (val === null || val === undefined) return '#9aa8be'
+  return parseFloat(val) >= 0 ? '#10b981' : '#ef4444'
+}
+
+function chgLabel(val, suffix = '%') {
+  if (val === null || val === undefined) return '—'
+  const n = parseFloat(val)
+  if (isNaN(n)) return '—'
+  return (n >= 0 ? '+' : '') + n.toFixed(2) + suffix
+}
+
 export default function TopBar() {
   const location = useLocation()
   const navigate = useNavigate()
   const title = routeTitles[location.pathname] || 'ControlNode'
+  const [tickers, setTickers] = useState([])
+
+  useEffect(function () {
+    async function fetchAll() {
+      try {
+        // 1. CoinGecko — XRP, BTC, ETH (no key needed)
+        const cgRes = await fetch(
+          'https://api.coingecko.com/api/v3/simple/price?ids=ripple,bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true'
+        )
+        const cg = await cgRes.json()
+
+        // 2. Twelve Data — all macro symbols in one call
+        const tdKey = import.meta.env.VITE_TWELVE_DATA_API_KEY
+        const symbols = 'XAU/USD,USOIL,WTI/USD,DXY,EUR/USD,USD/JPY,SPX,US10Y,JP10Y'
+        const tdRes = await fetch(
+          `https://api.twelvedata.com/price?symbol=${symbols}&apikey=${tdKey}`
+        )
+        const td = await tdRes.json()
+
+        // 3. Fear & Greed
+        const fgRes = await fetch('https://api.alternative.me/fng/?limit=1')
+        const fg = await fgRes.json()
+        const fgVal = fg?.data?.[0]?.value
+        const fgClass = fg?.data?.[0]?.value_classification
+
+        // Helper to get Twelve Data price
+        function tdp(sym) {
+          return td?.[sym]?.price ?? null
+        }
+
+        // Build oil/JPY cross
+        const oilUsd = parseFloat(td?.['USOIL']?.price ?? td?.['WTI/USD']?.price ?? null)
+        const usdjpy = parseFloat(td?.['USD/JPY']?.price ?? null)
+        const oilJpy = (!isNaN(oilUsd) && !isNaN(usdjpy)) ? (oilUsd * usdjpy) : null
+
+        const items = [
+          {
+            sym: 'XRP',
+            price: fmt(cg?.ripple?.usd, '$'),
+            chg: chgLabel(cg?.ripple?.usd_24h_change),
+            up: (cg?.ripple?.usd_24h_change ?? 0) >= 0,
+          },
+          {
+            sym: 'BTC',
+            price: fmt(cg?.bitcoin?.usd, '$', '', 0),
+            chg: chgLabel(cg?.bitcoin?.usd_24h_change),
+            up: (cg?.bitcoin?.usd_24h_change ?? 0) >= 0,
+          },
+          {
+            sym: 'ETH',
+            price: fmt(cg?.ethereum?.usd, '$', '', 0),
+            chg: chgLabel(cg?.ethereum?.usd_24h_change),
+            up: (cg?.ethereum?.usd_24h_change ?? 0) >= 0,
+          },
+          {
+            sym: 'GOLD',
+            price: fmt(tdp('XAU/USD'), '$', '', 0),
+            chg: '—',
+            up: true,
+          },
+          {
+            sym: 'BRENT CRUDE',
+            price: fmt(tdp('USOIL'), '$'),
+            chg: '—',
+            up: true,
+          },
+          {
+            sym: 'OIL/JPY',
+            price: oilJpy ? '¥' + oilJpy.toLocaleString('en-US', { maximumFractionDigits: 0 }) : '—',
+            chg: '—',
+            up: true,
+          },
+          {
+            sym: 'DXY',
+            price: fmt(tdp('DXY'), '', '', 2),
+            chg: '—',
+            up: false,
+          },
+          {
+            sym: 'EUR/USD',
+            price: fmt(tdp('EUR/USD'), '', '', 3),
+            chg: '—',
+            up: true,
+          },
+          {
+            sym: 'USD/JPY',
+            price: fmt(tdp('USD/JPY'), '', '', 2),
+            chg: '—',
+            up: false,
+          },
+          {
+            sym: 'S&P 500',
+            price: fmt(tdp('SPX'), '', '', 0),
+            chg: '—',
+            up: false,
+          },
+          {
+            sym: 'US 10Y',
+            price: fmt(tdp('US10Y'), '', '%', 2),
+            chg: '—',
+            up: false,
+          },
+          {
+            sym: 'JAPAN 10Y',
+            price: fmt(tdp('JP10Y'), '', '%', 2),
+            chg: '—',
+            up: true,
+          },
+          {
+            sym: 'F&G INDEX',
+            price: fgVal ?? '—',
+            chg: fgClass ?? '—',
+            up: parseInt(fgVal) >= 50,
+          },
+        ]
+
+        setTickers(items)
+      } catch (e) {
+        console.error('TopBar fetch error', e)
+      }
+    }
+
+    fetchAll()
+    const interval = setInterval(fetchAll, 5 * 60 * 1000) // refresh every 5 min
+    return function () { clearInterval(interval) }
+  }, [])
+
+  const displayTickers = tickers.length > 0 ? tickers : []
 
   return (
     <header
@@ -85,9 +209,7 @@ export default function TopBar() {
     >
       <style>{tickerStyle}</style>
 
-      {/* Main top bar row */}
       <div className="flex items-center justify-between px-4 lg:px-6 h-14">
-        {/* Page title */}
         <div className="flex items-center gap-3 flex-shrink-0">
           <div className="w-8 lg:hidden" />
           <h1
@@ -98,11 +220,7 @@ export default function TopBar() {
           </h1>
         </div>
 
-        {/* Scrolling ticker — center, with padding on both sides */}
-        <div
-          className="hidden lg:flex flex-1 items-center overflow-hidden mx-8"
-        >
-          {/* LIVE label */}
+        <div className="hidden lg:flex flex-1 items-center overflow-hidden mx-8">
           <span
             className="flex-shrink-0 mr-4 pr-4 text-xs font-bold tracking-widest"
             style={{
@@ -114,43 +232,41 @@ export default function TopBar() {
             LIVE
           </span>
 
-          {/* Ticker track wrapper — clips overflow */}
           <div className="cn-dash-wrapper">
-            <div className="cn-dash-track">
-              {/* Items x2 for seamless infinite loop */}
-              {[...tickerItems, ...tickerItems].map((item, i) => (
-                <span
-                  key={i}
-                  className="inline-flex items-center gap-2 flex-shrink-0"
-                >
-                  <span
-                    className="text-xs font-bold"
-                    style={{ fontFamily: 'JetBrains Mono, monospace', color: '#eceef5' }}
-                  >
-                    {item.sym}
+            {displayTickers.length === 0 ? (
+              <span className="text-xs" style={{ color: '#6b7a96' }}>Loading market data...</span>
+            ) : (
+              <div className="cn-dash-track">
+                {[...displayTickers, ...displayTickers].map((item, i) => (
+                  <span key={i} className="inline-flex items-center gap-2 flex-shrink-0">
+                    <span
+                      className="text-xs font-bold"
+                      style={{ fontFamily: 'JetBrains Mono, monospace', color: '#eceef5' }}
+                    >
+                      {item.sym}
+                    </span>
+                    <span
+                      className="text-xs"
+                      style={{ fontFamily: 'JetBrains Mono, monospace', color: '#9aa8be' }}
+                    >
+                      {item.price}
+                    </span>
+                    <span
+                      className="text-xs"
+                      style={{
+                        fontFamily: 'JetBrains Mono, monospace',
+                        color: item.up ? '#10b981' : '#ef4444',
+                      }}
+                    >
+                      {item.chg}
+                    </span>
                   </span>
-                  <span
-                    className="text-xs"
-                    style={{ fontFamily: 'JetBrains Mono, monospace', color: '#9aa8be' }}
-                  >
-                    {item.price}
-                  </span>
-                  <span
-                    className="text-xs"
-                    style={{
-                      fontFamily: 'JetBrains Mono, monospace',
-                      color: item.up ? '#10b981' : '#ef4444',
-                    }}
-                  >
-                    {item.chg}
-                  </span>
-                </span>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Right side — bell + avatar */}
         <div className="flex items-center gap-2 flex-shrink-0">
           <NotificationBell />
           <button
