@@ -225,13 +225,7 @@ export default function RightSidebar() {
                 var sourceName = item.source_info ? item.source_info.name : item.source
                 return (
                   
-                    key={String(item.id)}
-                    href={item.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block px-3 py-3 rounded-lg transition-colors hover:bg-white/5"
-                    style={{ background: '#161a22', border: '1px solid #1e2330', textDecoration: 'none' }}
-                  >
+                    <a key={String(item.id)} href={item.url} target="_blank" rel="noopener noreferrer" className="block px-3 py-3 rounded-lg transition-colors hover:bg-white/5" style={{ background: '#161a22', border: '1px solid #1e2330', textDecoration: 'none' }}>
                     <div className="flex items-center justify-between gap-1 mb-1.5">
                       <span
                         className="text-xs font-semibold px-1.5 py-0.5 rounded"
