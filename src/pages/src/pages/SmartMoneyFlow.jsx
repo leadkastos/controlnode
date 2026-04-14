@@ -191,3 +191,18 @@ export default function SmartMoneyFlow() {
                           </tr>
                         )
                       })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              <p className="text-xs mt-4" style={{ color: '#6b7a96' }}>
+                Source: XRPL public ledger via xrplcluster.com · Live data · For informational purposes only.
+              </p>
+            </div>
+
+          </div>
+        </main>
+      </div>
+    </div>
+  )
+}
