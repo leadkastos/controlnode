@@ -26,6 +26,18 @@ const categoryColors = {
   Technology: { bg: 'rgba(6,182,212,0.12)', text: '#06b6d4' },
 }
 
+const signalColors = {
+  green: { bg: 'rgba(16,185,129,0.12)', text: '#10b981' },
+  yellow: { bg: 'rgba(245,158,11,0.12)', text: '#f59e0b' },
+  red: { bg: 'rgba(239,68,68,0.12)', text: '#ef4444' },
+}
+
+const mockSignals = [
+  { label: 'XRP Momentum', value: 'Bullish', color: 'green' },
+  { label: 'BTC Dominance', value: 'Neutral', color: 'yellow' },
+  { label: 'Risk Appetite', value: 'Cautious', color: 'red' },
+]
+
 function fmt(n) {
   if (n === null || n === undefined) return '—'
   if (n >= 1000) return '$' + n.toLocaleString('en-US', { maximumFractionDigits: 0 })
@@ -40,16 +52,19 @@ function timeAgo(ts) {
   return Math.floor(diff / 1440) + ' days ago'
 }
 
-const mockSignals = [
-  { label: 'XRP Momentum', value: 'Bullish', color: 'green' },
-  { label: 'BTC Dominance', value: 'Neutral', color: 'yellow' },
-  { label: 'Risk Appetite', value: 'Cautious', color: 'red' },
-]
+function getCategoryColor(categories) {
+  if (!categories) return categoryColors['XRP']
+  const cats = categories.split('|')
+  for (var i = 0; i < cats.length; i++) {
+    var trimmed = cats[i].trim()
+    if (categoryColors[trimmed]) return categoryColors[trimmed]
+  }
+  return categoryColors['XRP']
+}
 
-const signalColors = {
-  green: { bg: 'rgba(16,185,129,0.12)', text: '#10b981' },
-  yellow: { bg: 'rgba(245,158,11,0.12)', text: '#f59e0b' },
-  red: { bg: 'rgba(239,68,68,0.12)', text: '#ef4444' },
+function getCategoryLabel(categories) {
+  if (!categories) return 'XRP'
+  return categories.split('|')[0].trim()
 }
 
 export default function RightSidebar() {
@@ -58,76 +73,63 @@ export default function RightSidebar() {
   const [prices, setPrices] = useState({})
   const [news, setNews] = useState([])
 
-  // Load user watchlist from Supabase
-  useEffect(function () {
+  useEffect(function() {
     if (!user) return
     async function loadWatchlist() {
-      const { data } = await supabase
+      var result = await supabase
         .from('user_watchlist')
         .select('symbol')
         .eq('user_id', user.id)
         .order('added_at', { ascending: true })
-      if (data && data.length > 0) {
-        setSymbols(data.map(function (d) { return d.symbol }))
+      if (result.data && result.data.length > 0) {
+        setSymbols(result.data.map(function(d) { return d.symbol }))
       }
     }
     loadWatchlist()
   }, [user])
 
-  // Fetch live prices from CoinGecko
-  useEffect(function () {
+  useEffect(function() {
     if (symbols.length === 0) return
     async function fetchPrices() {
-      const ids = symbols
-        .map(function (s) { return COINGECKO_IDS[s] })
+      var ids = symbols
+        .map(function(s) { return COINGECKO_IDS[s] })
         .filter(Boolean)
         .join(',')
       if (!ids) return
       try {
-        const res = await fetch(
-          `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`
+        var res = await fetch(
+          'https://api.coingecko.com/api/v3/simple/price?ids=' + ids + '&vs_currencies=usd&include_24hr_change=true'
         )
-        const data = await res.json()
+        var data = await res.json()
         setPrices(data)
-      } catch (e) {
-        console.error('RightSidebar CoinGecko error:', e)
+      } catch(e) {
+        console.error('RightSidebar prices error:', e)
       }
     }
     fetchPrices()
-    const interval = setInterval(fetchPrices, 60 * 1000)
-    return function () { clearInterval(interval) }
+    var interval = setInterval(fetchPrices, 60 * 1000)
+    return function() { clearInterval(interval) }
   }, [symbols])
 
-  // Fetch live news from CryptoCompare
-  useEffect(function () {
+  useEffect(function() {
     async function fetchNews() {
       try {
-        const key = import.meta.env.VITE_CRYPTOCOMPARE_API_KEY
-        const res = await fetch(
-          `https://min-api.cryptocompare.com/data/v2/news/?categories=XRP,Ripple,Regulation&excludeCategories=Sponsored&lang=EN&api_key=${key}`
+        var key = import.meta.env.VITE_CRYPTOCOMPARE_API_KEY
+        var res = await fetch(
+          'https://min-api.cryptocompare.com/data/v2/news/?categories=XRP,Ripple,Regulation&excludeCategories=Sponsored&lang=EN&api_key=' + key
         )
-        const data = await res.json()
-        if (data?.Data) {
+        var data = await res.json()
+        if (data && data.Data) {
           setNews(data.Data.slice(0, 6))
         }
-      } catch (e) {
+      } catch(e) {
         console.error('News fetch error:', e)
       }
     }
     fetchNews()
-    const interval = setInterval(fetchNews, 5 * 60 * 1000)
-    return function () { clearInterval(interval) }
+    var interval = setInterval(fetchNews, 5 * 60 * 1000)
+    return function() { clearInterval(interval) }
   }, [])
-
-  function getCategoryColor(categories) {
-    if (!categories) return categoryColors['XRP']
-    const cats = categories.split('|')
-    for (const cat of cats) {
-      const trimmed = cat.trim()
-      if (categoryColors[trimmed]) return categoryColors[trimmed]
-    }
-    return categoryColors['XRP']
-  }
 
   return (
     <aside
@@ -138,18 +140,17 @@ export default function RightSidebar() {
 
       <div className="flex-1 overflow-y-auto py-4 px-4 space-y-5">
 
-        {/* Watchlist */}
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#6b7a96' }}>
             Watchlist
           </p>
           <div className="space-y-1.5">
-            {symbols.map(function (symbol) {
-              const cgId = COINGECKO_IDS[symbol]
-              const p = cgId ? prices[cgId] : null
-              const price = p?.usd ?? null
-              const change = p?.usd_24h_change ?? null
-              const up = (change ?? 0) >= 0
+            {symbols.map(function(symbol) {
+              var cgId = COINGECKO_IDS[symbol]
+              var p = cgId ? prices[cgId] : null
+              var price = p ? p.usd : null
+              var change = p ? p.usd_24h_change : null
+              var up = (change || 0) >= 0
               return (
                 <div
                   key={symbol}
@@ -175,13 +176,12 @@ export default function RightSidebar() {
           </div>
         </div>
 
-        {/* Market Signals */}
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#6b7a96' }}>
             Market Signals
           </p>
           <div className="space-y-2">
-            {mockSignals.map(function (s) {
+            {mockSignals.map(function(s) {
               return (
                 <div
                   key={s.label}
@@ -201,7 +201,6 @@ export default function RightSidebar() {
           </div>
         </div>
 
-        {/* News Feed */}
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#6b7a96' }}>
             News Feed
@@ -209,7 +208,7 @@ export default function RightSidebar() {
           <div className="space-y-2">
             {news.length === 0 ? (
               <div className="space-y-2">
-                {[1, 2, 3].map(function (i) {
+                {[1, 2, 3].map(function(i) {
                   return (
                     <div key={i} className="px-3 py-3 rounded-lg" style={{ background: '#161a22', border: '1px solid #1e2330' }}>
                       <div className="h-3 rounded animate-pulse mb-2" style={{ background: '#1e2330', width: '60%' }} />
@@ -220,12 +219,13 @@ export default function RightSidebar() {
                 })}
               </div>
             ) : (
-              news.map(function (item) {
-                const cat = getCategoryColor(item.categories)
-                const catLabel = (item.categories || 'XRP').split('|')[0].trim()
+              news.map(function(item) {
+                var cat = getCategoryColor(item.categories)
+                var catLabel = getCategoryLabel(item.categories)
+                var sourceName = item.source_info ? item.source_info.name : item.source
                 return (
                   
-                    key={item.id}
+                    key={String(item.id)}
                     href={item.url}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -233,15 +233,17 @@ export default function RightSidebar() {
                     style={{ background: '#161a22', border: '1px solid #1e2330', textDecoration: 'none' }}
                   >
                     <div className="flex items-center justify-between gap-1 mb-1.5">
-                      <span className="text-xs font-semibold px-1.5 py-0.5 rounded"
-                        style={{ background: cat.bg, color: cat.text }}>
+                      <span
+                        className="text-xs font-semibold px-1.5 py-0.5 rounded"
+                        style={{ background: cat.bg, color: cat.text }}
+                      >
                         {catLabel}
                       </span>
                       <ExternalLink size={10} style={{ color: '#6b7a96', flexShrink: 0 }} />
                     </div>
                     <p className="text-xs leading-snug mb-1" style={{ color: '#eceef5' }}>{item.title}</p>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium" style={{ color: '#3b82f6' }}>{item.source_info?.name || item.source}</span>
+                      <span className="text-xs font-medium" style={{ color: '#3b82f6' }}>{sourceName}</span>
                       <span className="text-xs" style={{ color: '#6b7a96' }}>{timeAgo(item.published_on)}</span>
                     </div>
                   </a>
