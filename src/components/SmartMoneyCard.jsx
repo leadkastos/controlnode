@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { TrendingUp, TrendingDown } from 'lucide-react'
 
 const KNOWN_EXCHANGES = {
   'rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh': 'Binance',
@@ -16,7 +16,7 @@ function fmt(n) {
   if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B'
   if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M'
   if (n >= 1e3) return (n / 1e3).toFixed(0) + 'K'
-  return n.toString()
+  return n.toFixed(2)
 }
 
 export default function SmartMoneyCard() {
@@ -44,22 +44,20 @@ export default function SmartMoneyCard() {
         const txs = json?.result?.transactions || []
 
         let largestAmount = 0
-        let largestTx = null
         let totalInflow = 0
         let totalOutflow = 0
 
         txs.forEach(function(t) {
           const tx = t.tx || t.transaction || {}
-          if (tx.TransactionType === 'Payment' && tx.Amount) {
+          if (tx.TransactionType === 'Payment' && typeof tx.Amount === 'string') {
             const amt = parseInt(tx.Amount) / 1e6
-            if (amt > largestAmount) {
-              largestAmount = amt
-              largestTx = tx
-            }
-            if (tx.Destination === 'rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh') {
-              totalInflow += amt
-            } else {
-              totalOutflow += amt
+            if (!isNaN(amt)) {
+              if (amt > largestAmount) largestAmount = amt
+              if (tx.Destination === 'rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh') {
+                totalInflow += amt
+              } else {
+                totalOutflow += amt
+              }
             }
           }
         })
@@ -69,15 +67,7 @@ export default function SmartMoneyCard() {
         const flowValue = Math.abs(netFlow)
         const flowBullish = netFlow > 0
 
-        setData({
-          flowLabel,
-          flowValue,
-          flowBullish,
-          largestAmount,
-          largestTx,
-          totalInflow,
-          totalOutflow,
-        })
+        setData({ flowLabel, flowValue, flowBullish, largestAmount, totalInflow, totalOutflow })
       } catch(e) {
         setData(null)
       }
@@ -94,7 +84,7 @@ export default function SmartMoneyCard() {
     <div
       className="rounded-xl p-5 border flex flex-col gap-4 cursor-pointer group transition-all duration-200"
       style={{ background: '#161a22', borderColor: '#1e2330' }}
-      onClick={function() { nav('/xrp-intelligence') }}
+      onClick={function() { nav('/smart-money-flow') }}
       onMouseEnter={function(e) { e.currentTarget.style.borderColor = 'rgba(59,130,246,0.3)' }}
       onMouseLeave={function(e) { e.currentTarget.style.borderColor = '#1e2330' }}
     >
@@ -132,7 +122,7 @@ export default function SmartMoneyCard() {
         <div className="space-y-2 flex-1">
           <div className="flex items-center justify-between gap-2">
             <span className="text-xs" style={{ color: '#9aa8be' }}>Net Exchange Flow</span>
-            <span className="flex items-center gap-1 text-xs font-medium" style={{ color: data.flowBullish ? bullishColor : bearishColor }}>
+            <span className="flex items-center gap-1 text-xs font-medium" style={{ color: data.flowBullish ? bullishColor : data.flowLabel === 'Neutral' ? neutralColor : bearishColor }}>
               {data.flowBullish ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
               {data.flowLabel}: {fmt(data.flowValue)} XRP
             </span>
@@ -156,7 +146,7 @@ export default function SmartMoneyCard() {
 
       <button className="flex items-center gap-1.5 text-xs font-medium mt-auto transition-colors" style={{ color: '#3b82f6' }}>
         View Details
-        <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
+        <span className="group-hover:translate-x-0.5 transition-transform inline-block">→</span>
       </button>
     </div>
   )
