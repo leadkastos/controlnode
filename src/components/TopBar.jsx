@@ -74,144 +74,70 @@ export default function TopBar() {
     async function fetchAll() {
       try {
         const tdKey = import.meta.env.VITE_TWELVE_DATA_API_KEY
+        console.log('TD Key loaded:', tdKey ? 'YES (' + tdKey.slice(0,6) + '...)' : 'NO - UNDEFINED')
 
-        // Batch 1: CoinGecko — XRP, BTC, ETH, XLM (no key needed)
+        // CoinGecko — crypto (no key)
         const cgRes = await fetch(
           'https://api.coingecko.com/api/v3/simple/price?ids=ripple,bitcoin,ethereum,stellar&vs_currencies=usd&include_24hr_change=true'
         )
         const cg = await cgRes.json()
 
-        // Batch 2: Twelve Data — all macro + ETF symbols in one call
-        const tdSymbols = 'XAU/USD,USOIL,BRENT,DXY,EUR/USD,USD/JPY,SPX,US10Y,JP10Y,XRPC,XRPZ,TOXR'
+        // Twelve Data — all symbols in one batch call
+        const tdSymbols = [
+          'EUR/USD',
+          'USD/JPY',
+          'XAU/USD',
+          'USOIL',
+          'BRENT',
+          'DXY',
+          'SPX',
+          'US10Y',
+          'JP10Y',
+          'XRPC',
+          'XRPZ',
+          'TOXR',
+        ].join(',')
+
         const tdRes = await fetch(
           `https://api.twelvedata.com/price?symbol=${tdSymbols}&apikey=${tdKey}`
         )
         const td = await tdRes.json()
+        console.log('Twelve Data response:', JSON.stringify(td))
 
-        // Batch 3: Fear & Greed
+        // Fear & Greed
         const fgRes = await fetch('https://api.alternative.me/fng/?limit=1')
         const fg = await fgRes.json()
         const fgVal = fg?.data?.[0]?.value
         const fgClass = fg?.data?.[0]?.value_classification
 
         function tdp(sym) {
-          return td?.[sym]?.price ?? null
+          const val = td?.[sym]?.price
+          return val ?? null
         }
 
-        // Oil/JPY cross calculation
-        const oilUsd = parseFloat(tdp('USOIL') ?? tdp('BRENT') ?? null)
-        const usdjpy = parseFloat(tdp('USD/JPY') ?? null)
-        const oilJpy = (!isNaN(oilUsd) && !isNaN(usdjpy)) ? (oilUsd * usdjpy) : null
+        const oilUsd = parseFloat(tdp('USOIL') ?? tdp('BRENT') ?? 0)
+        const usdjpy = parseFloat(tdp('USD/JPY') ?? 0)
+        const oilJpy = (oilUsd > 0 && usdjpy > 0) ? (oilUsd * usdjpy) : null
 
         const items = [
-          {
-            sym: 'XRP',
-            price: fmt(cg?.ripple?.usd, '$', '', 4),
-            chg: chgLabel(cg?.ripple?.usd_24h_change),
-            up: (cg?.ripple?.usd_24h_change ?? 0) >= 0,
-          },
-          {
-            sym: 'BTC',
-            price: fmt(cg?.bitcoin?.usd, '$', '', 0),
-            chg: chgLabel(cg?.bitcoin?.usd_24h_change),
-            up: (cg?.bitcoin?.usd_24h_change ?? 0) >= 0,
-          },
-          {
-            sym: 'ETH',
-            price: fmt(cg?.ethereum?.usd, '$', '', 0),
-            chg: chgLabel(cg?.ethereum?.usd_24h_change),
-            up: (cg?.ethereum?.usd_24h_change ?? 0) >= 0,
-          },
-          {
-            sym: 'XLM',
-            price: fmt(cg?.stellar?.usd, '$', '', 4),
-            chg: chgLabel(cg?.stellar?.usd_24h_change),
-            up: (cg?.stellar?.usd_24h_change ?? 0) >= 0,
-          },
-          {
-            sym: 'GOLD',
-            price: fmt(tdp('XAU/USD'), '$', '', 0),
-            chg: '—',
-            up: true,
-          },
-          {
-            sym: 'BRENT CRUDE',
-            price: fmt(tdp('BRENT'), '$', '', 2),
-            chg: '—',
-            up: true,
-          },
-          {
-            sym: 'WTI CRUDE',
-            price: fmt(tdp('USOIL'), '$', '', 2),
-            chg: '—',
-            up: true,
-          },
-          {
-            sym: 'OIL/JPY',
-            price: oilJpy ? '¥' + oilJpy.toLocaleString('en-US', { maximumFractionDigits: 0 }) : '—',
-            chg: '—',
-            up: true,
-          },
-          {
-            sym: 'DXY',
-            price: fmt(tdp('DXY'), '', '', 2),
-            chg: '—',
-            up: false,
-          },
-          {
-            sym: 'EUR/USD',
-            price: fmt(tdp('EUR/USD'), '', '', 3),
-            chg: '—',
-            up: true,
-          },
-          {
-            sym: 'USD/JPY',
-            price: fmt(tdp('USD/JPY'), '', '', 2),
-            chg: '—',
-            up: false,
-          },
-          {
-            sym: 'S&P 500',
-            price: fmt(tdp('SPX'), '', '', 0),
-            chg: '—',
-            up: false,
-          },
-          {
-            sym: 'US 10Y',
-            price: fmt(tdp('US10Y'), '', '%', 2),
-            chg: '—',
-            up: false,
-          },
-          {
-            sym: 'JAPAN 10Y',
-            price: fmt(tdp('JP10Y'), '', '%', 2),
-            chg: '—',
-            up: true,
-          },
-          {
-            sym: 'XRPC ETF',
-            price: fmt(tdp('XRPC'), '$', '', 2),
-            chg: '—',
-            up: true,
-          },
-          {
-            sym: 'XRPZ ETF',
-            price: fmt(tdp('XRPZ'), '$', '', 2),
-            chg: '—',
-            up: true,
-          },
-          {
-            sym: 'TOXR ETF',
-            price: fmt(tdp('TOXR'), '$', '', 2),
-            chg: '—',
-            up: true,
-          },
-          {
-            sym: 'F&G INDEX',
-            price: fgVal ?? '—',
-            chg: fgClass ?? '—',
-            up: parseInt(fgVal) >= 50,
-          },
+          { sym: 'XRP', price: fmt(cg?.ripple?.usd, '$', '', 4), chg: chgLabel(cg?.ripple?.usd_24h_change), up: (cg?.ripple?.usd_24h_change ?? 0) >= 0 },
+          { sym: 'BTC', price: fmt(cg?.bitcoin?.usd, '$', '', 0), chg: chgLabel(cg?.bitcoin?.usd_24h_change), up: (cg?.bitcoin?.usd_24h_change ?? 0) >= 0 },
+          { sym: 'ETH', price: fmt(cg?.ethereum?.usd, '$', '', 0), chg: chgLabel(cg?.ethereum?.usd_24h_change), up: (cg?.ethereum?.usd_24h_change ?? 0) >= 0 },
+          { sym: 'XLM', price: fmt(cg?.stellar?.usd, '$', '', 4), chg: chgLabel(cg?.stellar?.usd_24h_change), up: (cg?.stellar?.usd_24h_change ?? 0) >= 0 },
+          { sym: 'GOLD', price: fmt(tdp('XAU/USD'), '$', '', 0), chg: '—', up: true },
+          { sym: 'BRENT CRUDE', price: fmt(tdp('BRENT'), '$', '', 2), chg: '—', up: true },
+          { sym: 'WTI CRUDE', price: fmt(tdp('USOIL'), '$', '', 2), chg: '—', up: true },
+          { sym: 'OIL/JPY', price: oilJpy ? '¥' + oilJpy.toLocaleString('en-US', { maximumFractionDigits: 0 }) : '—', chg: '—', up: true },
+          { sym: 'DXY', price: fmt(tdp('DXY'), '', '', 2), chg: '—', up: false },
+          { sym: 'EUR/USD', price: fmt(tdp('EUR/USD'), '', '', 3), chg: '—', up: true },
+          { sym: 'USD/JPY', price: fmt(tdp('USD/JPY'), '', '', 2), chg: '—', up: false },
+          { sym: 'S&P 500', price: fmt(tdp('SPX'), '', '', 0), chg: '—', up: false },
+          { sym: 'US 10Y', price: fmt(tdp('US10Y'), '', '%', 2), chg: '—', up: false },
+          { sym: 'JAPAN 10Y', price: fmt(tdp('JP10Y'), '', '%', 2), chg: '—', up: true },
+          { sym: 'XRPC ETF', price: fmt(tdp('XRPC'), '$', '', 2), chg: '—', up: true },
+          { sym: 'XRPZ ETF', price: fmt(tdp('XRPZ'), '$', '', 2), chg: '—', up: true },
+          { sym: 'TOXR ETF', price: fmt(tdp('TOXR'), '$', '', 2), chg: '—', up: true },
+          { sym: 'F&G INDEX', price: fgVal ?? '—', chg: fgClass ?? '—', up: parseInt(fgVal) >= 50 },
         ]
 
         setTickers(items)
@@ -246,15 +172,10 @@ export default function TopBar() {
         <div className="hidden lg:flex flex-1 items-center overflow-hidden mx-8">
           <span
             className="flex-shrink-0 mr-4 pr-4 text-xs font-bold tracking-widest"
-            style={{
-              fontFamily: 'JetBrains Mono, monospace',
-              color: '#9d5cf6',
-              borderRight: '1px solid #1e2330',
-            }}
+            style={{ fontFamily: 'JetBrains Mono, monospace', color: '#9d5cf6', borderRight: '1px solid #1e2330' }}
           >
             LIVE
           </span>
-
           <div className="cn-dash-wrapper">
             {tickers.length === 0 ? (
               <span className="text-xs" style={{ color: '#6b7a96' }}>Loading market data...</span>
@@ -262,25 +183,13 @@ export default function TopBar() {
               <div className="cn-dash-track">
                 {[...tickers, ...tickers].map((item, i) => (
                   <span key={i} className="inline-flex items-center gap-2 flex-shrink-0">
-                    <span
-                      className="text-xs font-bold"
-                      style={{ fontFamily: 'JetBrains Mono, monospace', color: '#eceef5' }}
-                    >
+                    <span className="text-xs font-bold" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#eceef5' }}>
                       {item.sym}
                     </span>
-                    <span
-                      className="text-xs"
-                      style={{ fontFamily: 'JetBrains Mono, monospace', color: '#9aa8be' }}
-                    >
+                    <span className="text-xs" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#9aa8be' }}>
                       {item.price}
                     </span>
-                    <span
-                      className="text-xs"
-                      style={{
-                        fontFamily: 'JetBrains Mono, monospace',
-                        color: item.up ? '#10b981' : '#ef4444',
-                      }}
-                    >
+                    <span className="text-xs" style={{ fontFamily: 'JetBrains Mono, monospace', color: item.up ? '#10b981' : '#ef4444' }}>
                       {item.chg}
                     </span>
                   </span>
