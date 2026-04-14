@@ -49,9 +49,12 @@ const tickerStyle = `
   }
 `
 
-function fmt(val, prefix = '', suffix = '', decimals = 2) {
+function fmt(val, prefix, suffix, decimals) {
+  prefix = prefix || ''
+  suffix = suffix || ''
+  decimals = decimals !== undefined ? decimals : 2
   if (val === null || val === undefined) return '—'
-  const n = parseFloat(val)
+  var n = parseFloat(val)
   if (isNaN(n)) return '—'
   if (Math.abs(n) >= 1000) return prefix + n.toLocaleString('en-US', { maximumFractionDigits: decimals }) + suffix
   return prefix + n.toFixed(decimals) + suffix
@@ -59,7 +62,7 @@ function fmt(val, prefix = '', suffix = '', decimals = 2) {
 
 function chgLabel(val) {
   if (val === null || val === undefined) return '—'
-  const n = parseFloat(val)
+  var n = parseFloat(val)
   if (isNaN(n)) return '—'
   return (n >= 0 ? '+' : '') + n.toFixed(2) + '%'
 }
@@ -73,17 +76,14 @@ export default function TopBar() {
   useEffect(function () {
     async function fetchAll() {
       try {
-        const tdKey = import.meta.env.VITE_TWELVE_DATA_API_KEY
-        console.log('TD Key loaded:', tdKey ? 'YES (' + tdKey.slice(0,6) + '...)' : 'NO - UNDEFINED')
+        var tdKey = import.meta.env.VITE_TWELVE_DATA_API_KEY
 
-        // CoinGecko — crypto (no key)
-        const cgRes = await fetch(
+        var cgRes = await fetch(
           'https://api.coingecko.com/api/v3/simple/price?ids=ripple,bitcoin,ethereum,stellar&vs_currencies=usd&include_24hr_change=true'
         )
-        const cg = await cgRes.json()
+        var cg = await cgRes.json()
 
-        // Twelve Data — all symbols in one batch call
-        const tdSymbols = [
+        var tdSymbols = [
           'EUR/USD',
           'USD/JPY',
           'XAU/USD',
@@ -98,32 +98,29 @@ export default function TopBar() {
           'TOXR',
         ].join(',')
 
-        const tdRes = await fetch(
-          `https://api.twelvedata.com/price?symbol=${tdSymbols}&apikey=${tdKey}`
+        var tdRes = await fetch(
+          'https://api.twelvedata.com/price?symbol=' + tdSymbols + '&apikey=' + tdKey
         )
-        const td = await tdRes.json()
-        console.log('Twelve Data response:', JSON.stringify(td))
+        var td = await tdRes.json()
 
-        // Fear & Greed
-        const fgRes = await fetch('https://api.alternative.me/fng/?limit=1')
-        const fg = await fgRes.json()
-        const fgVal = fg?.data?.[0]?.value
-        const fgClass = fg?.data?.[0]?.value_classification
+        var fgRes = await fetch('https://api.alternative.me/fng/?limit=1')
+        var fg = await fgRes.json()
+        var fgVal = fg && fg.data && fg.data[0] ? fg.data[0].value : null
+        var fgClass = fg && fg.data && fg.data[0] ? fg.data[0].value_classification : null
 
         function tdp(sym) {
-          const val = td?.[sym]?.price
-          return val ?? null
+          return td && td[sym] && td[sym].price ? td[sym].price : null
         }
 
-        const oilUsd = parseFloat(tdp('USOIL') ?? tdp('BRENT') ?? 0)
-        const usdjpy = parseFloat(tdp('USD/JPY') ?? 0)
-        const oilJpy = (oilUsd > 0 && usdjpy > 0) ? (oilUsd * usdjpy) : null
+        var oilUsd = parseFloat(tdp('USOIL') || tdp('BRENT') || 0)
+        var usdjpy = parseFloat(tdp('USD/JPY') || 0)
+        var oilJpy = (oilUsd > 0 && usdjpy > 0) ? (oilUsd * usdjpy) : null
 
-        const items = [
-          { sym: 'XRP', price: fmt(cg?.ripple?.usd, '$', '', 4), chg: chgLabel(cg?.ripple?.usd_24h_change), up: (cg?.ripple?.usd_24h_change ?? 0) >= 0 },
-          { sym: 'BTC', price: fmt(cg?.bitcoin?.usd, '$', '', 0), chg: chgLabel(cg?.bitcoin?.usd_24h_change), up: (cg?.bitcoin?.usd_24h_change ?? 0) >= 0 },
-          { sym: 'ETH', price: fmt(cg?.ethereum?.usd, '$', '', 0), chg: chgLabel(cg?.ethereum?.usd_24h_change), up: (cg?.ethereum?.usd_24h_change ?? 0) >= 0 },
-          { sym: 'XLM', price: fmt(cg?.stellar?.usd, '$', '', 4), chg: chgLabel(cg?.stellar?.usd_24h_change), up: (cg?.stellar?.usd_24h_change ?? 0) >= 0 },
+        var items = [
+          { sym: 'XRP', price: fmt(cg && cg.ripple ? cg.ripple.usd : null, '$', '', 4), chg: chgLabel(cg && cg.ripple ? cg.ripple.usd_24h_change : null), up: ((cg && cg.ripple ? cg.ripple.usd_24h_change : 0) || 0) >= 0 },
+          { sym: 'BTC', price: fmt(cg && cg.bitcoin ? cg.bitcoin.usd : null, '$', '', 0), chg: chgLabel(cg && cg.bitcoin ? cg.bitcoin.usd_24h_change : null), up: ((cg && cg.bitcoin ? cg.bitcoin.usd_24h_change : 0) || 0) >= 0 },
+          { sym: 'ETH', price: fmt(cg && cg.ethereum ? cg.ethereum.usd : null, '$', '', 0), chg: chgLabel(cg && cg.ethereum ? cg.ethereum.usd_24h_change : null), up: ((cg && cg.ethereum ? cg.ethereum.usd_24h_change : 0) || 0) >= 0 },
+          { sym: 'XLM', price: fmt(cg && cg.stellar ? cg.stellar.usd : null, '$', '', 4), chg: chgLabel(cg && cg.stellar ? cg.stellar.usd_24h_change : null), up: ((cg && cg.stellar ? cg.stellar.usd_24h_change : 0) || 0) >= 0 },
           { sym: 'GOLD', price: fmt(tdp('XAU/USD'), '$', '', 0), chg: '—', up: true },
           { sym: 'BRENT CRUDE', price: fmt(tdp('BRENT'), '$', '', 2), chg: '—', up: true },
           { sym: 'WTI CRUDE', price: fmt(tdp('USOIL'), '$', '', 2), chg: '—', up: true },
@@ -137,7 +134,7 @@ export default function TopBar() {
           { sym: 'XRPC ETF', price: fmt(tdp('XRPC'), '$', '', 2), chg: '—', up: true },
           { sym: 'XRPZ ETF', price: fmt(tdp('XRPZ'), '$', '', 2), chg: '—', up: true },
           { sym: 'TOXR ETF', price: fmt(tdp('TOXR'), '$', '', 2), chg: '—', up: true },
-          { sym: 'F&G INDEX', price: fgVal ?? '—', chg: fgClass ?? '—', up: parseInt(fgVal) >= 50 },
+          { sym: 'F&G INDEX', price: fgVal || '—', chg: fgClass || '—', up: parseInt(fgVal) >= 50 },
         ]
 
         setTickers(items)
@@ -147,7 +144,7 @@ export default function TopBar() {
     }
 
     fetchAll()
-    const interval = setInterval(fetchAll, 5 * 60 * 1000)
+    var interval = setInterval(fetchAll, 60 * 60 * 1000)
     return function () { clearInterval(interval) }
   }, [])
 
@@ -181,19 +178,21 @@ export default function TopBar() {
               <span className="text-xs" style={{ color: '#6b7a96' }}>Loading market data...</span>
             ) : (
               <div className="cn-dash-track">
-                {[...tickers, ...tickers].map((item, i) => (
-                  <span key={i} className="inline-flex items-center gap-2 flex-shrink-0">
-                    <span className="text-xs font-bold" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#eceef5' }}>
-                      {item.sym}
+                {[...tickers, ...tickers].map(function(item, i) {
+                  return (
+                    <span key={i} className="inline-flex items-center gap-2 flex-shrink-0">
+                      <span className="text-xs font-bold" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#eceef5' }}>
+                        {item.sym}
+                      </span>
+                      <span className="text-xs" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#9aa8be' }}>
+                        {item.price}
+                      </span>
+                      <span className="text-xs" style={{ fontFamily: 'JetBrains Mono, monospace', color: item.up ? '#10b981' : '#ef4444' }}>
+                        {item.chg}
+                      </span>
                     </span>
-                    <span className="text-xs" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#9aa8be' }}>
-                      {item.price}
-                    </span>
-                    <span className="text-xs" style={{ fontFamily: 'JetBrains Mono, monospace', color: item.up ? '#10b981' : '#ef4444' }}>
-                      {item.chg}
-                    </span>
-                  </span>
-                ))}
+                  )
+                })}
               </div>
             )}
           </div>
@@ -202,7 +201,7 @@ export default function TopBar() {
         <div className="flex items-center gap-2 flex-shrink-0">
           <NotificationBell />
           <button
-            onClick={() => navigate('/account')}
+            onClick={function() { navigate('/account') }}
             className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ml-1 transition-opacity hover:opacity-80"
             style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', color: '#fff' }}
             title="My Profile"
