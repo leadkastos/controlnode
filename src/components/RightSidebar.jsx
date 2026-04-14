@@ -2,15 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { TrendingUp, TrendingDown, ExternalLink } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
-
-const COINGECKO_IDS = {
-  XRP: 'ripple', BTC: 'bitcoin', ETH: 'ethereum', SOL: 'solana',
-  XLM: 'stellar', HBAR: 'hedera-hashgraph', ADA: 'cardano',
-  DOT: 'polkadot', MATIC: 'matic-network', AVAX: 'avalanche-2',
-  LINK: 'chainlink', LTC: 'litecoin', DOGE: 'dogecoin',
-  SHIB: 'shiba-inu', TRX: 'tron', TON: 'the-open-network',
-  SUI: 'sui', APT: 'aptos', OP: 'optimism', ARB: 'arbitrum',
-}
+import { usePrices, COINGECKO_IDS } from '../contexts/PriceContext'
 
 const DEFAULT_SYMBOLS = ['XRP', 'BTC', 'SOL', 'ETH', 'HBAR', 'XLM']
 
@@ -24,6 +16,8 @@ const categoryColors = {
   Ripple: { bg: 'rgba(139,92,246,0.12)', text: '#8b5cf6' },
   Business: { bg: 'rgba(16,185,129,0.12)', text: '#10b981' },
   Technology: { bg: 'rgba(6,182,212,0.12)', text: '#06b6d4' },
+  Regulation: { bg: 'rgba(139,92,246,0.12)', text: '#8b5cf6' },
+  Blockchain: { bg: 'rgba(59,130,246,0.12)', text: '#3b82f6' },
 }
 
 const signalColors = {
@@ -46,7 +40,7 @@ function fmt(n) {
 }
 
 function timeAgo(ts) {
-  const diff = Math.floor((Date.now() - ts * 1000) / 60000)
+  var diff = Math.floor((Date.now() - ts * 1000) / 60000)
   if (diff < 60) return diff + ' min ago'
   if (diff < 1440) return Math.floor(diff / 60) + ' hrs ago'
   return Math.floor(diff / 1440) + ' days ago'
@@ -54,7 +48,7 @@ function timeAgo(ts) {
 
 function getCategoryColor(categories) {
   if (!categories) return categoryColors['XRP']
-  const cats = categories.split('|')
+  var cats = categories.split('|')
   for (var i = 0; i < cats.length; i++) {
     var trimmed = cats[i].trim()
     if (categoryColors[trimmed]) return categoryColors[trimmed]
@@ -69,8 +63,8 @@ function getCategoryLabel(categories) {
 
 export default function RightSidebar() {
   const { user } = useAuth()
+  const prices = usePrices()
   const [symbols, setSymbols] = useState(DEFAULT_SYMBOLS)
-  const [prices, setPrices] = useState({})
   const [news, setNews] = useState([])
 
   useEffect(function() {
@@ -87,29 +81,6 @@ export default function RightSidebar() {
     }
     loadWatchlist()
   }, [user])
-
-  useEffect(function() {
-    if (symbols.length === 0) return
-    async function fetchPrices() {
-      var ids = symbols
-        .map(function(s) { return COINGECKO_IDS[s] })
-        .filter(Boolean)
-        .join(',')
-      if (!ids) return
-      try {
-        var res = await fetch(
-          'https://api.coingecko.com/api/v3/simple/price?ids=' + ids + '&vs_currencies=usd&include_24hr_change=true'
-        )
-        var data = await res.json()
-        setPrices(data)
-      } catch(e) {
-        console.error('RightSidebar prices error:', e)
-      }
-    }
-    fetchPrices()
-    var interval = setInterval(fetchPrices, 60 * 1000)
-    return function() { clearInterval(interval) }
-  }, [symbols])
 
   useEffect(function() {
     async function fetchNews() {
@@ -224,13 +195,9 @@ export default function RightSidebar() {
                 var catLabel = getCategoryLabel(item.categories)
                 var sourceName = item.source_info ? item.source_info.name : item.source
                 return (
-                  
-                    <a key={String(item.id)} href={item.url} target="_blank" rel="noopener noreferrer" className="block px-3 py-3 rounded-lg transition-colors hover:bg-white/5" style={{ background: '#161a22', border: '1px solid #1e2330', textDecoration: 'none' }}>
+                  <a key={String(item.id)} href={item.url} target="_blank" rel="noopener noreferrer" className="block px-3 py-3 rounded-lg transition-colors hover:bg-white/5" style={{ background: '#161a22', border: '1px solid #1e2330', textDecoration: 'none' }}>
                     <div className="flex items-center justify-between gap-1 mb-1.5">
-                      <span
-                        className="text-xs font-semibold px-1.5 py-0.5 rounded"
-                        style={{ background: cat.bg, color: cat.text }}
-                      >
+                      <span className="text-xs font-semibold px-1.5 py-0.5 rounded" style={{ background: cat.bg, color: cat.text }}>
                         {catLabel}
                       </span>
                       <ExternalLink size={10} style={{ color: '#6b7a96', flexShrink: 0 }} />
