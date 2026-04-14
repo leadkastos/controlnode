@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import Sidebar from '../components/Sidebar'
 import TopBar from '../components/TopBar'
-import { TrendingUp, TrendingDown, Activity } from 'lucide-react'
+import { TrendingUp, TrendingDown } from 'lucide-react'
 
 const KNOWN_EXCHANGES = {
   'rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh': 'Binance',
@@ -17,7 +17,7 @@ function fmt(n) {
   if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B'
   if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M'
   if (n >= 1e3) return (n / 1e3).toFixed(0) + 'K'
-  return n.toString()
+  return n.toFixed(2)
 }
 
 function StatRow({ label, value, color }) {
@@ -60,21 +60,22 @@ export default function SmartMoneyFlow() {
 
         txs.forEach(function (t) {
           const tx = t.tx || t.transaction || {}
-          if (tx.TransactionType === 'Payment' && tx.Amount) {
+          if (tx.TransactionType === 'Payment' && typeof tx.Amount === 'string') {
             const amt = parseInt(tx.Amount) / 1e6
-            if (amt > largestAmount) largestAmount = amt
-            if (tx.Destination === 'rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh') {
-              totalInflow += amt
-            } else {
-              totalOutflow += amt
+            if (!isNaN(amt)) {
+              if (amt > largestAmount) largestAmount = amt
+              if (tx.Destination === 'rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh') {
+                totalInflow += amt
+              } else {
+                totalOutflow += amt
+              }
+              payments.push({
+                amount: amt,
+                direction: tx.Destination === 'rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh' ? 'inflow' : 'outflow',
+                from: KNOWN_EXCHANGES[tx.Account] || tx.Account?.slice(0, 12) + '...',
+                to: KNOWN_EXCHANGES[tx.Destination] || tx.Destination?.slice(0, 12) + '...',
+              })
             }
-            payments.push({
-              hash: tx.hash,
-              amount: amt,
-              direction: tx.Destination === 'rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh' ? 'inflow' : 'outflow',
-              from: KNOWN_EXCHANGES[tx.Account] || tx.Account?.slice(0, 10) + '...',
-              to: KNOWN_EXCHANGES[tx.Destination] || tx.Destination?.slice(0, 10) + '...',
-            })
           }
         })
 
@@ -129,7 +130,7 @@ export default function SmartMoneyFlow() {
                   <StatRow
                     label="Net Exchange Flow"
                     value={`${data.flowLabel}: ${fmt(data.flowValue)} XRP`}
-                    color={data.flowBullish ? bullishColor : bearishColor}
+                    color={data.flowBullish ? bullishColor : data.flowLabel === 'Neutral' ? neutralColor : bearishColor}
                   />
                   <StatRow label="Total Inflow (window)" value={`${fmt(data.totalInflow)} XRP`} color={bearishColor} />
                   <StatRow label="Total Outflow (window)" value={`${fmt(data.totalOutflow)} XRP`} color={bullishColor} />
@@ -156,7 +157,7 @@ export default function SmartMoneyFlow() {
                   {[1,2,3,4,5].map(i => <div key={i} className="h-5 rounded animate-pulse" style={{ background: '#1e2330' }} />)}
                 </div>
               ) : txList.length === 0 ? (
-                <p className="text-sm" style={{ color: '#6b7a96' }}>No recent payment transactions found.</p>
+                <p className="text-sm" style={{ color: '#6b7a96' }}>No recent XRP payment transactions found.</p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
