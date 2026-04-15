@@ -40,42 +40,19 @@ function Field({ label, children }) {
 
 function TextInput({ value, onChange, placeholder }) {
   return (
-    <input
-      type="text"
-      value={value}
-      onChange={function(e) { onChange(e.target.value) }}
-      placeholder={placeholder}
-      className="w-full px-3 py-2.5 rounded-lg text-sm outline-none"
-      style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}
-      onFocus={function(e) { e.target.style.borderColor = '#3b82f6' }}
-      onBlur={function(e) { e.target.style.borderColor = '#1e2330' }}
-    />
+    <input type="text" value={value} onChange={function(e) { onChange(e.target.value) }} placeholder={placeholder} className="w-full px-3 py-2.5 rounded-lg text-sm outline-none" style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }} onFocus={function(e) { e.target.style.borderColor = '#3b82f6' }} onBlur={function(e) { e.target.style.borderColor = '#1e2330' }} />
   )
 }
 
 function TextArea({ value, onChange, placeholder, rows }) {
   return (
-    <textarea
-      value={value}
-      onChange={function(e) { onChange(e.target.value) }}
-      placeholder={placeholder}
-      rows={rows || 5}
-      className="w-full px-3 py-2.5 rounded-lg text-sm outline-none resize-none"
-      style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}
-      onFocus={function(e) { e.target.style.borderColor = '#3b82f6' }}
-      onBlur={function(e) { e.target.style.borderColor = '#1e2330' }}
-    />
+    <textarea value={value} onChange={function(e) { onChange(e.target.value) }} placeholder={placeholder} rows={rows || 5} className="w-full px-3 py-2.5 rounded-lg text-sm outline-none resize-none" style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }} onFocus={function(e) { e.target.style.borderColor = '#3b82f6' }} onBlur={function(e) { e.target.style.borderColor = '#1e2330' }} />
   )
 }
 
 function SaveButton({ onClick, loading, label }) {
   return (
-    <button
-      onClick={onClick}
-      disabled={loading}
-      className="px-6 py-2.5 rounded-lg text-sm font-semibold"
-      style={{ background: loading ? '#1e2330' : '#3b82f6', color: loading ? '#6b7a96' : '#fff' }}
-    >
+    <button onClick={onClick} disabled={loading} className="px-6 py-2.5 rounded-lg text-sm font-semibold" style={{ background: loading ? '#1e2330' : '#3b82f6', color: loading ? '#6b7a96' : '#fff' }}>
       {loading ? 'Saving...' : label}
     </button>
   )
@@ -83,11 +60,7 @@ function SaveButton({ onClick, loading, label }) {
 
 function Toast({ message, type }) {
   if (!message) return null
-  return (
-    <div className="fixed bottom-6 right-6 px-5 py-3 rounded-lg text-sm font-medium z-50" style={{ background: type === 'error' ? '#ef4444' : '#10b981', color: '#fff' }}>
-      {message}
-    </div>
-  )
+  return <div className="fixed bottom-6 right-6 px-5 py-3 rounded-lg text-sm font-medium z-50" style={{ background: type === 'error' ? '#ef4444' : '#10b981', color: '#fff' }}>{message}</div>
 }
 
 function Toggle({ enabled, onToggle }) {
@@ -107,41 +80,27 @@ function EmailNotificationsSection() {
   useEffect(function() {
     if (!user) return
     supabase.from('profiles').select('email_morning_brief, email_daily_wrap').eq('id', user.id).single().then(function(res) {
-      if (res.data) {
-        setMorningBrief(res.data.email_morning_brief || false)
-        setDailyWrap(res.data.email_daily_wrap || false)
-      }
+      if (res.data) { setMorningBrief(res.data.email_morning_brief || false); setDailyWrap(res.data.email_daily_wrap || false) }
     })
   }, [user])
 
   async function save(field, value) {
     if (!user) return
-    var update = {}
-    update[field] = value
+    var update = {}; update[field] = value
     await supabase.from('profiles').update(update).eq('id', user.id)
-    setToast('Saved!')
-    setTimeout(function() { setToast('') }, 2000)
+    setToast('Saved!'); setTimeout(function() { setToast('') }, 2000)
   }
-
-  function toggleMorning() { var next = !morningBrief; setMorningBrief(next); save('email_morning_brief', next) }
-  function toggleWrap() { var next = !dailyWrap; setDailyWrap(next); save('email_daily_wrap', next) }
 
   return (
     <DetailSection title="Email Notifications">
       <div className="space-y-3">
         <div className="flex items-center justify-between py-2" style={{ borderBottom: '1px solid #1e2330' }}>
-          <div>
-            <p className="text-sm font-medium" style={{ color: '#eceef5' }}>Morning Brief</p>
-            <p className="text-xs" style={{ color: '#9aa8be' }}>Delivered to your email each morning when published</p>
-          </div>
-          <Toggle enabled={morningBrief} onToggle={toggleMorning} />
+          <div><p className="text-sm font-medium" style={{ color: '#eceef5' }}>Morning Brief</p><p className="text-xs" style={{ color: '#9aa8be' }}>Delivered to your email each morning when published</p></div>
+          <Toggle enabled={morningBrief} onToggle={function() { var n = !morningBrief; setMorningBrief(n); save('email_morning_brief', n) }} />
         </div>
         <div className="flex items-center justify-between py-2" style={{ borderBottom: '1px solid #1e2330' }}>
-          <div>
-            <p className="text-sm font-medium" style={{ color: '#eceef5' }}>Daily Wrap</p>
-            <p className="text-xs" style={{ color: '#9aa8be' }}>Delivered to your email each evening when published</p>
-          </div>
-          <Toggle enabled={dailyWrap} onToggle={toggleWrap} />
+          <div><p className="text-sm font-medium" style={{ color: '#eceef5' }}>Daily Wrap</p><p className="text-xs" style={{ color: '#9aa8be' }}>Delivered to your email each evening when published</p></div>
+          <Toggle enabled={dailyWrap} onToggle={function() { var n = !dailyWrap; setDailyWrap(n); save('email_daily_wrap', n) }} />
         </div>
       </div>
       {toast && <p className="text-xs mt-3" style={{ color: '#10b981' }}>{toast}</p>}
@@ -167,37 +126,27 @@ function YouTubeSection() {
     setNewUrl(''); setError('')
   }
 
-  function removeChannel(id) { setChannels(channels.filter(function(c) { return c.id !== id })) }
-
   return (
     <DetailSection title="YouTube Intel — Channel Settings">
       <div className="space-y-2 mb-4">
         {channels.map(function(ch) {
           return (
             <div key={ch.id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg" style={{ background: '#111318', border: '1px solid #1e2330' }}>
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(239,68,68,0.15)' }}>
-                <Youtube size={14} style={{ color: '#ef4444' }} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate" style={{ color: '#eceef5' }}>@{ch.name}</p>
-                <p className="text-xs truncate" style={{ color: '#6b7a96' }}>{ch.url}</p>
-              </div>
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(239,68,68,0.15)' }}><Youtube size={14} style={{ color: '#ef4444' }} /></div>
+              <div className="flex-1 min-w-0"><p className="text-sm font-medium truncate" style={{ color: '#eceef5' }}>@{ch.name}</p></div>
               <a href={ch.url} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded" style={{ color: '#6b7a96' }}><ExternalLink size={13} /></a>
-              <button onClick={function() { removeChannel(ch.id) }} className="p-1.5 rounded hover:bg-red-500/10" style={{ color: '#6b7a96' }}><Trash2 size={13} /></button>
+              <button onClick={function() { setChannels(channels.filter(function(c) { return c.id !== ch.id })) }} className="p-1.5 rounded hover:bg-red-500/10" style={{ color: '#6b7a96' }}><Trash2 size={13} /></button>
             </div>
           )
         })}
       </div>
       {channels.length < MAX && (
-        <div>
-          <div className="flex gap-2">
-            <input type="text" value={newUrl} onChange={function(e) { setNewUrl(e.target.value); setError('') }} placeholder="https://youtube.com/@channelname" className="flex-1 px-3 py-2.5 rounded-lg text-sm outline-none" style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }} onFocus={function(e) { e.target.style.borderColor = '#3b82f6' }} onBlur={function(e) { e.target.style.borderColor = '#1e2330' }} onKeyDown={function(e) { if (e.key === 'Enter') addChannel() }} />
-            <button onClick={addChannel} className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-sm font-medium" style={{ background: '#3b82f6', color: '#fff' }}><Plus size={14} />Add</button>
-          </div>
-          {error && <p className="text-xs mt-2" style={{ color: '#ef4444' }}>{error}</p>}
-          <p className="text-xs mt-2" style={{ color: '#6b7a96' }}>{channels.length} of {MAX} channels used</p>
+        <div className="flex gap-2">
+          <input type="text" value={newUrl} onChange={function(e) { setNewUrl(e.target.value); setError('') }} placeholder="https://youtube.com/@channelname" className="flex-1 px-3 py-2.5 rounded-lg text-sm outline-none" style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }} onFocus={function(e) { e.target.style.borderColor = '#3b82f6' }} onBlur={function(e) { e.target.style.borderColor = '#1e2330' }} onKeyDown={function(e) { if (e.key === 'Enter') addChannel() }} />
+          <button onClick={addChannel} className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-sm font-medium" style={{ background: '#3b82f6', color: '#fff' }}><Plus size={14} />Add</button>
         </div>
       )}
+      {error && <p className="text-xs mt-2" style={{ color: '#ef4444' }}>{error}</p>}
     </DetailSection>
   )
 }
@@ -287,6 +236,7 @@ export function Admin() {
           { href: '/admin/daily-wrap', title: 'Daily Wrap', desc: 'Publish the daily wrap' },
           { href: '/admin/domino-theory', title: 'Domino Theory', desc: 'Update domino statuses and notes' },
           { href: '/admin/geopolitical-watch', title: 'Geopolitical Watch', desc: 'Update flash points and weekly watch' },
+          { href: '/admin/oil-yen', title: 'Oil vs Yen', desc: 'Update macro scenarios to monitor' },
           { href: '/admin/headlines', title: 'Top Headlines', desc: 'Manage headline feed' },
           { href: '/admin/watchlist', title: 'Master Watchlist', desc: 'Manage suggested symbols' },
           { href: '/admin/chatter', title: 'Market Chatter', desc: 'Moderate member posts' },
@@ -312,17 +262,15 @@ export function AdminMorningBrief() {
   var loadingState = useState(false); var loading = loadingState[0]; var setLoading = loadingState[1]
   var toastState = useState({ message: '', type: '' }); var toast = toastState[0]; var setToast = toastState[1]
 
-  function showToast(message, type) { setToast({ message: message, type: type || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
+  function showToast(m, t) { setToast({ message: m, type: t || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
 
   async function publish() {
     if (!date || !headline || !summary) { showToast('Date, headline, and summary are required.', 'error'); return }
     setLoading(true)
-    var catalystArray = catalysts.split('\n').map(function(c) { return c.trim() }).filter(Boolean)
-    var result = await supabase.from('morning_briefs').insert({ date: date, headline: headline, summary: summary, catalysts: catalystArray, published: true })
+    var result = await supabase.from('morning_briefs').insert({ date: date, headline: headline, summary: summary, catalysts: catalysts.split('\n').map(function(c) { return c.trim() }).filter(Boolean), published: true })
     setLoading(false)
     if (result.error) { showToast('Error: ' + result.error.message, 'error'); return }
-    showToast('Morning Brief published!', 'success')
-    setDate(''); setHeadline(''); setSummary(''); setCatalysts('')
+    showToast('Morning Brief published!'); setDate(''); setHeadline(''); setSummary(''); setCatalysts('')
   }
 
   return (
@@ -347,17 +295,15 @@ export function AdminDailyWrap() {
   var loadingState = useState(false); var loading = loadingState[0]; var setLoading = loadingState[1]
   var toastState = useState({ message: '', type: '' }); var toast = toastState[0]; var setToast = toastState[1]
 
-  function showToast(message, type) { setToast({ message: message, type: type || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
+  function showToast(m, t) { setToast({ message: m, type: t || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
 
   async function publish() {
     if (!date || !headline || !summary) { showToast('Date, headline, and summary are required.', 'error'); return }
     setLoading(true)
-    var catalystArray = catalysts.split('\n').map(function(c) { return c.trim() }).filter(Boolean)
-    var result = await supabase.from('daily_wraps').insert({ date: date, headline: headline, summary: summary, catalysts: catalystArray, published: true })
+    var result = await supabase.from('daily_wraps').insert({ date: date, headline: headline, summary: summary, catalysts: catalysts.split('\n').map(function(c) { return c.trim() }).filter(Boolean), published: true })
     setLoading(false)
     if (result.error) { showToast('Error: ' + result.error.message, 'error'); return }
-    showToast('Daily Wrap published!', 'success')
-    setDate(''); setHeadline(''); setSummary(''); setCatalysts('')
+    showToast('Daily Wrap published!'); setDate(''); setHeadline(''); setSummary(''); setCatalysts('')
   }
 
   return (
@@ -380,7 +326,7 @@ export function AdminDominoTheory() {
   var savingState = useState(null); var saving = savingState[0]; var setSaving = savingState[1]
   var toastState = useState({ message: '', type: '' }); var toast = toastState[0]; var setToast = toastState[1]
 
-  function showToast(message, type) { setToast({ message: message, type: type || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
+  function showToast(m, t) { setToast({ message: m, type: t || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
 
   useEffect(function() {
     supabase.from('domino_theory').select('*').order('domino_number').then(function(res) {
@@ -390,12 +336,7 @@ export function AdminDominoTheory() {
   }, [])
 
   function updateField(id, field, value) {
-    setDominoes(function(prev) {
-      return prev.map(function(d) {
-        if (d.id === id) { var u = Object.assign({}, d); u[field] = value; return u }
-        return d
-      })
-    })
+    setDominoes(function(prev) { return prev.map(function(d) { if (d.id === id) { var u = Object.assign({}, d); u[field] = value; return u } return d }) })
   }
 
   async function save(domino) {
@@ -403,28 +344,26 @@ export function AdminDominoTheory() {
     var result = await supabase.from('domino_theory').update({ status: domino.status, notes: domino.notes }).eq('id', domino.id)
     setSaving(null)
     if (result.error) { showToast('Error: ' + result.error.message, 'error'); return }
-    showToast(domino.domino_name + ' saved!', 'success')
+    showToast(domino.domino_name + ' saved!')
   }
 
   return (
     <AdminLayout title="Domino Theory">
-      {loading ? (<p style={{ color: '#6b7a96' }}>Loading...</p>) : dominoes.length === 0 ? (<p style={{ color: '#6b7a96' }}>No dominoes found.</p>) : (
-        dominoes.map(function(d) {
-          return (
-            <AdminCard key={d.id} title={'Domino ' + d.domino_number + ' — ' + d.domino_name}>
-              <Field label="Status">
-                <select value={d.status || 'Standing'} onChange={function(e) { updateField(d.id, 'status', e.target.value) }} className="w-full px-3 py-2.5 rounded-lg text-sm outline-none" style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}>
-                  <option value="Standing">Standing</option>
-                  <option value="Tipping">Tipping</option>
-                  <option value="Fallen">Fallen</option>
-                </select>
-              </Field>
-              <Field label="Assessment Notes"><TextArea value={d.notes || ''} onChange={function(v) { updateField(d.id, 'notes', v) }} placeholder="Assessment notes..." rows={3} /></Field>
-              <SaveButton onClick={function() { save(d) }} loading={saving === d.id} label="Save" />
-            </AdminCard>
-          )
-        })
-      )}
+      {loading ? <p style={{ color: '#6b7a96' }}>Loading...</p> : dominoes.length === 0 ? <p style={{ color: '#6b7a96' }}>No dominoes found.</p> : dominoes.map(function(d) {
+        return (
+          <AdminCard key={d.id} title={'Domino ' + d.domino_number + ' — ' + d.domino_name}>
+            <Field label="Status">
+              <select value={d.status || 'Standing'} onChange={function(e) { updateField(d.id, 'status', e.target.value) }} className="w-full px-3 py-2.5 rounded-lg text-sm outline-none" style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}>
+                <option value="Standing">Standing</option>
+                <option value="Tipping">Tipping</option>
+                <option value="Fallen">Fallen</option>
+              </select>
+            </Field>
+            <Field label="Assessment Notes"><TextArea value={d.notes || ''} onChange={function(v) { updateField(d.id, 'notes', v) }} placeholder="Assessment notes..." rows={3} /></Field>
+            <SaveButton onClick={function() { save(d) }} loading={saving === d.id} label="Save" />
+          </AdminCard>
+        )
+      })}
       <Toast message={toast.message} type={toast.type} />
     </AdminLayout>
   )
@@ -435,10 +374,9 @@ export function AdminGeopoliticalWatch() {
   var loadingState = useState(true); var loading = loadingState[0]; var setLoading = loadingState[1]
   var savingState = useState(false); var saving = savingState[0]; var setSaving = savingState[1]
   var toastState = useState({ message: '', type: '' }); var toast = toastState[0]; var setToast = toastState[1]
-  var formState = useState({ section: 'flashpoint', title: '', subtitle: '', level: 'Elevated', confirmed: true, sort_order: 0 })
-  var form = formState[0]; var setForm = formState[1]
+  var formState = useState({ section: 'flashpoint', title: '', subtitle: '', level: 'Elevated', confirmed: true, sort_order: 0 }); var form = formState[0]; var setForm = formState[1]
 
-  function showToast(message, type) { setToast({ message: message, type: type || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
+  function showToast(m, t) { setToast({ message: m, type: t || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
 
   async function load() {
     var res = await supabase.from('geopolitical_watch').select('*').order('sort_order', { ascending: true })
@@ -454,16 +392,12 @@ export function AdminGeopoliticalWatch() {
     var result = await supabase.from('geopolitical_watch').insert(form)
     setSaving(false)
     if (result.error) { showToast('Error: ' + result.error.message, 'error'); return }
-    showToast('Item added!', 'success')
+    showToast('Item added!')
     setForm({ section: 'flashpoint', title: '', subtitle: '', level: 'Elevated', confirmed: true, sort_order: 0 })
     load()
   }
 
-  async function remove(id) {
-    await supabase.from('geopolitical_watch').delete().eq('id', id)
-    showToast('Item removed.', 'success')
-    load()
-  }
+  async function remove(id) { await supabase.from('geopolitical_watch').delete().eq('id', id); showToast('Removed.'); load() }
 
   var flashPoints = items.filter(function(i) { return i.section === 'flashpoint' })
   var weeklyWatch = items.filter(function(i) { return i.section === 'weekly_watch' })
@@ -501,17 +435,13 @@ export function AdminGeopoliticalWatch() {
         <Field label="Sort Order"><TextInput value={String(form.sort_order)} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { sort_order: parseInt(v) || 0 }) }) }} placeholder="0" /></Field>
         <SaveButton onClick={add} loading={saving} label="Add Item" />
       </AdminCard>
-
       <AdminCard title="Active Flash Points">
         {loading ? <p style={{ color: '#6b7a96' }}>Loading...</p> : flashPoints.length === 0 ? <p style={{ color: '#6b7a96' }}>No flash points yet.</p> : (
           <div className="space-y-2">
             {flashPoints.map(function(item) {
               return (
                 <div key={item.id} className="flex items-start justify-between gap-3 py-2" style={{ borderBottom: '1px solid #1e2330' }}>
-                  <div>
-                    <p className="text-sm font-medium" style={{ color: '#eceef5' }}>{item.title}</p>
-                    <p className="text-xs" style={{ color: '#6b7a96' }}>{item.subtitle} · <span style={{ color: '#f59e0b' }}>{item.level}</span></p>
-                  </div>
+                  <div><p className="text-sm font-medium" style={{ color: '#eceef5' }}>{item.title}</p><p className="text-xs" style={{ color: '#6b7a96' }}>{item.subtitle} · <span style={{ color: '#f59e0b' }}>{item.level}</span></p></div>
                   <button onClick={function() { remove(item.id) }} className="text-xs px-3 py-1 rounded flex-shrink-0" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>Remove</button>
                 </div>
               )
@@ -519,16 +449,80 @@ export function AdminGeopoliticalWatch() {
           </div>
         )}
       </AdminCard>
-
       <AdminCard title="What to Watch This Week">
         {loading ? <p style={{ color: '#6b7a96' }}>Loading...</p> : weeklyWatch.length === 0 ? <p style={{ color: '#6b7a96' }}>No items yet.</p> : (
           <div className="space-y-2">
             {weeklyWatch.map(function(item) {
               return (
                 <div key={item.id} className="flex items-start justify-between gap-3 py-2" style={{ borderBottom: '1px solid #1e2330' }}>
+                  <div><p className="text-sm font-medium" style={{ color: '#eceef5' }}>{item.title}</p><p className="text-xs" style={{ color: '#6b7a96' }}>{item.subtitle} · <span style={{ color: item.confirmed ? '#10b981' : '#ef4444' }}>{item.confirmed ? 'Confirmed' : 'Unconfirmed'}</span></p></div>
+                  <button onClick={function() { remove(item.id) }} className="text-xs px-3 py-1 rounded flex-shrink-0" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>Remove</button>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </AdminCard>
+      <Toast message={toast.message} type={toast.type} />
+    </AdminLayout>
+  )
+}
+
+export function AdminOilYen() {
+  var itemsState = useState([]); var items = itemsState[0]; var setItems = itemsState[1]
+  var loadingState = useState(true); var loading = loadingState[0]; var setLoading = loadingState[1]
+  var savingState = useState(false); var saving = savingState[0]; var setSaving = savingState[1]
+  var toastState = useState({ message: '', type: '' }); var toast = toastState[0]; var setToast = toastState[1]
+  var formState = useState({ scenario: '', context: '', color: '#f59e0b', sort_order: 0 }); var form = formState[0]; var setForm = formState[1]
+
+  function showToast(m, t) { setToast({ message: m, type: t || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
+
+  async function load() {
+    var res = await supabase.from('oil_yen_scenarios').select('*').order('sort_order', { ascending: true })
+    if (res.data) setItems(res.data)
+    setLoading(false)
+  }
+
+  useEffect(function() { load() }, [])
+
+  async function add() {
+    if (!form.scenario || !form.context) { showToast('Scenario and context are required.', 'error'); return }
+    setSaving(true)
+    var result = await supabase.from('oil_yen_scenarios').insert(form)
+    setSaving(false)
+    if (result.error) { showToast('Error: ' + result.error.message, 'error'); return }
+    showToast('Scenario added!')
+    setForm({ scenario: '', context: '', color: '#f59e0b', sort_order: 0 })
+    load()
+  }
+
+  async function remove(id) { await supabase.from('oil_yen_scenarios').delete().eq('id', id); showToast('Removed.'); load() }
+
+  return (
+    <AdminLayout title="Oil vs Yen — Macro Scenarios">
+      <AdminCard title="Add Scenario">
+        <Field label="Scenario"><TextInput value={form.scenario} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { scenario: v }) }) }} placeholder="Oil spikes to $95+ (supply shock)" /></Field>
+        <Field label="Context / Impact"><TextInput value={form.context} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { context: v }) }) }} placeholder="Short-term risk-off potential..." /></Field>
+        <Field label="Color">
+          <select value={form.color} onChange={function(e) { setForm(function(f) { return Object.assign({}, f, { color: e.target.value }) }) }} className="w-full px-3 py-2.5 rounded-lg text-sm outline-none" style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}>
+            <option value="#f59e0b">Yellow (Caution)</option>
+            <option value="#10b981">Green (Positive)</option>
+            <option value="#ef4444">Red (Risk)</option>
+            <option value="#3b82f6">Blue (Neutral)</option>
+          </select>
+        </Field>
+        <Field label="Sort Order"><TextInput value={String(form.sort_order)} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { sort_order: parseInt(v) || 0 }) }) }} placeholder="0" /></Field>
+        <SaveButton onClick={add} loading={saving} label="Add Scenario" />
+      </AdminCard>
+      <AdminCard title="Current Scenarios">
+        {loading ? <p style={{ color: '#6b7a96' }}>Loading...</p> : items.length === 0 ? <p style={{ color: '#6b7a96' }}>No scenarios yet.</p> : (
+          <div className="space-y-2">
+            {items.map(function(item) {
+              return (
+                <div key={item.id} className="flex items-start justify-between gap-3 py-2" style={{ borderBottom: '1px solid #1e2330' }}>
                   <div>
-                    <p className="text-sm font-medium" style={{ color: '#eceef5' }}>{item.title}</p>
-                    <p className="text-xs" style={{ color: '#6b7a96' }}>{item.subtitle} · <span style={{ color: item.confirmed ? '#10b981' : '#ef4444' }}>{item.confirmed ? 'Confirmed' : 'Unconfirmed'}</span></p>
+                    <p className="text-sm font-medium" style={{ color: '#eceef5' }}>{item.scenario}</p>
+                    <p className="text-xs" style={{ color: item.color }}>{item.context}</p>
                   </div>
                   <button onClick={function() { remove(item.id) }} className="text-xs px-3 py-1 rounded flex-shrink-0" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>Remove</button>
                 </div>
@@ -549,7 +543,7 @@ export function AdminHeadlines() {
   var savingState = useState(false); var saving = savingState[0]; var setSaving = savingState[1]
   var toastState = useState({ message: '', type: '' }); var toast = toastState[0]; var setToast = toastState[1]
 
-  function showToast(message, type) { setToast({ message: message, type: type || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
+  function showToast(m, t) { setToast({ message: m, type: t || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
 
   async function load() {
     var res = await supabase.from('top_headlines').select('*').order('created_at', { ascending: false }).limit(20)
@@ -565,16 +559,12 @@ export function AdminHeadlines() {
     var result = await supabase.from('top_headlines').insert(form)
     setSaving(false)
     if (result.error) { showToast('Error: ' + result.error.message, 'error'); return }
-    showToast('Headline added!', 'success')
+    showToast('Headline added!')
     setForm({ headline: '', source: '', category: '', url: '' })
     load()
   }
 
-  async function remove(id) {
-    await supabase.from('top_headlines').delete().eq('id', id)
-    showToast('Headline removed.', 'success')
-    load()
-  }
+  async function remove(id) { await supabase.from('top_headlines').delete().eq('id', id); showToast('Removed.'); load() }
 
   return (
     <AdminLayout title="Top Headlines">
@@ -591,10 +581,7 @@ export function AdminHeadlines() {
             {headlines.map(function(h) {
               return (
                 <div key={h.id} className="flex items-start justify-between gap-3 py-2" style={{ borderBottom: '1px solid #1e2330' }}>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium" style={{ color: '#eceef5' }}>{h.headline}</p>
-                    <p className="text-xs mt-0.5" style={{ color: '#6b7a96' }}>{h.source} · {h.category}</p>
-                  </div>
+                  <div className="flex-1 min-w-0"><p className="text-sm font-medium" style={{ color: '#eceef5' }}>{h.headline}</p><p className="text-xs mt-0.5" style={{ color: '#6b7a96' }}>{h.source} · {h.category}</p></div>
                   <button onClick={function() { remove(h.id) }} className="text-xs px-3 py-1 rounded" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>Remove</button>
                 </div>
               )
@@ -614,7 +601,7 @@ export function AdminWatchlist() {
   var savingState = useState(false); var saving = savingState[0]; var setSaving = savingState[1]
   var toastState = useState({ message: '', type: '' }); var toast = toastState[0]; var setToast = toastState[1]
 
-  function showToast(message, type) { setToast({ message: message, type: type || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
+  function showToast(m, t) { setToast({ message: m, type: t || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
 
   async function load() {
     var res = await supabase.from('master_watchlist').select('*').order('symbol')
@@ -630,16 +617,12 @@ export function AdminWatchlist() {
     var result = await supabase.from('master_watchlist').insert(Object.assign({}, form, { symbol: form.symbol.toUpperCase() }))
     setSaving(false)
     if (result.error) { showToast('Error: ' + result.error.message, 'error'); return }
-    showToast('Symbol added!', 'success')
+    showToast('Symbol added!')
     setForm({ symbol: '', name: '', category: '' })
     load()
   }
 
-  async function remove(id) {
-    await supabase.from('master_watchlist').delete().eq('id', id)
-    showToast('Symbol removed.', 'success')
-    load()
-  }
+  async function remove(id) { await supabase.from('master_watchlist').delete().eq('id', id); showToast('Removed.'); load() }
 
   return (
     <AdminLayout title="Master Watchlist">
@@ -655,11 +638,7 @@ export function AdminWatchlist() {
             {symbols.map(function(s) {
               return (
                 <div key={s.id} className="flex items-center justify-between py-2" style={{ borderBottom: '1px solid #1e2330' }}>
-                  <div>
-                    <span className="text-sm font-bold mr-2" style={{ color: '#3b82f6' }}>{s.symbol}</span>
-                    <span className="text-sm" style={{ color: '#eceef5' }}>{s.name}</span>
-                    <span className="text-xs ml-2" style={{ color: '#6b7a96' }}>{s.category}</span>
-                  </div>
+                  <div><span className="text-sm font-bold mr-2" style={{ color: '#3b82f6' }}>{s.symbol}</span><span className="text-sm" style={{ color: '#eceef5' }}>{s.name}</span><span className="text-xs ml-2" style={{ color: '#6b7a96' }}>{s.category}</span></div>
                   <button onClick={function() { remove(s.id) }} className="text-xs px-3 py-1 rounded" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>Remove</button>
                 </div>
               )
@@ -677,7 +656,7 @@ export function AdminChatter() {
   var loadingState = useState(true); var loading = loadingState[0]; var setLoading = loadingState[1]
   var toastState = useState({ message: '', type: '' }); var toast = toastState[0]; var setToast = toastState[1]
 
-  function showToast(message, type) { setToast({ message: message, type: type || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
+  function showToast(m, t) { setToast({ message: m, type: t || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
 
   async function load() {
     var res = await supabase.from('market_chatter').select('*').order('created_at', { ascending: false }).limit(50)
@@ -686,10 +665,6 @@ export function AdminChatter() {
   }
 
   useEffect(function() { load() }, [])
-
-  async function warn(post) { await supabase.from('market_chatter').update({ flagged: true }).eq('id', post.id); showToast('Warning issued.', 'success'); load() }
-  async function remove(id) { await supabase.from('market_chatter').delete().eq('id', id); showToast('Post removed.', 'success'); load() }
-  async function ban(userId) { await supabase.from('profiles').update({ is_banned: true }).eq('id', userId); showToast('User banned.', 'success'); load() }
 
   return (
     <AdminLayout title="Market Chatter Moderation">
@@ -703,9 +678,9 @@ export function AdminChatter() {
                   <p className="text-sm mb-2" style={{ color: '#eceef5' }}>{p.content}</p>
                   {p.flagged && <span className="text-xs px-2 py-0.5 rounded" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>Flagged</span>}
                   <div className="flex gap-2 flex-wrap mt-2">
-                    <button onClick={function() { warn(p) }} className="text-xs px-3 py-1.5 rounded" style={{ background: 'rgba(234,179,8,0.1)', color: '#eab308' }}>Warn</button>
-                    <button onClick={function() { remove(p.id) }} className="text-xs px-3 py-1.5 rounded" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>Remove Post</button>
-                    <button onClick={function() { ban(p.user_id) }} className="text-xs px-3 py-1.5 rounded" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444' }}>Ban User</button>
+                    <button onClick={async function() { await supabase.from('market_chatter').update({ flagged: true }).eq('id', p.id); showToast('Warning issued.'); load() }} className="text-xs px-3 py-1.5 rounded" style={{ background: 'rgba(234,179,8,0.1)', color: '#eab308' }}>Warn</button>
+                    <button onClick={async function() { await supabase.from('market_chatter').delete().eq('id', p.id); showToast('Post removed.'); load() }} className="text-xs px-3 py-1.5 rounded" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>Remove Post</button>
+                    <button onClick={async function() { await supabase.from('profiles').update({ is_banned: true }).eq('id', p.user_id); showToast('User banned.'); load() }} className="text-xs px-3 py-1.5 rounded" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444' }}>Ban User</button>
                   </div>
                 </div>
               )
@@ -723,7 +698,7 @@ export function AdminETFFlows() {
   var savingState = useState(false); var saving = savingState[0]; var setSaving = savingState[1]
   var toastState = useState({ message: '', type: '' }); var toast = toastState[0]; var setToast = toastState[1]
 
-  function showToast(message, type) { setToast({ message: message, type: type || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
+  function showToast(m, t) { setToast({ message: m, type: t || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
 
   async function save() {
     if (!form.date) { showToast('Date is required.', 'error'); return }
@@ -731,7 +706,7 @@ export function AdminETFFlows() {
     var result = await supabase.from('xrp_etf_flows').insert(form)
     setSaving(false)
     if (result.error) { showToast('Error: ' + result.error.message, 'error'); return }
-    showToast('ETF flow data saved!', 'success')
+    showToast('ETF flow data saved!')
     setForm({ date: '', net_flow: '', total_aum: '', institutions: '', notes: '' })
   }
 
