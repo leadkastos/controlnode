@@ -1,151 +1,78 @@
-import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
 import AppLayout from '../components/AppLayout'
-import { Play, ExternalLink, Clock, Youtube } from 'lucide-react'
+import { ExternalLink, Clock, Youtube } from 'lucide-react'
+import { supabase } from '../lib/supabase'
 
-const mockVideos = [
-  {
-    id: 1,
-    channelName: 'Jake Claver',
-    channelHandle: '@JakeClaver',
-    title: 'XRP Is About To Do Something Nobody Is Expecting — Here\'s The Setup',
-    thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
-    videoId: 'dQw4w9WgXcQ',
-    duration: '18:42',
-    posted: '3 hours ago',
-    views: '24K views',
-    color: '#3b82f6',
-  },
-  {
-    id: 2,
-    channelName: 'Good Evening Crypto',
-    channelHandle: '@GoodEveningCrypto',
-    title: 'BREAKING: Major XRP News — This Changes Everything For The Lawsuit',
-    thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
-    videoId: 'dQw4w9WgXcQ',
-    duration: '22:15',
-    posted: '6 hours ago',
-    views: '31K views',
-    color: '#10b981',
-  },
-  {
-    id: 3,
-    channelName: 'Paul Barron Network',
-    channelHandle: '@PaulBarronNetwork',
-    title: 'XRP Price Target Revealed — Institutional Money Is Moving NOW',
-    thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
-    videoId: 'dQw4w9WgXcQ',
-    duration: '31:08',
-    posted: '9 hours ago',
-    views: '18K views',
-    color: '#8b5cf6',
-  },
-  {
-    id: 4,
-    channelName: 'Mikkel Thorup',
-    channelHandle: '@MikkelThorup',
-    title: 'XRP & The Global Reset — Why This Crypto Is Different From All Others',
-    thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
-    videoId: 'dQw4w9WgXcQ',
-    duration: '26:33',
-    posted: '12 hours ago',
-    views: '14K views',
-    color: '#f59e0b',
-  },
-]
+const channelColors = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b']
 
-function VideoCard({ video }) {
-  const [playing, setPlaying] = useState(false)
+function timeAgo(dateStr) {
+  if (!dateStr) return ''
+  var diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000)
+  if (diff < 3600) return Math.floor(diff / 60) + ' min ago'
+  if (diff < 86400) return Math.floor(diff / 3600) + ' hrs ago'
+  return Math.floor(diff / 86400) + ' days ago'
+}
 
+function formatViews(n) {
+  if (!n) return ''
+  var num = parseInt(n)
+  if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M views'
+  if (num >= 1000) return Math.floor(num / 1000) + 'K views'
+  return num + ' views'
+}
+
+function parseDuration(iso) {
+  if (!iso) return ''
+  var match = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/)
+  if (!match) return ''
+  var h = parseInt(match[1] || 0)
+  var m = parseInt(match[2] || 0)
+  var s = parseInt(match[3] || 0)
+  if (h > 0) return h + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0')
+  return m + ':' + String(s).padStart(2, '0')
+}
+
+function VideoCard({ video, color }) {
   return (
-    <div
-      className="rounded-xl overflow-hidden border"
-      style={{ background: '#161a22', borderColor: '#1e2330' }}
-    >
-      {/* Thumbnail / Player */}
-      <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-        {playing ? (
-          <iframe
-            className="absolute inset-0 w-full h-full"
-            src={`https://www.youtube.com/embed/${video.videoId}?autoplay=1`}
-            title={video.title}
-            frameBorder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
+    <div className="rounded-xl overflow-hidden border" style={{ background: '#161a22', borderColor: '#1e2330' }}>
+      <a href={'https://youtube.com/watch?v=' + video.video_id} target="_blank" rel="noopener noreferrer" className="block relative w-full" style={{ paddingBottom: '56.25%', textDecoration: 'none' }}>
+        <div className="absolute inset-0">
+          <img
+            src={video.thumbnail_url || ('https://img.youtube.com/vi/' + video.video_id + '/hqdefault.jpg')}
+            alt={video.title}
+            className="w-full h-full object-cover"
+            onError={function(e) { e.target.src = 'https://img.youtube.com/vi/' + video.video_id + '/hqdefault.jpg' }}
           />
-        ) : (
-          <div className="absolute inset-0">
-            <img
-              src={`https://img.youtube.com/vi/${video.videoId}/maxresdefault.jpg`}
-              alt={video.title}
-              className="w-full h-full object-cover"
-              onError={e => {
-                e.target.src = `https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg`
-              }}
-            />
-            {/* Overlay */}
-            <div
-              className="absolute inset-0 flex items-center justify-center cursor-pointer transition-all"
-              style={{ background: 'rgba(0,0,0,0.4)' }}
-              onClick={() => setPlaying(true)}
-            >
-              <div
-                className="w-14 h-14 rounded-full flex items-center justify-center transition-transform hover:scale-110"
-                style={{ background: 'rgba(239,68,68,0.9)' }}
-              >
-                <Play size={22} fill="white" style={{ color: 'white', marginLeft: '3px' }} />
-              </div>
-            </div>
-            {/* Duration badge */}
-            <div
-              className="absolute bottom-2 right-2 px-2 py-0.5 rounded text-xs font-mono font-medium"
-              style={{ background: 'rgba(0,0,0,0.85)', color: '#fff' }}
-            >
-              {video.duration}
+          <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.35)' }}>
+            <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ background: 'rgba(239,68,68,0.9)' }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21" /></svg>
             </div>
           </div>
-        )}
-      </div>
-
-      {/* Info */}
-      <div className="p-4">
-        {/* Channel */}
-        <div className="flex items-center gap-2 mb-2">
-          <div
-            className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
-            style={{ background: `${video.color}20` }}
-          >
-            <Youtube size={12} style={{ color: video.color }} />
-          </div>
-          <span className="text-xs font-semibold" style={{ color: video.color }}>
-            {video.channelName}
-          </span>
-          <span className="text-xs" style={{ color: '#6b7a96' }}>{video.channelHandle}</span>
+          {video.duration && (
+            <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded text-xs font-mono font-medium" style={{ background: 'rgba(0,0,0,0.85)', color: '#fff' }}>
+              {parseDuration(video.duration)}
+            </div>
+          )}
         </div>
-
-        {/* Title */}
-        <p className="text-sm font-medium leading-snug mb-3" style={{ color: '#eceef5' }}>
-          {video.title}
-        </p>
-
-        {/* Meta */}
+      </a>
+      <div className="p-4">
+        <div className="flex items-center gap-2 mb-2">
+          <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: color + '20' }}>
+            <Youtube size={12} style={{ color: color }} />
+          </div>
+          <span className="text-xs font-semibold" style={{ color: color }}>{video.channel_name}</span>
+          <span className="text-xs" style={{ color: '#6b7a96' }}>{video.channel_handle}</span>
+        </div>
+        <p className="text-sm font-medium leading-snug mb-3" style={{ color: '#eceef5' }}>{video.title}</p>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1 text-xs" style={{ color: '#6b7a96' }}>
-              <Clock size={11} />
-              {video.posted}
+              <Clock size={11} />{timeAgo(video.published_at)}
             </span>
-            <span className="text-xs" style={{ color: '#6b7a96' }}>{video.views}</span>
+            <span className="text-xs" style={{ color: '#6b7a96' }}>{formatViews(video.view_count)}</span>
           </div>
-          <a
-            href={`https://youtube.com/watch?v=${video.videoId}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1 text-xs transition-colors hover:opacity-80"
-            style={{ color: '#3b82f6' }}
-          >
-            <ExternalLink size={11} />
-            YouTube
+          <a href={'https://youtube.com/watch?v=' + video.video_id} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs" style={{ color: '#3b82f6' }}>
+            <ExternalLink size={11} />YouTube
           </a>
         </div>
       </div>
@@ -154,56 +81,80 @@ function VideoCard({ video }) {
 }
 
 export default function YouTubeIntel() {
+  const [videos, setVideos] = useState([])
+  const [channels, setChannels] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(function() {
+    async function load() {
+      var chRes = await supabase.from('youtube_channels').select('*').eq('active', true).order('sort_order', { ascending: true })
+      var ch = chRes.data || []
+      setChannels(ch)
+
+      var vidRes = await supabase.from('youtube_videos').select('*').order('published_at', { ascending: false })
+      setVideos(vidRes.data || [])
+      setLoading(false)
+    }
+    load()
+  }, [])
+
+  // Get latest video per channel in channel order
+  function getDisplayVideos() {
+    var result = []
+    channels.forEach(function(ch) {
+      var chVideos = videos.filter(function(v) { return v.channel_handle === ch.channel_handle })
+      if (chVideos.length > 0) result.push(chVideos[0])
+    })
+    return result
+  }
+
+  var displayVideos = getDisplayVideos()
+
+  function getColor(video) {
+    var idx = channels.findIndex(function(ch) { return ch.channel_handle === video.channel_handle })
+    return channelColors[idx >= 0 ? idx : 0]
+  }
+
   return (
     <AppLayout>
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-1">
-          <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center"
-            style={{ background: 'rgba(239,68,68,0.15)' }}
-          >
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(239,68,68,0.15)' }}>
             <Youtube size={16} style={{ color: '#ef4444' }} />
           </div>
-          <h1 className="text-2xl font-bold" style={{ fontFamily: 'Syne, sans-serif', color: '#eceef5' }}>
-            YouTube Intel
-          </h1>
+          <h1 className="text-2xl font-bold" style={{ fontFamily: 'Syne, sans-serif', color: '#eceef5' }}>YouTube Intel</h1>
         </div>
-        <p className="text-sm" style={{ color: '#9aa8be' }}>
-          Latest videos from your followed channels. Updated 4x daily — 6AM, 12PM, 6PM, 12AM CT.
-        </p>
+        <p className="text-sm" style={{ color: '#9aa8be' }}>Latest videos from curated XRP and crypto channels. Updated hourly during market hours.</p>
         <div className="flex items-center gap-2 mt-3">
           <div className="w-2 h-2 rounded-full" style={{ background: '#10b981' }} />
-          <span className="text-xs" style={{ color: '#6b7a96' }}>
-            Following 4 channels · Last checked 6:00 AM CT · Next check 12:00 PM CT
-          </span>
+          <span className="text-xs" style={{ color: '#6b7a96' }}>Following {channels.length} channel{channels.length !== 1 ? 's' : ''} · Updates every hour 7AM–9PM CT</span>
         </div>
       </div>
 
-      {/* Disclaimer */}
-      <div
-        className="rounded-lg px-4 py-3 mb-6 text-xs"
-        style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.15)', color: '#9aa8be' }}
-      >
+      <div className="rounded-lg px-4 py-3 mb-6 text-xs" style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.15)', color: '#9aa8be' }}>
         <span style={{ color: '#3b82f6', fontWeight: 600 }}>Note: </span>
-        Videos below are from independent creators. Third-party content (including embedded videos) is provided for informational purposes only. ControlNode does not own or control this content. Nothing presented here constitutes financial advice. Always do your own research.
+        Videos below are from independent creators. Third-party content is provided for informational purposes only. ControlNode does not own or control this content. Nothing presented here constitutes financial advice. Always do your own research.
       </div>
 
-      {/* 2x2 Video Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-        {mockVideos.map((video) => (
-          <VideoCard key={video.id} video={video} />
-        ))}
-      </div>
-
-      {/* Manage channels link */}
-      <div className="mt-6 text-center">
-        <p className="text-xs" style={{ color: '#6b7a96' }}>
-          Following 4 of 4 channels.{' '}
-          <Link to="/account" style={{ color: '#3b82f6' }}>
-            Manage channels in your profile →
-          </Link>
-        </p>
-      </div>
+      {loading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          {[1,2,3,4].map(function(i) {
+            return <div key={i} className="rounded-xl animate-pulse" style={{ background: '#161a22', height: '320px' }} />
+          })}
+        </div>
+      ) : displayVideos.length === 0 ? (
+        <div className="rounded-xl p-8 text-center border" style={{ background: '#161a22', borderColor: '#1e2330' }}>
+          <Youtube size={32} style={{ color: '#6b7a96', margin: '0 auto 12px' }} />
+          <p className="text-sm font-medium mb-1" style={{ color: '#eceef5' }}>No videos yet</p>
+          <p className="text-xs" style={{ color: '#6b7a96' }}>Videos will appear here once channels are configured and fetched from the admin panel.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          {displayVideos.map(function(video) {
+            return <VideoCard key={video.id} video={video} color={getColor(video)} />
+          })}
+        </div>
+      )}
     </AppLayout>
   )
 }
