@@ -764,8 +764,16 @@ export function AdminYouTube() {
   async function fetchNow() {
     setFetching(true)
     try {
-      var res = await supabase.functions.invoke('fetch-youtube-videos')
-      if (res.error) { showToast('Fetch error: ' + res.error.message, 'error') } else { showToast('Videos refreshed successfully!') }
+      var res = await fetch('https://oubwxjhvqjlaxscqbutl.supabase.co/functions/v1/fetch-youtube-videos', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + import.meta.env.VITE_SUPABASE_ANON_KEY
+        },
+        body: JSON.stringify({})
+      })
+      var data = await res.json()
+      if (!res.ok) { showToast('Fetch error: ' + (data.error || 'Unknown error'), 'error') } else { showToast('Videos refreshed! Fetched ' + (data.videos_fetched || 0) + ' videos.') }
     } catch(e) {
       showToast('Fetch failed: ' + e.message, 'error')
     }
