@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import AppLayout from '../components/AppLayout'
 import DetailPageLayout, { DetailSection, DataRow } from '../components/DetailPageLayout'
 import { Badge } from '../components/UI'
-import { Youtube, Plus, Trash2, ExternalLink } from 'lucide-react'
+import { Trash2, ExternalLink, Plus } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -108,49 +108,6 @@ function EmailNotificationsSection() {
   )
 }
 
-function YouTubeSection() {
-  const [channels, setChannels] = useState([
-    { id: 1, url: 'https://youtube.com/@EgragCrypto', name: 'EgragCrypto' },
-    { id: 2, url: 'https://youtube.com/@darkdefender', name: 'darkdefender' },
-  ])
-  const [newUrl, setNewUrl] = useState('')
-  const [error, setError] = useState('')
-  const MAX = 4
-
-  function addChannel() {
-    if (!newUrl.trim()) return
-    if (channels.length >= MAX) { setError('Maximum of ' + MAX + ' channels allowed.'); return }
-    if (!newUrl.includes('youtube.com') && !newUrl.includes('youtu.be')) { setError('Please enter a valid YouTube channel URL.'); return }
-    var name = newUrl.split('@')[1]?.split('/')[0] || newUrl
-    setChannels([...channels, { id: Date.now(), url: newUrl.trim(), name }])
-    setNewUrl(''); setError('')
-  }
-
-  return (
-    <DetailSection title="YouTube Intel — Channel Settings">
-      <div className="space-y-2 mb-4">
-        {channels.map(function(ch) {
-          return (
-            <div key={ch.id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg" style={{ background: '#111318', border: '1px solid #1e2330' }}>
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(239,68,68,0.15)' }}><Youtube size={14} style={{ color: '#ef4444' }} /></div>
-              <div className="flex-1 min-w-0"><p className="text-sm font-medium truncate" style={{ color: '#eceef5' }}>@{ch.name}</p></div>
-              <a href={ch.url} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded" style={{ color: '#6b7a96' }}><ExternalLink size={13} /></a>
-              <button onClick={function() { setChannels(channels.filter(function(c) { return c.id !== ch.id })) }} className="p-1.5 rounded hover:bg-red-500/10" style={{ color: '#6b7a96' }}><Trash2 size={13} /></button>
-            </div>
-          )
-        })}
-      </div>
-      {channels.length < MAX && (
-        <div className="flex gap-2">
-          <input type="text" value={newUrl} onChange={function(e) { setNewUrl(e.target.value); setError('') }} placeholder="https://youtube.com/@channelname" className="flex-1 px-3 py-2.5 rounded-lg text-sm outline-none" style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }} onFocus={function(e) { e.target.style.borderColor = '#3b82f6' }} onBlur={function(e) { e.target.style.borderColor = '#1e2330' }} onKeyDown={function(e) { if (e.key === 'Enter') addChannel() }} />
-          <button onClick={addChannel} className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-sm font-medium" style={{ background: '#3b82f6', color: '#fff' }}><Plus size={14} />Add</button>
-        </div>
-      )}
-      {error && <p className="text-xs mt-2" style={{ color: '#ef4444' }}>{error}</p>}
-    </DetailSection>
-  )
-}
-
 export function Account() {
   const { user, profile } = useAuth()
   var initials = profile?.full_name ? profile.full_name.split(' ').map(function(n) { return n[0] }).join('').toUpperCase() : 'CN'
@@ -182,7 +139,6 @@ export function Account() {
           </div>
         </DetailSection>
         <EmailNotificationsSection />
-        <YouTubeSection />
       </DetailPageLayout>
     </AppLayout>
   )
@@ -241,6 +197,7 @@ export function Admin() {
           { href: '/admin/watchlist', title: 'Master Watchlist', desc: 'Manage suggested symbols' },
           { href: '/admin/chatter', title: 'Market Chatter', desc: 'Moderate member posts' },
           { href: '/admin/etf-flows', title: 'XRP ETF Flows', desc: 'Update ETF data and flow numbers' },
+          { href: '/admin/youtube', title: 'YouTube Intel', desc: 'Manage YouTube channels for all members' },
         ].map(function(item) {
           return (
             <a key={item.href} href={item.href} className="rounded-xl p-5 block" style={{ background: '#0d1117', border: '1px solid #1e2330' }}>
@@ -744,24 +701,12 @@ export function AdminETFFlows() {
         return (
           <AdminCard key={etf.id} title={etf.etf_name + ' (' + etf.ticker + ')'}>
             <div className="grid grid-cols-2 gap-4">
-              <Field label="AUM (USD)">
-                <TextInput value={String(etf.aum || '')} onChange={function(v) { updateField(etf.id, 'aum', v) }} placeholder="1240000000" />
-              </Field>
-              <Field label="XRP Holdings">
-                <TextInput value={String(etf.xrp_holdings || '')} onChange={function(v) { updateField(etf.id, 'xrp_holdings', v) }} placeholder="536900000" />
-              </Field>
-              <Field label="Net Flow 24h (USD)">
-                <TextInput value={String(etf.flow_24h || '')} onChange={function(v) { updateField(etf.id, 'flow_24h', v) }} placeholder="42000000 or -8000000" />
-              </Field>
-              <Field label="Net Flow 7d (USD)">
-                <TextInput value={String(etf.flow_7d || '')} onChange={function(v) { updateField(etf.id, 'flow_7d', v) }} placeholder="187000000" />
-              </Field>
-              <Field label="Net Flow 30d (USD)">
-                <TextInput value={String(etf.flow_30d || '')} onChange={function(v) { updateField(etf.id, 'flow_30d', v) }} placeholder="412000000" />
-              </Field>
-              <Field label="Price Change %">
-                <TextInput value={String(etf.price_change || '')} onChange={function(v) { updateField(etf.id, 'price_change', v) }} placeholder="3.4 or -1.2" />
-              </Field>
+              <Field label="AUM (USD)"><TextInput value={String(etf.aum || '')} onChange={function(v) { updateField(etf.id, 'aum', v) }} placeholder="1240000000" /></Field>
+              <Field label="XRP Holdings"><TextInput value={String(etf.xrp_holdings || '')} onChange={function(v) { updateField(etf.id, 'xrp_holdings', v) }} placeholder="536900000" /></Field>
+              <Field label="Net Flow 24h (USD)"><TextInput value={String(etf.flow_24h || '')} onChange={function(v) { updateField(etf.id, 'flow_24h', v) }} placeholder="42000000 or -8000000" /></Field>
+              <Field label="Net Flow 7d (USD)"><TextInput value={String(etf.flow_7d || '')} onChange={function(v) { updateField(etf.id, 'flow_7d', v) }} placeholder="187000000" /></Field>
+              <Field label="Net Flow 30d (USD)"><TextInput value={String(etf.flow_30d || '')} onChange={function(v) { updateField(etf.id, 'flow_30d', v) }} placeholder="412000000" /></Field>
+              <Field label="Price Change %"><TextInput value={String(etf.price_change || '')} onChange={function(v) { updateField(etf.id, 'price_change', v) }} placeholder="3.4 or -1.2" /></Field>
             </div>
             <Field label="Status">
               <select value={etf.status || 'active'} onChange={function(e) { updateField(etf.id, 'status', e.target.value) }} className="w-full px-3 py-2.5 rounded-lg text-sm outline-none" style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}>
@@ -774,6 +719,99 @@ export function AdminETFFlows() {
           </AdminCard>
         )
       })}
+      <Toast message={toast.message} type={toast.type} />
+    </AdminLayout>
+  )
+}
+
+export function AdminYouTube() {
+  var channelsState = useState([]); var channels = channelsState[0]; var setChannels = channelsState[1]
+  var loadingState = useState(true); var loading = loadingState[0]; var setLoading = loadingState[1]
+  var savingState = useState(false); var saving = savingState[0]; var setSaving = savingState[1]
+  var fetchingState = useState(false); var fetching = fetchingState[0]; var setFetching = fetchingState[1]
+  var toastState = useState({ message: '', type: '' }); var toast = toastState[0]; var setToast = toastState[1]
+  var formState = useState({ channel_handle: '', channel_name: '', sort_order: 0 }); var form = formState[0]; var setForm = formState[1]
+
+  function showToast(m, t) { setToast({ message: m, type: t || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
+
+  async function load() {
+    var res = await supabase.from('youtube_channels').select('*').order('sort_order', { ascending: true })
+    if (res.data) setChannels(res.data)
+    setLoading(false)
+  }
+
+  useEffect(function() { load() }, [])
+
+  async function add() {
+    if (!form.channel_handle || !form.channel_name) { showToast('Handle and name are required.', 'error'); return }
+    if (channels.length >= 4) { showToast('Maximum 4 channels allowed.', 'error'); return }
+    var handle = form.channel_handle.startsWith('@') ? form.channel_handle : '@' + form.channel_handle
+    setSaving(true)
+    var result = await supabase.from('youtube_channels').insert({ channel_handle: handle, channel_name: form.channel_name, sort_order: form.sort_order, active: true })
+    setSaving(false)
+    if (result.error) { showToast('Error: ' + result.error.message, 'error'); return }
+    showToast('Channel added!')
+    setForm({ channel_handle: '', channel_name: '', sort_order: 0 })
+    load()
+  }
+
+  async function remove(id) {
+    await supabase.from('youtube_channels').delete().eq('id', id)
+    showToast('Channel removed.')
+    load()
+  }
+
+  async function fetchNow() {
+    setFetching(true)
+    try {
+      var res = await supabase.functions.invoke('fetch-youtube-videos')
+      if (res.error) { showToast('Fetch error: ' + res.error.message, 'error') } else { showToast('Videos refreshed successfully!') }
+    } catch(e) {
+      showToast('Fetch failed: ' + e.message, 'error')
+    }
+    setFetching(false)
+  }
+
+  return (
+    <AdminLayout title="YouTube Intel">
+      <div className="rounded-lg px-4 py-3 mb-6 text-sm" style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.2)', color: '#9aa8be' }}>
+        Add up to 4 YouTube channels. Videos refresh automatically every hour (7AM–9PM CT) and every 3 hours overnight. All members see the same channels.
+      </div>
+      <AdminCard title="Add Channel">
+        <Field label="Channel Handle (e.g. @JakeClaver)">
+          <TextInput value={form.channel_handle} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { channel_handle: v }) }) }} placeholder="@JakeClaver" />
+        </Field>
+        <Field label="Display Name">
+          <TextInput value={form.channel_name} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { channel_name: v }) }) }} placeholder="Jake Claver" />
+        </Field>
+        <Field label="Sort Order">
+          <TextInput value={String(form.sort_order)} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { sort_order: parseInt(v) || 0 }) }) }} placeholder="0" />
+        </Field>
+        <SaveButton onClick={add} loading={saving} label="Add Channel" />
+      </AdminCard>
+      <AdminCard title={'Active Channels (' + channels.length + '/4)'}>
+        {loading ? <p style={{ color: '#6b7a96' }}>Loading...</p> : channels.length === 0 ? <p style={{ color: '#6b7a96' }}>No channels added yet.</p> : (
+          <div className="space-y-2 mb-4">
+            {channels.map(function(ch) {
+              return (
+                <div key={ch.id} className="flex items-center justify-between gap-3 p-3 rounded-lg" style={{ background: '#111318', border: '1px solid #1e2330' }}>
+                  <div>
+                    <p className="text-sm font-semibold" style={{ color: '#eceef5' }}>{ch.channel_name}</p>
+                    <p className="text-xs" style={{ color: '#6b7a96' }}>{ch.channel_handle}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <a href={'https://youtube.com/' + ch.channel_handle} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded" style={{ color: '#6b7a96' }}><ExternalLink size={13} /></a>
+                    <button onClick={function() { remove(ch.id) }} className="p-1.5 rounded" style={{ color: '#ef4444' }}><Trash2 size={13} /></button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+        <button onClick={fetchNow} disabled={fetching} className="px-4 py-2 rounded-lg text-sm font-semibold" style={{ background: fetching ? '#1e2330' : 'rgba(16,185,129,0.12)', color: fetching ? '#6b7a96' : '#10b981', border: '1px solid rgba(16,185,129,0.2)' }}>
+          {fetching ? 'Fetching...' : '⟳ Fetch Videos Now'}
+        </button>
+      </AdminCard>
       <Toast message={toast.message} type={toast.type} />
     </AdminLayout>
   )
