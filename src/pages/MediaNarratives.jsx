@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import AppLayout from '../components/AppLayout'
 import { ExternalLink } from 'lucide-react'
-
 const categoryColors = {
   Regulatory: { bg: 'rgba(139,92,246,0.12)', text: '#8b5cf6' },
   Government: { bg: 'rgba(59,130,246,0.12)', text: '#3b82f6' },
@@ -16,14 +15,12 @@ const categoryColors = {
   Technology: { bg: 'rgba(6,182,212,0.12)', text: '#06b6d4' },
   Blockchain: { bg: 'rgba(59,130,246,0.12)', text: '#3b82f6' },
 }
-
 function timeAgo(ts) {
   var diff = Math.floor((Date.now() / 1000) - ts)
   if (diff < 3600) return Math.floor(diff / 60) + ' min ago'
   if (diff < 86400) return Math.floor(diff / 3600) + ' hrs ago'
   return Math.floor(diff / 86400) + ' days ago'
 }
-
 function getCategoryColor(categories) {
   if (!categories) return categoryColors['XRP']
   var cats = categories.split('|')
@@ -33,48 +30,33 @@ function getCategoryColor(categories) {
   }
   return categoryColors['XRP']
 }
-
 function getCategoryLabel(categories) {
   if (!categories) return 'XRP'
   return categories.split('|')[0].trim()
 }
-
 export default function MediaNarratives() {
   const [xrpNews, setXrpNews] = useState([])
-  const [rippleNews, setRippleNews] = useState([])
   const [marketNews, setMarketNews] = useState([])
   const [loading, setLoading] = useState(true)
-
   useEffect(function() {
     var key = import.meta.env.VITE_CRYPTOCOMPARE_API_KEY
-
     async function fetchAll() {
       try {
-        // XRP & Ripple focused news
-        var r1 = await fetch('https://min-api.cryptocompare.com/data/v2/news/?categories=XRP,Ripple&excludeCategories=Sponsored&lang=EN&api_key=' + key)
+        var r1 = await fetch('https://min-api.cryptocompare.com/data/v2/news/?categories=XRP,Ripple,Regulation&excludeCategories=Sponsored&lang=EN&api_key=' + key)
         var d1 = await r1.json()
-        if (d1 && d1.Data) setXrpNews(d1.Data.slice(0, 10))
-
-        // Ripple corporate news
-        var r2 = await fetch('https://min-api.cryptocompare.com/data/v2/news/?categories=Ripple,Regulation&excludeCategories=Sponsored&lang=EN&api_key=' + key)
+        if (d1 && d1.Data) setXrpNews(d1.Data.slice(0, 12))
+        var r2 = await fetch('https://min-api.cryptocompare.com/data/v2/news/?categories=ETF,Regulation,Blockchain&excludeCategories=Sponsored&lang=EN&api_key=' + key)
         var d2 = await r2.json()
-        if (d2 && d2.Data) setRippleNews(d2.Data.slice(0, 6))
-
-        // Broader crypto market news
-        var r3 = await fetch('https://min-api.cryptocompare.com/data/v2/news/?categories=ETF,Regulation,Blockchain&excludeCategories=Sponsored&lang=EN&api_key=' + key)
-        var d3 = await r3.json()
-        if (d3 && d3.Data) setMarketNews(d3.Data.slice(0, 6))
+        if (d2 && d2.Data) setMarketNews(d2.Data.slice(0, 8))
       } catch(e) {
         console.error('MediaNarratives fetch error:', e)
       }
       setLoading(false)
     }
-
     fetchAll()
     var interval = setInterval(fetchAll, 10 * 60 * 1000)
     return function() { clearInterval(interval) }
   }, [])
-
   function NewsItem({ article }) {
     var cat = getCategoryColor(article.categories)
     var catLabel = getCategoryLabel(article.categories)
@@ -93,7 +75,6 @@ export default function MediaNarratives() {
       </a>
     )
   }
-
   function Section({ title, articles, badge }) {
     return (
       <div className="rounded-xl p-5 border" style={{ background: '#161a22', borderColor: '#1e2330' }}>
@@ -114,7 +95,6 @@ export default function MediaNarratives() {
       </div>
     )
   }
-
   return (
     <AppLayout>
       <div className="mb-6">
@@ -124,10 +104,8 @@ export default function MediaNarratives() {
         </div>
         <p className="text-sm" style={{ color: '#9aa8be' }}>Live XRP, Ripple, and crypto market news from reputable global sources. For informational purposes only.</p>
       </div>
-
       <div className="space-y-6">
         <Section title="XRP & Ripple News" articles={xrpNews} badge="LIVE" />
-        <Section title="Ripple News" articles={rippleNews} badge="LIVE" />
         <Section title="Market & Regulatory News" articles={marketNews} badge="LIVE" />
       </div>
     </AppLayout>
