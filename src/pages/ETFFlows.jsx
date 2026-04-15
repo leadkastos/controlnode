@@ -48,6 +48,14 @@ function fmtXRP(n) {
   return n.toString()
 }
 
+function getLastUpdated(etfs) {
+  if (!etfs || etfs.length === 0) return null
+  var latest = etfs.reduce(function(a, b) { return new Date(a.updated_at) > new Date(b.updated_at) ? a : b })
+  if (!latest.updated_at) return null
+  var d = new Date(latest.updated_at)
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' at ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
+}
+
 const pieColors = ['#3b82f6','#8b5cf6','#10b981','#f59e0b','#ef4444','#06b6d4','#ec4899']
 
 function FlowChart({ data }) {
@@ -228,6 +236,7 @@ export default function ETFFlows() {
   const net24h = etfs.reduce(function(s, e) { return s + (e.flow_24h || 0) }, 0)
   const net7d = etfs.reduce(function(s, e) { return s + (e.flow_7d || 0) }, 0)
   const net30d = etfs.reduce(function(s, e) { return s + (e.flow_30d || 0) }, 0)
+  const lastUpdated = getLastUpdated(etfs)
 
   return (
     <AppLayout>
@@ -262,9 +271,12 @@ export default function ETFFlows() {
       <div className="rounded-xl border mb-6 overflow-hidden" style={{ background: '#161a22', borderColor: '#1e2330' }}>
         <div className="px-5 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid #1e2330', background: '#111318' }}>
           <h2 className="text-sm font-semibold" style={{ fontFamily: 'Syne, sans-serif', color: '#eceef5' }}>Active XRP ETFs</h2>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-sm" style={{ background: '#3b82f6' }} /><span className="text-xs" style={{ color: '#9aa8be' }}>Spot</span></div>
-            <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-sm" style={{ background: '#f59e0b' }} /><span className="text-xs" style={{ color: '#9aa8be' }}>Futures</span></div>
+          <div className="flex items-center gap-4">
+            {lastUpdated && <span className="text-xs" style={{ color: '#6b7a96' }}>Last updated: {lastUpdated}</span>}
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-sm" style={{ background: '#3b82f6' }} /><span className="text-xs" style={{ color: '#9aa8be' }}>Spot</span></div>
+              <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-sm" style={{ background: '#f59e0b' }} /><span className="text-xs" style={{ color: '#9aa8be' }}>Futures</span></div>
+            </div>
           </div>
         </div>
         <div className="overflow-x-auto">
