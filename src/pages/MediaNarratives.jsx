@@ -1,24 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import AppLayout from '../components/AppLayout'
-import DetailPageLayout, { DetailSection } from '../components/DetailPageLayout'
 import { ExternalLink } from 'lucide-react'
-
-const CRYPTOCOMPARE_KEY = import.meta.env.VITE_CRYPTOCOMPARE_API_KEY
-
-const staticHeadlines = [
-  { source: 'Reuters', headline: 'SEC Drops Final XRP Lawsuit Appeal — Ripple Fully Cleared to Operate', time: '2 hrs ago', category: 'Regulatory', url: '#', confirmed: true },
-  { source: 'Bloomberg', headline: 'BlackRock Files XRP ETF Application — Third Major Institution This Month', time: '4 hrs ago', category: 'ETF', url: '#', confirmed: true },
-  { source: 'Financial Times', headline: 'BRICS Summit Opens With Digital Settlement Framework Language for First Time', time: '6 hrs ago', category: 'Geopolitical', url: '#', confirmed: true },
-  { source: 'CoinDesk', headline: 'XRP On-Chain Activity Hits 12-Month High as ODL Corridors Expand Globally', time: '8 hrs ago', category: 'XRP', url: '#', confirmed: true },
-  { source: 'WSJ', headline: 'BOJ Holds Rates — Yen Carry Trade Dynamics Remain Active Amid USD/JPY Surge', time: '10 hrs ago', category: 'Macro', url: '#', confirmed: true },
-  { source: 'Congress.gov', headline: 'Senate Banking Committee Schedules Crypto Market Structure Hearing for April', time: '12 hrs ago', category: 'Government', url: '#', confirmed: true },
-  { source: 'The Block', headline: 'Ripple IPO Timeline: Investment Banks Said to Be in Early Conversations', time: '18 hrs ago', category: 'Ripple', url: '#', confirmed: false },
-  { source: 'Decrypt', headline: 'XRP Futures Open Interest Hits Record High — Derivatives Market Expanding', time: '22 hrs ago', category: 'Markets', url: '#', confirmed: true },
-  { source: 'Forbes', headline: 'Sovereign Wealth Fund Reportedly Exploring XRP Allocation — Sources Unconfirmed', time: '28 hrs ago', category: 'Institutional', url: '#', confirmed: false },
-  { source: 'CoinDesk', headline: 'Ripple Expands RLUSD Stablecoin to Three New Markets — Official Announcement', time: '36 hrs ago', category: 'Ripple', url: '#', confirmed: true },
-  { source: 'Reuters', headline: 'Oil Rises to $89 as OPEC+ Reaffirms Production Cut Extension Through Q2', time: '40 hrs ago', category: 'Macro', url: '#', confirmed: true },
-  { source: 'Financial Times', headline: 'EU MiCA Compliance Deadline Passes — Major Exchanges Now Fully Regulated', time: '44 hrs ago', category: 'Regulatory', url: '#', confirmed: true },
-]
 
 const categoryColors = {
   Regulatory: { bg: 'rgba(139,92,246,0.12)', text: '#8b5cf6' },
@@ -30,101 +12,124 @@ const categoryColors = {
   Ripple: { bg: 'rgba(139,92,246,0.12)', text: '#8b5cf6' },
   Markets: { bg: 'rgba(6,182,212,0.12)', text: '#06b6d4' },
   Institutional: { bg: 'rgba(16,185,129,0.12)', text: '#10b981' },
-  XRP_News: { bg: 'rgba(59,130,246,0.12)', text: '#3b82f6' },
+  Business: { bg: 'rgba(16,185,129,0.12)', text: '#10b981' },
+  Technology: { bg: 'rgba(6,182,212,0.12)', text: '#06b6d4' },
+  Blockchain: { bg: 'rgba(59,130,246,0.12)', text: '#3b82f6' },
 }
 
-function LiveNewsSection() {
-  const [articles, setArticles] = useState([])
-  const [loading, setLoading] = useState(true)
+function timeAgo(ts) {
+  var diff = Math.floor((Date.now() / 1000) - ts)
+  if (diff < 3600) return Math.floor(diff / 60) + ' min ago'
+  if (diff < 86400) return Math.floor(diff / 3600) + ' hrs ago'
+  return Math.floor(diff / 86400) + ' days ago'
+}
 
-  useEffect(function() {
-    fetch('https://min-api.cryptocompare.com/data/v2/news/?categories=XRP,Ripple&excludeCategories=Sponsored&api_key=' + CRYPTOCOMPARE_KEY)
-      .then(function(r) { return r.json() })
-      .then(function(json) {
-        if (json && json.Data) setArticles(json.Data.slice(0, 15))
-        setLoading(false)
-      })
-      .catch(function() { setLoading(false) })
-  }, [])
-
-  function timeAgo(ts) {
-    const diff = Math.floor((Date.now() / 1000) - ts)
-    if (diff < 3600) return Math.floor(diff / 60) + ' min ago'
-    if (diff < 86400) return Math.floor(diff / 3600) + ' hrs ago'
-    return Math.floor(diff / 86400) + ' days ago'
+function getCategoryColor(categories) {
+  if (!categories) return categoryColors['XRP']
+  var cats = categories.split('|')
+  for (var i = 0; i < cats.length; i++) {
+    var t = cats[i].trim()
+    if (categoryColors[t]) return categoryColors[t]
   }
+  return categoryColors['XRP']
+}
 
-  return (
-    <DetailSection title="Live XRP & Ripple News">
-      <div className="rounded-lg px-4 py-3 mb-4 text-xs leading-relaxed" style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.15)', color: '#9aa8be' }}>
-        <span style={{ color: '#3b82f6', fontWeight: 600 }}>Live feed: </span>
-        Real-time XRP and Ripple news pulled automatically from CryptoCompare. Updates continuously throughout the day.
-      </div>
-      {loading ? (
-        <p style={{ color: '#6b7a96' }}>Loading live news...</p>
-      ) : articles.length === 0 ? (
-        <p style={{ color: '#6b7a96' }}>No articles available right now.</p>
-      ) : (
-        <div className="space-y-1">
-          {articles.map(function(article, i) {
-            return (
-              <a href={article.url} target="_blank" rel="noopener noreferrer" key={i} className="flex items-start gap-3 px-4 py-3 rounded-lg hover:bg-white/5 block" style={{ textDecoration: 'none', borderBottom: '1px solid #1e2330' }}>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded" style={{ background: 'rgba(59,130,246,0.12)', color: '#3b82f6' }}>XRP News</span>
-                  </div>
-                  <p className="text-sm leading-snug mb-1.5" style={{ color: '#eceef5' }}>{article.title}</p>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium" style={{ color: '#3b82f6' }}>{article.source_info?.name || article.source}</span>
-                    <span className="text-xs" style={{ color: '#6b7a96' }}>{timeAgo(article.published_on)}</span>
-                    <ExternalLink size={10} style={{ color: '#6b7a96' }} />
-                  </div>
-                </div>
-              </a>
-            )
-          })}
-        </div>
-      )}
-      <p className="text-xs mt-3" style={{ color: '#6b7a96' }}>Source: CryptoCompare News API · Updates automatically · For informational purposes only.</p>
-    </DetailSection>
-  )
+function getCategoryLabel(categories) {
+  if (!categories) return 'XRP'
+  return categories.split('|')[0].trim()
 }
 
 export default function MediaNarratives() {
+  const [xrpNews, setXrpNews] = useState([])
+  const [rippleNews, setRippleNews] = useState([])
+  const [marketNews, setMarketNews] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(function() {
+    var key = import.meta.env.VITE_CRYPTOCOMPARE_API_KEY
+
+    async function fetchAll() {
+      try {
+        // XRP & Ripple focused news
+        var r1 = await fetch('https://min-api.cryptocompare.com/data/v2/news/?categories=XRP,Ripple&excludeCategories=Sponsored&lang=EN&api_key=' + key)
+        var d1 = await r1.json()
+        if (d1 && d1.Data) setXrpNews(d1.Data.slice(0, 10))
+
+        // Ripple corporate news
+        var r2 = await fetch('https://min-api.cryptocompare.com/data/v2/news/?categories=Ripple,Regulation&excludeCategories=Sponsored&lang=EN&api_key=' + key)
+        var d2 = await r2.json()
+        if (d2 && d2.Data) setRippleNews(d2.Data.slice(0, 6))
+
+        // Broader crypto market news
+        var r3 = await fetch('https://min-api.cryptocompare.com/data/v2/news/?categories=ETF,Regulation,Blockchain&excludeCategories=Sponsored&lang=EN&api_key=' + key)
+        var d3 = await r3.json()
+        if (d3 && d3.Data) setMarketNews(d3.Data.slice(0, 6))
+      } catch(e) {
+        console.error('MediaNarratives fetch error:', e)
+      }
+      setLoading(false)
+    }
+
+    fetchAll()
+    var interval = setInterval(fetchAll, 10 * 60 * 1000)
+    return function() { clearInterval(interval) }
+  }, [])
+
+  function NewsItem({ article }) {
+    var cat = getCategoryColor(article.categories)
+    var catLabel = getCategoryLabel(article.categories)
+    var sourceName = article.source_info ? article.source_info.name : article.source
+    return (
+      <a href={article.url} target="_blank" rel="noopener noreferrer" className="block py-3 hover:bg-white/5 -mx-5 px-5 transition-colors" style={{ borderBottom: '1px solid #1e2330', textDecoration: 'none' }}>
+        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+          <span className="text-xs font-semibold px-2 py-0.5 rounded" style={{ background: cat.bg, color: cat.text }}>{catLabel}</span>
+          <ExternalLink size={10} style={{ color: '#6b7a96' }} />
+        </div>
+        <p className="text-sm leading-snug mb-1.5" style={{ color: '#eceef5' }}>{article.title}</p>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium" style={{ color: '#3b82f6' }}>{sourceName}</span>
+          <span className="text-xs" style={{ color: '#6b7a96' }}>{timeAgo(article.published_on)}</span>
+        </div>
+      </a>
+    )
+  }
+
+  function Section({ title, articles, badge }) {
+    return (
+      <div className="rounded-xl p-5 border" style={{ background: '#161a22', borderColor: '#1e2330' }}>
+        <div className="flex items-center gap-2 mb-4">
+          <h2 className="text-sm font-semibold" style={{ color: '#eceef5' }}>{title}</h2>
+          {badge && <span className="text-xs font-semibold px-2 py-0.5 rounded" style={{ background: 'rgba(16,185,129,0.12)', color: '#10b981' }}>{badge}</span>}
+        </div>
+        {loading ? (
+          <div className="space-y-3">
+            {[1,2,3].map(function(i) { return <div key={i} className="h-14 rounded animate-pulse" style={{ background: '#1e2330' }} /> })}
+          </div>
+        ) : articles.length === 0 ? (
+          <p className="text-sm" style={{ color: '#6b7a96' }}>No articles available right now.</p>
+        ) : (
+          articles.map(function(article, i) { return <NewsItem key={i} article={article} /> })
+        )}
+        <p className="text-xs mt-4" style={{ color: '#6b7a96' }}>Source: CryptoCompare · Live feed · For informational purposes only.</p>
+      </div>
+    )
+  }
+
   return (
     <AppLayout>
-      <DetailPageLayout title="Media & Narratives" subtitle="Live XRP news and top headlines from reputable sources. For informational purposes only." badge="LAST 48 HOURS" badgeColor="blue">
-
-        <LiveNewsSection />
-
-        <DetailSection title="Top Headlines">
-          <div className="space-y-1">
-            {staticHeadlines.map(function(item, i) {
-              const cat = categoryColors[item.category] || categoryColors['XRP']
-              return (
-                <a href={item.url} target="_blank" rel="noopener noreferrer" key={i} className="flex items-start gap-3 px-4 py-3 rounded-lg hover:bg-white/5 block" style={{ textDecoration: 'none', borderBottom: '1px solid #1e2330' }}>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                      <span className="text-xs font-semibold px-2 py-0.5 rounded" style={{ background: cat.bg, color: cat.text }}>{item.category}</span>
-                      {!item.confirmed && (<span className="text-xs font-semibold px-2 py-0.5 rounded" style={{ background: 'rgba(239,68,68,0.12)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' }}>Unconfirmed</span>)}
-                    </div>
-                    <p className="text-sm leading-snug mb-1.5" style={{ color: '#eceef5' }}>{item.headline}</p>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium" style={{ color: '#3b82f6' }}>{item.source}</span>
-                      <span className="text-xs" style={{ color: '#6b7a96' }}>{item.time}</span>
-                      <ExternalLink size={10} style={{ color: '#6b7a96' }} />
-                    </div>
-                  </div>
-                </a>
-              )
-            })}
-          </div>
-        </DetailSection>
-
-        <div className="rounded-lg px-4 py-3 mt-2 text-xs text-center" style={{ color: '#6b7a96' }}>
-          Headlines sourced from Reuters, Bloomberg, WSJ, Financial Times, CoinDesk, The Block, Forbes, Decrypt, and official government sources only. Unconfirmed items are flagged in red — always verify independently.
+      <div className="mb-6">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-xs font-semibold px-2 py-0.5 rounded" style={{ background: 'rgba(59,130,246,0.12)', color: '#3b82f6' }}>LIVE</span>
+          <h1 className="text-2xl font-bold" style={{ fontFamily: 'Syne, sans-serif', color: '#eceef5' }}>Media & Narratives</h1>
         </div>
-      </DetailPageLayout>
+        <p className="text-sm" style={{ color: '#9aa8be' }}>Live XRP, Ripple, and crypto market news from reputable global sources. For informational purposes only.</p>
+      </div>
+
+      <div className="space-y-6">
+        <Section title="XRP & Ripple News" articles={xrpNews} badge="LIVE" />
+        <Section title="Ripple News" articles={rippleNews} badge="LIVE" />
+        <Section title="Market & Regulatory News" articles={marketNews} badge="LIVE" />
+      </div>
     </AppLayout>
   )
 }
