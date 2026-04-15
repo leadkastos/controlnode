@@ -1,16 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import AppLayout from '../components/AppLayout'
 import { TrendingUp, TrendingDown, Building2, FileText } from 'lucide-react'
-
-const etfs = [
-  { name: 'Canary Capital XRP ETF', ticker: 'XRPC', issuer: 'Canary Capital', type: 'spot', aum: 1240000000, xrp_holdings: 536900000, flow_24h: 42000000, flow_7d: 187000000, flow_30d: 412000000, price_change: 3.4, status: 'active' },
-  { name: 'Bitwise XRP ETF', ticker: 'XRP', issuer: 'Bitwise', type: 'spot', aum: 980000000, xrp_holdings: 424600000, flow_24h: 28000000, flow_7d: 134000000, flow_30d: 290000000, price_change: 3.2, status: 'active' },
-  { name: 'Franklin Templeton XRP ETF', ticker: 'XRPZ', issuer: 'Franklin Templeton', type: 'spot', aum: 760000000, xrp_holdings: 329300000, flow_24h: 19000000, flow_7d: 98000000, flow_30d: 201000000, price_change: 3.1, status: 'active' },
-  { name: 'Grayscale XRP ETF', ticker: 'GXRP', issuer: 'Grayscale', type: 'spot', aum: 640000000, xrp_holdings: 277200000, flow_24h: -8000000, flow_7d: 22000000, flow_30d: 88000000, price_change: 2.9, status: 'active' },
-  { name: '21Shares XRP ETF', ticker: 'TOXR', issuer: '21Shares', type: 'spot', aum: 420000000, xrp_holdings: 181900000, flow_24h: 11000000, flow_7d: 54000000, flow_30d: 120000000, price_change: 3.3, status: 'active' },
-  { name: 'REX-Osprey XRP ETF', ticker: 'XRPR', issuer: 'REX-Osprey', type: 'spot', aum: 310000000, xrp_holdings: 134300000, flow_24h: 6000000, flow_7d: 31000000, flow_30d: 74000000, price_change: 3.0, status: 'active' },
-  { name: 'ProShares Ultra XRP ETF', ticker: 'UXRP', issuer: 'ProShares', type: 'futures', aum: 180000000, xrp_holdings: 0, flow_24h: 3000000, flow_7d: 18000000, flow_30d: 42000000, price_change: 6.8, status: 'active' },
-]
+import { supabase } from '../lib/supabase'
 
 const pipeline = [
   { issuer: 'BlackRock', status: 'not_filed', importance: 'high', notes: 'Major institutional catalyst if filed. Largest ETF issuer globally.' },
@@ -57,12 +48,6 @@ function fmtXRP(n) {
   return n.toString()
 }
 
-const totalAUM = etfs.reduce(function(s, e) { return s + e.aum }, 0)
-const totalXRP = etfs.filter(function(e) { return e.type === 'spot' }).reduce(function(s, e) { return s + e.xrp_holdings }, 0)
-const net24h = etfs.reduce(function(s, e) { return s + e.flow_24h }, 0)
-const net7d = etfs.reduce(function(s, e) { return s + e.flow_7d }, 0)
-const net30d = etfs.reduce(function(s, e) { return s + e.flow_30d }, 0)
-const activeCount = etfs.length
 const pieColors = ['#3b82f6','#8b5cf6','#10b981','#f59e0b','#ef4444','#06b6d4','#ec4899']
 
 function FlowChart({ data }) {
@@ -99,10 +84,11 @@ function FlowChart({ data }) {
 
 function PieChart({ etfs }) {
   const spotETFs = etfs.filter(function(e) { return e.type === 'spot' })
-  const total = spotETFs.reduce(function(s, e) { return s + e.aum }, 0)
+  const total = spotETFs.reduce(function(s, e) { return s + (e.aum || 0) }, 0)
+  if (total === 0) return <p style={{ color: '#6b7a96' }}>No data available.</p>
   let cumulative = 0
   const slices = spotETFs.map(function(e, i) {
-    const pct = e.aum / total
+    const pct = (e.aum || 0) / total
     const start = cumulative
     cumulative += pct
     return Object.assign({}, e, { pct, start, color: pieColors[i] })
@@ -150,7 +136,7 @@ function StatusBadge({ status }) {
   const map = {
     active: { bg: 'rgba(16,185,129,0.12)', color: '#10b981', label: 'Active' },
     pending: { bg: 'rgba(245,158,11,0.12)', color: '#f59e0b', label: 'Pending' },
-    withdrawn: { bg: 'rgba(239,68,68,0.12)', color: '#ef4444', label: 'Withdrawn' },
+    suspended: { bg: 'rgba(239,68,68,0.12)', color: '#ef4444', label: 'Suspended' },
     not_filed: { bg: 'rgba(139,92,246,0.12)', color: '#8b5cf6', label: 'Not Filed' },
   }
   const s = map[status] || map.pending
@@ -226,7 +212,22 @@ function EDGARFilingsSection() {
 }
 
 export default function ETFFlows() {
+  const [etfs, setEtfs] = useState([])
+  const [loading, setLoading] = useState(true)
   const [flowPeriod, setFlowPeriod] = useState('7d')
+
+  useEffect(function() {
+    supabase.from('xrp_etf_flows').select('*').order('aum', { ascending: false }).then(function(res) {
+      if (res.data) setEtfs(res.data)
+      setLoading(false)
+    })
+  }, [])
+
+  const totalAUM = etfs.reduce(function(s, e) { return s + (e.aum || 0) }, 0)
+  const totalXRP = etfs.filter(function(e) { return e.type === 'spot' }).reduce(function(s, e) { return s + (e.xrp_holdings || 0) }, 0)
+  const net24h = etfs.reduce(function(s, e) { return s + (e.flow_24h || 0) }, 0)
+  const net7d = etfs.reduce(function(s, e) { return s + (e.flow_7d || 0) }, 0)
+  const net30d = etfs.reduce(function(s, e) { return s + (e.flow_30d || 0) }, 0)
 
   return (
     <AppLayout>
@@ -242,11 +243,11 @@ export default function ETFFlows() {
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
         {[
-          { label: 'Total ETF AUM', value: '$' + fmt(totalAUM), sub: activeCount + ' active ETFs', color: '#3b82f6' },
-          { label: 'XRP in ETFs', value: fmtXRP(totalXRP), sub: 'Spot ETFs only', color: '#8b5cf6' },
-          { label: 'Net Flow 24h', value: (net24h >= 0 ? '+' : '') + '$' + fmt(net24h), sub: 'Combined all ETFs', color: net24h >= 0 ? '#10b981' : '#ef4444' },
-          { label: 'Net Flow 7d', value: (net7d >= 0 ? '+' : '') + '$' + fmt(net7d), sub: 'Rolling 7 days', color: net7d >= 0 ? '#10b981' : '#ef4444' },
-          { label: 'Net Flow 30d', value: (net30d >= 0 ? '+' : '') + '$' + fmt(net30d), sub: 'Rolling 30 days', color: net30d >= 0 ? '#10b981' : '#ef4444' },
+          { label: 'Total ETF AUM', value: loading ? '—' : '$' + fmt(totalAUM), sub: etfs.length + ' active ETFs', color: '#3b82f6' },
+          { label: 'XRP in ETFs', value: loading ? '—' : fmtXRP(totalXRP), sub: 'Spot ETFs only', color: '#8b5cf6' },
+          { label: 'Net Flow 24h', value: loading ? '—' : (net24h >= 0 ? '+' : '') + '$' + fmt(net24h), sub: 'Combined all ETFs', color: net24h >= 0 ? '#10b981' : '#ef4444' },
+          { label: 'Net Flow 7d', value: loading ? '—' : (net7d >= 0 ? '+' : '') + '$' + fmt(net7d), sub: 'Rolling 7 days', color: net7d >= 0 ? '#10b981' : '#ef4444' },
+          { label: 'Net Flow 30d', value: loading ? '—' : (net30d >= 0 ? '+' : '') + '$' + fmt(net30d), sub: 'Rolling 30 days', color: net30d >= 0 ? '#10b981' : '#ef4444' },
         ].map(function(k, i) {
           return (
             <div key={i} className="rounded-xl p-4 border" style={{ background: '#161a22', borderColor: '#1e2330' }}>
@@ -267,40 +268,44 @@ export default function ETFFlows() {
           </div>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full" style={{ minWidth: '800px' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid #1e2330' }}>
-                {['ETF Name', 'Ticker', 'Type', 'AUM', 'XRP Holdings', 'Inflow 24h', 'Outflow 24h', 'Net 7d', 'Price Chg', 'Status'].map(function(h) {
-                  return <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide" style={{ color: '#6b7a96' }}>{h}</th>
+          {loading ? (
+            <div className="p-6"><p style={{ color: '#6b7a96' }}>Loading ETF data...</p></div>
+          ) : (
+            <table className="w-full" style={{ minWidth: '800px' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid #1e2330' }}>
+                  {['ETF Name', 'Ticker', 'Type', 'AUM', 'XRP Holdings', 'Inflow 24h', 'Outflow 24h', 'Net 7d', 'Price Chg', 'Status'].map(function(h) {
+                    return <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide" style={{ color: '#6b7a96' }}>{h}</th>
+                  })}
+                </tr>
+              </thead>
+              <tbody>
+                {etfs.map(function(e, i) {
+                  const inflow = (e.flow_24h || 0) > 0 ? e.flow_24h : 0
+                  const outflow = (e.flow_24h || 0) < 0 ? e.flow_24h : 0
+                  return (
+                    <tr key={i} style={{ borderBottom: '1px solid rgba(30,35,48,0.5)' }} className="transition-colors hover:bg-white/5">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-1.5 h-8 rounded-full flex-shrink-0" style={{ background: e.type === 'spot' ? '#3b82f6' : '#f59e0b' }} />
+                          <span className="text-sm font-medium" style={{ color: '#eceef5' }}>{e.etf_name}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3"><span className="text-xs font-mono font-bold px-2 py-1 rounded" style={{ background: '#111318', color: '#3b82f6' }}>{e.ticker}</span></td>
+                      <td className="px-4 py-3"><span className="text-xs font-semibold px-2 py-0.5 rounded capitalize" style={{ background: e.type === 'spot' ? 'rgba(59,130,246,0.12)' : 'rgba(245,158,11,0.12)', color: e.type === 'spot' ? '#3b82f6' : '#f59e0b' }}>{e.type}</span></td>
+                      <td className="px-4 py-3 text-sm font-mono" style={{ color: '#eceef5' }}>${fmt(e.aum || 0)}</td>
+                      <td className="px-4 py-3 text-sm font-mono" style={{ color: '#9aa8be' }}>{e.type === 'spot' ? fmtXRP(e.xrp_holdings || 0) : '—'}</td>
+                      <td className="px-4 py-3">{inflow > 0 ? <span className="flex items-center gap-1 text-sm font-mono" style={{ color: '#10b981' }}><TrendingUp size={13} />+${fmt(inflow)}</span> : <span className="text-sm font-mono" style={{ color: '#6b7a96' }}>—</span>}</td>
+                      <td className="px-4 py-3">{outflow < 0 ? <span className="flex items-center gap-1 text-sm font-mono" style={{ color: '#ef4444' }}><TrendingDown size={13} />${fmt(outflow)}</span> : <span className="text-sm font-mono" style={{ color: '#6b7a96' }}>—</span>}</td>
+                      <td className="px-4 py-3 text-sm font-mono" style={{ color: (e.flow_7d || 0) >= 0 ? '#10b981' : '#ef4444' }}>{(e.flow_7d || 0) >= 0 ? '+' : ''}${fmt(e.flow_7d || 0)}</td>
+                      <td className="px-4 py-3 text-sm font-mono" style={{ color: (e.price_change || 0) >= 0 ? '#10b981' : '#ef4444' }}>{(e.price_change || 0) >= 0 ? '+' : ''}{e.price_change || 0}%</td>
+                      <td className="px-4 py-3"><StatusBadge status={e.status} /></td>
+                    </tr>
+                  )
                 })}
-              </tr>
-            </thead>
-            <tbody>
-              {etfs.map(function(e, i) {
-                const inflow = e.flow_24h > 0 ? e.flow_24h : 0
-                const outflow = e.flow_24h < 0 ? e.flow_24h : 0
-                return (
-                  <tr key={i} style={{ borderBottom: '1px solid rgba(30,35,48,0.5)' }} className="transition-colors hover:bg-white/5">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-1.5 h-8 rounded-full flex-shrink-0" style={{ background: e.type === 'spot' ? '#3b82f6' : '#f59e0b' }} />
-                        <span className="text-sm font-medium" style={{ color: '#eceef5' }}>{e.name}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3"><span className="text-xs font-mono font-bold px-2 py-1 rounded" style={{ background: '#111318', color: '#3b82f6' }}>{e.ticker}</span></td>
-                    <td className="px-4 py-3"><span className="text-xs font-semibold px-2 py-0.5 rounded capitalize" style={{ background: e.type === 'spot' ? 'rgba(59,130,246,0.12)' : 'rgba(245,158,11,0.12)', color: e.type === 'spot' ? '#3b82f6' : '#f59e0b' }}>{e.type}</span></td>
-                    <td className="px-4 py-3 text-sm font-mono" style={{ color: '#eceef5' }}>${fmt(e.aum)}</td>
-                    <td className="px-4 py-3 text-sm font-mono" style={{ color: '#9aa8be' }}>{e.type === 'spot' ? fmtXRP(e.xrp_holdings) : '—'}</td>
-                    <td className="px-4 py-3">{inflow > 0 ? <span className="flex items-center gap-1 text-sm font-mono" style={{ color: '#10b981' }}><TrendingUp size={13} />+${fmt(inflow)}</span> : <span className="text-sm font-mono" style={{ color: '#6b7a96' }}>—</span>}</td>
-                    <td className="px-4 py-3">{outflow < 0 ? <span className="flex items-center gap-1 text-sm font-mono" style={{ color: '#ef4444' }}><TrendingDown size={13} />${fmt(outflow)}</span> : <span className="text-sm font-mono" style={{ color: '#6b7a96' }}>—</span>}</td>
-                    <td className="px-4 py-3 text-sm font-mono" style={{ color: e.flow_7d >= 0 ? '#10b981' : '#ef4444' }}>{e.flow_7d >= 0 ? '+' : ''}${fmt(e.flow_7d)}</td>
-                    <td className="px-4 py-3 text-sm font-mono" style={{ color: e.price_change >= 0 ? '#10b981' : '#ef4444' }}>{e.price_change >= 0 ? '+' : ''}{e.price_change}%</td>
-                    <td className="px-4 py-3"><StatusBadge status={e.status} /></td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
 
@@ -321,8 +326,8 @@ export default function ETFFlows() {
         </div>
         <div className="rounded-xl p-5 border" style={{ background: '#161a22', borderColor: '#1e2330' }}>
           <h2 className="text-sm font-semibold mb-4" style={{ color: '#eceef5' }}>AUM Market Share (Spot ETFs)</h2>
-          <PieChart etfs={etfs} />
-          <p className="text-xs mt-4" style={{ color: '#6b7a96' }}>Total Spot AUM: ${fmt(etfs.filter(function(e) { return e.type === 'spot' }).reduce(function(s, e) { return s + e.aum }, 0))}</p>
+          {loading ? <p style={{ color: '#6b7a96' }}>Loading...</p> : <PieChart etfs={etfs} />}
+          <p className="text-xs mt-4" style={{ color: '#6b7a96' }}>Total Spot AUM: ${fmt(etfs.filter(function(e) { return e.type === 'spot' }).reduce(function(s, e) { return s + (e.aum || 0) }, 0))}</p>
         </div>
       </div>
 
