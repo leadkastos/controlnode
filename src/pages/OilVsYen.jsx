@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import AppLayout from '../components/AppLayout'
+import { supabase } from '../lib/supabase'
 
 function DataRow({ label, value, valueColor }) {
   return (
@@ -47,6 +48,7 @@ function fmt(val, prefix, suffix, decimals) {
 
 export default function OilVsYen() {
   const [macro, setMacro] = useState({})
+  const [scenarios, setScenarios] = useState([])
 
   useEffect(function() {
     async function fetchMacro() {
@@ -64,6 +66,12 @@ export default function OilVsYen() {
     fetchMacro()
     var interval = setInterval(fetchMacro, 60 * 60 * 1000)
     return function() { clearInterval(interval) }
+  }, [])
+
+  useEffect(function() {
+    supabase.from('oil_yen_scenarios').select('*').order('sort_order', { ascending: true }).then(function(res) {
+      if (res.data) setScenarios(res.data)
+    })
   }, [])
 
   function tdp(sym) {
@@ -95,7 +103,7 @@ export default function OilVsYen() {
           <DataRow label="BOJ Rate" value="0.5% (Hold)" />
           <DataRow label="OPEC+ Stance" value="Production cuts maintained" />
           <p className="text-xs mt-3" style={{ color: '#6b7a96' }}>
-            Oil and forex data: Twelve Data · Updates hourly · BOJ Rate and OPEC+ manually updated · For informational purposes only.
+            Oil and forex: Twelve Data · Updates hourly · BOJ Rate and OPEC+ manually updated · For informational purposes only.
           </p>
         </Section>
 
@@ -114,39 +122,28 @@ export default function OilVsYen() {
         </Section>
 
         <Section title="Historical Correlation Notes">
-          <DataRow label="Oil up + Yen weak (current)" value="Historically observed positive XRP periods" />
+          <DataRow label="Oil up + Yen weak" value="Historically observed positive XRP periods" />
           <DataRow label="Oil down + Yen strong" value="Historically observed negative XRP periods" />
           <DataRow label="Oil up + Yen strong" value="Mixed historical outcomes" />
           <DataRow label="Correlation Confidence" value="Moderate (6-month observation window)" />
           <p className="text-xs mt-3" style={{ color: '#6b7a96' }}>Past correlations are not predictive of future market behavior.</p>
         </Section>
 
-        <Section title="OPEC+ & Supply Context">
-          <BulletList items={[
-            'OPEC+ maintaining current production cuts through Q2 2026.',
-            'Saudi Arabia fiscal breakeven around $80+ oil — supply discipline context.',
-            'Russia sanctions creating alternative trade routes through India/China.',
-            'US shale production at record highs — partial supply offset.',
-            'Demand: China recovery trajectory uneven. EU demand remains soft.',
-          ]} />
-        </Section>
-
         <Section title="Macro Scenarios to Monitor">
-          <div className="space-y-3">
-            {[
-              { scenario: 'Oil spikes to $95+ (supply shock)', context: 'Short-term risk-off potential, followed by yen weakness context', color: '#f59e0b' },
-              { scenario: 'Oil falls to $75 (demand concern)', context: 'Broader risk-off signal across asset classes', color: '#ef4444' },
-              { scenario: 'Oil holds $85-90 (base case)', context: 'Current conditions maintain — yen dynamics continue', color: '#10b981' },
-              { scenario: 'BOJ surprise rate hike', context: 'Yen strengthens, carry trade dynamics reverse — risk asset impact likely', color: '#ef4444' },
-            ].map(function(s, i) {
-              return (
-                <div key={i} className="p-3 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid #1e2330' }}>
-                  <p className="text-xs font-semibold mb-1" style={{ color: '#eceef5' }}>{s.scenario}</p>
-                  <p className="text-xs" style={{ color: s.color }}>{s.context}</p>
-                </div>
-              )
-            })}
-          </div>
+          {scenarios.length === 0 ? (
+            <p className="text-sm" style={{ color: '#6b7a96' }}>No scenarios added yet. Check back soon.</p>
+          ) : (
+            <div className="space-y-3">
+              {scenarios.map(function(s) {
+                return (
+                  <div key={s.id} className="p-3 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid #1e2330' }}>
+                    <p className="text-xs font-semibold mb-1" style={{ color: '#eceef5' }}>{s.scenario}</p>
+                    <p className="text-xs" style={{ color: s.color || '#f59e0b' }}>{s.context}</p>
+                  </div>
+                )
+              })}
+            </div>
+          )}
           <p className="text-xs mt-3" style={{ color: '#6b7a96' }}>Scenarios are observational frameworks only — not predictions or recommendations.</p>
         </Section>
 
