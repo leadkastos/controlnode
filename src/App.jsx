@@ -26,6 +26,7 @@ import {
   AdminDailyWrap,
   AdminDominoTheory,
   AdminGeopoliticalWatch,
+  AdminOilYen,
   AdminHeadlines,
   AdminWatchlist,
   AdminChatter,
@@ -64,6 +65,7 @@ export default function App() {
         <Route path="/admin/daily-wrap" element={<ProtectedRoute adminOnly><AdminDailyWrap /></ProtectedRoute>} />
         <Route path="/admin/domino-theory" element={<ProtectedRoute adminOnly><AdminDominoTheory /></ProtectedRoute>} />
         <Route path="/admin/geopolitical-watch" element={<ProtectedRoute adminOnly><AdminGeopoliticalWatch /></ProtectedRoute>} />
+        <Route path="/admin/oil-yen" element={<ProtectedRoute adminOnly><AdminOilYen /></ProtectedRoute>} />
         <Route path="/admin/headlines" element={<ProtectedRoute adminOnly><AdminHeadlines /></ProtectedRoute>} />
         <Route path="/admin/watchlist" element={<ProtectedRoute adminOnly><AdminWatchlist /></ProtectedRoute>} />
         <Route path="/admin/chatter" element={<ProtectedRoute adminOnly><AdminChatter /></ProtectedRoute>} />
