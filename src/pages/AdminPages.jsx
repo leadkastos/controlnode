@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import AppLayout from '../components/AppLayout'
+import DetailPageLayout, { DetailSection, DataRow } from '../components/DetailPageLayout'
+import { Badge } from '../components/UI'
+import { Youtube, Plus, Trash2, ExternalLink } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../contexts/AuthContext'
 
 function AdminLayout({ title, children }) {
   return (
@@ -89,6 +93,275 @@ function Toast({ message, type }) {
   )
 }
 
+function Toggle({ enabled, onToggle }) {
+  return (
+    <div
+      onClick={onToggle}
+      className="w-10 h-5 rounded-full flex items-center px-0.5 cursor-pointer transition-all"
+      style={{ background: enabled ? '#3b82f6' : '#1e2330' }}
+    >
+      <div
+        className="w-4 h-4 rounded-full"
+        style={{ background: '#fff', transform: enabled ? 'translateX(20px)' : 'translateX(0)', transition: 'transform 0.15s' }}
+      />
+    </div>
+  )
+}
+
+function EmailNotificationsSection() {
+  const { user } = useAuth()
+  const [morningBrief, setMorningBrief] = useState(false)
+  const [dailyWrap, setDailyWrap] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [toast, setToast] = useState('')
+
+  useEffect(function() {
+    if (!user) return
+    supabase.from('profiles').select('email_morning_brief, email_daily_wrap').eq('id', user.id).single().then(function(res) {
+      if (res.data) {
+        setMorningBrief(res.data.email_morning_brief || false)
+        setDailyWrap(res.data.email_daily_wrap || false)
+      }
+    })
+  }, [user])
+
+  async function save(field, value) {
+    if (!user) return
+    setSaving(true)
+    var update = {}
+    update[field] = value
+    await supabase.from('profiles').update(update).eq('id', user.id)
+    setSaving(false)
+    setToast('Saved!')
+    setTimeout(function() { setToast('') }, 2000)
+  }
+
+  function toggleMorning() {
+    var next = !morningBrief
+    setMorningBrief(next)
+    save('email_morning_brief', next)
+  }
+
+  function toggleWrap() {
+    var next = !dailyWrap
+    setDailyWrap(next)
+    save('email_daily_wrap', next)
+  }
+
+  return (
+    <DetailSection title="Email Notifications">
+      <div className="rounded-lg px-4 py-3 mb-4 text-xs leading-relaxed" style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.15)', color: '#9aa8be' }}>
+        <span style={{ color: '#3b82f6', fontWeight: 600 }}>How this works: </span>
+        Toggle on Morning Brief or Daily Wrap to receive them by email when published.
+      </div>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between py-2" style={{ borderBottom: '1px solid #1e2330' }}>
+          <div>
+            <p className="text-sm font-medium" style={{ color: '#eceef5' }}>Morning Brief</p>
+            <p className="text-xs" style={{ color: '#9aa8be' }}>Delivered to your email each morning when published</p>
+          </div>
+          <Toggle enabled={morningBrief} onToggle={toggleMorning} />
+        </div>
+        <div className="flex items-center justify-between py-2" style={{ borderBottom: '1px solid #1e2330' }}>
+          <div>
+            <p className="text-sm font-medium" style={{ color: '#eceef5' }}>Daily Wrap</p>
+            <p className="text-xs" style={{ color: '#9aa8be' }}>Delivered to your email each evening when published</p>
+          </div>
+          <Toggle enabled={dailyWrap} onToggle={toggleWrap} />
+        </div>
+      </div>
+      {toast && <p className="text-xs mt-3" style={{ color: '#10b981' }}>{toast}</p>}
+    </DetailSection>
+  )
+}
+
+function YouTubeSection() {
+  const [channels, setChannels] = useState([
+    { id: 1, url: 'https://youtube.com/@EgragCrypto', name: 'EgragCrypto' },
+    { id: 2, url: 'https://youtube.com/@darkdefender', name: 'darkdefender' },
+  ])
+  const [newUrl, setNewUrl] = useState('')
+  const [error, setError] = useState('')
+  const MAX = 4
+
+  function addChannel() {
+    if (!newUrl.trim()) return
+    if (channels.length >= MAX) { setError('Maximum of ' + MAX + ' channels allowed.'); return }
+    if (!newUrl.includes('youtube.com') && !newUrl.includes('youtu.be')) { setError('Please enter a valid YouTube channel URL.'); return }
+    var name = newUrl.split('@')[1]?.split('/')[0] || newUrl
+    setChannels([...channels, { id: Date.now(), url: newUrl.trim(), name }])
+    setNewUrl('')
+    setError('')
+  }
+
+  function removeChannel(id) { setChannels(channels.filter(function(c) { return c.id !== id })) }
+
+  return (
+    <DetailSection title="YouTube Intel — Channel Settings">
+      <div className="rounded-lg px-4 py-3 mb-4 text-xs leading-relaxed" style={{ background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.15)', color: '#9aa8be' }}>
+        <span style={{ color: '#ef4444', fontWeight: 600 }}>How this works: </span>
+        Add up to 4 YouTube channels. ControlNode checks for new videos 4 times daily.
+      </div>
+      <div className="space-y-2 mb-4">
+        {channels.map(function(ch) {
+          return (
+            <div key={ch.id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg" style={{ background: '#111318', border: '1px solid #1e2330' }}>
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(239,68,68,0.15)' }}>
+                <Youtube size={14} style={{ color: '#ef4444' }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate" style={{ color: '#eceef5' }}>@{ch.name}</p>
+                <p className="text-xs truncate" style={{ color: '#6b7a96' }}>{ch.url}</p>
+              </div>
+              <a href={ch.url} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded" style={{ color: '#6b7a96' }}>
+                <ExternalLink size={13} />
+              </a>
+              <button onClick={function() { removeChannel(ch.id) }} className="p-1.5 rounded transition-colors hover:bg-red-500/10" style={{ color: '#6b7a96' }}>
+                <Trash2 size={13} />
+              </button>
+            </div>
+          )
+        })}
+        {Array.from({ length: MAX - channels.length }).map(function(_, i) {
+          return (
+            <div key={'empty-' + i} className="flex items-center gap-3 px-3 py-2.5 rounded-lg" style={{ background: '#0d0f14', border: '1px dashed #1e2330' }}>
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#161a22' }}>
+                <Youtube size={14} style={{ color: '#4a5870' }} />
+              </div>
+              <p className="text-xs" style={{ color: '#4a5870' }}>Empty slot</p>
+            </div>
+          )
+        })}
+      </div>
+      {channels.length < MAX && (
+        <div>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={newUrl}
+              onChange={function(e) { setNewUrl(e.target.value); setError('') }}
+              placeholder="https://youtube.com/@channelname"
+              className="flex-1 px-3 py-2.5 rounded-lg text-sm outline-none"
+              style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}
+              onFocus={function(e) { e.target.style.borderColor = '#3b82f6' }}
+              onBlur={function(e) { e.target.style.borderColor = '#1e2330' }}
+              onKeyDown={function(e) { if (e.key === 'Enter') addChannel() }}
+            />
+            <button onClick={addChannel} className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-sm font-medium" style={{ background: '#3b82f6', color: '#fff' }}>
+              <Plus size={14} />
+              Add
+            </button>
+          </div>
+          {error && <p className="text-xs mt-2" style={{ color: '#ef4444' }}>{error}</p>}
+          <p className="text-xs mt-2" style={{ color: '#6b7a96' }}>{channels.length} of {MAX} channels used</p>
+        </div>
+      )}
+      {channels.length >= MAX && (
+        <div className="rounded-lg px-4 py-3 text-xs text-center" style={{ background: '#111318', border: '1px solid #1e2330', color: '#6b7a96' }}>
+          Maximum of 4 channels reached. Remove a channel to add a new one.
+        </div>
+      )}
+      <div className="mt-4 pt-4" style={{ borderTop: '1px solid #1e2330' }}>
+        <p className="text-xs" style={{ color: '#6b7a96' }}>Check schedule: 6:00 AM · 12:00 PM · 6:00 PM · 12:00 AM (CT)</p>
+      </div>
+    </DetailSection>
+  )
+}
+
+export function Account() {
+  const { user, profile } = useAuth()
+  var initials = profile?.full_name ? profile.full_name.split(' ').map(function(n) { return n[0] }).join('').toUpperCase() : 'CN'
+
+  return (
+    <AppLayout hideRightSidebar>
+      <DetailPageLayout title="My Profile" subtitle="Manage your ControlNode account and notification preferences.">
+        <DetailSection title="Profile Information">
+          <div className="flex items-center gap-4 mb-5">
+            <div className="w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold flex-shrink-0" style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', color: '#fff' }}>
+              {initials}
+            </div>
+            <div>
+              <p className="font-semibold" style={{ color: '#eceef5' }}>{profile?.full_name || 'Member'}</p>
+              <p className="text-sm" style={{ color: '#9aa8be' }}>{user?.email || ''}</p>
+              <div className="mt-1"><Badge color="blue">{profile?.subscription_status === 'active' ? 'Active' : 'Trial'}</Badge></div>
+            </div>
+          </div>
+          <div className="space-y-0">
+            <DataRow label="Plan" value="ControlNode Pro" />
+            <DataRow label="Status" value={profile?.subscription_status === 'active' ? 'Active' : 'Trial'} valueColor="#10b981" />
+          </div>
+        </DetailSection>
+        <DetailSection title="Account Settings">
+          <div className="space-y-3">
+            {['Email Address', 'Display Name', 'Reset Password', 'Timezone'].map(function(field) {
+              return (
+                <div key={field} className="flex items-center justify-between py-1">
+                  <span className="text-sm" style={{ color: '#9aa8be' }}>{field}</span>
+                  <button className="text-xs px-3 py-1.5 rounded-lg border transition-colors" style={{ color: '#3b82f6', borderColor: '#1e2330' }}>
+                    {field === 'Reset Password' ? 'Send Reset Email' : 'Edit'}
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        </DetailSection>
+        <EmailNotificationsSection />
+        <YouTubeSection />
+      </DetailPageLayout>
+    </AppLayout>
+  )
+}
+
+export function Billing() {
+  return (
+    <AppLayout hideRightSidebar>
+      <DetailPageLayout title="Billing" subtitle="Manage your subscription, payment methods, and invoices.">
+        <DetailSection title="Current Plan">
+          <div className="rounded-lg p-4 mb-4" style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)' }}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-semibold" style={{ color: '#eceef5' }}>ControlNode Pro</p>
+                <p className="text-sm" style={{ color: '#9aa8be' }}>$29/month</p>
+              </div>
+              <Badge color="blue">Active</Badge>
+            </div>
+          </div>
+          <div className="space-y-0">
+            <DataRow label="Payment Method" value="Managed via GoHighLevel" />
+          </div>
+        </DetailSection>
+      </DetailPageLayout>
+    </AppLayout>
+  )
+}
+
+export function Settings() {
+  return (
+    <AppLayout hideRightSidebar>
+      <DetailPageLayout title="Settings" subtitle="Configure your ControlNode experience.">
+        <DetailSection title="Display">
+          <div className="space-y-0">
+            <DataRow label="Theme" value="Dark (Default)" />
+            <DataRow label="Currency" value="USD" />
+            <DataRow label="Timezone" value="CT (Chicago)" />
+          </div>
+        </DetailSection>
+        <DetailSection title="Data & Privacy">
+          <div className="space-y-2">
+            {['Export My Data', 'Delete Account'].map(function(action) {
+              return (
+                <button key={action} className="text-sm px-4 py-2 rounded-lg border w-full text-left" style={{ color: action === 'Delete Account' ? '#ef4444' : '#8892a4', borderColor: '#1e2330' }}>
+                  {action}
+                </button>
+              )
+            })}
+          </div>
+        </DetailSection>
+      </DetailPageLayout>
+    </AppLayout>
+  )
+}
+
 export function Admin() {
   return (
     <AdminLayout title="Admin Panel">
@@ -128,23 +401,17 @@ export function Admin() {
 
 export function AdminMorningBrief() {
   var dateState = useState('')
-  var date = dateState[0]
-  var setDate = dateState[1]
+  var date = dateState[0]; var setDate = dateState[1]
   var headlineState = useState('')
-  var headline = headlineState[0]
-  var setHeadline = headlineState[1]
+  var headline = headlineState[0]; var setHeadline = headlineState[1]
   var summaryState = useState('')
-  var summary = summaryState[0]
-  var setSummary = summaryState[1]
+  var summary = summaryState[0]; var setSummary = summaryState[1]
   var catalystsState = useState('')
-  var catalysts = catalystsState[0]
-  var setCatalysts = catalystsState[1]
+  var catalysts = catalystsState[0]; var setCatalysts = catalystsState[1]
   var loadingState = useState(false)
-  var loading = loadingState[0]
-  var setLoading = loadingState[1]
+  var loading = loadingState[0]; var setLoading = loadingState[1]
   var toastState = useState({ message: '', type: '' })
-  var toast = toastState[0]
-  var setToast = toastState[1]
+  var toast = toastState[0]; var setToast = toastState[1]
 
   function showToast(message, type) {
     setToast({ message: message, type: type || 'success' })
@@ -178,23 +445,17 @@ export function AdminMorningBrief() {
 
 export function AdminDailyWrap() {
   var dateState = useState('')
-  var date = dateState[0]
-  var setDate = dateState[1]
+  var date = dateState[0]; var setDate = dateState[1]
   var headlineState = useState('')
-  var headline = headlineState[0]
-  var setHeadline = headlineState[1]
+  var headline = headlineState[0]; var setHeadline = headlineState[1]
   var summaryState = useState('')
-  var summary = summaryState[0]
-  var setSummary = summaryState[1]
+  var summary = summaryState[0]; var setSummary = summaryState[1]
   var catalystsState = useState('')
-  var catalysts = catalystsState[0]
-  var setCatalysts = catalystsState[1]
+  var catalysts = catalystsState[0]; var setCatalysts = catalystsState[1]
   var loadingState = useState(false)
-  var loading = loadingState[0]
-  var setLoading = loadingState[1]
+  var loading = loadingState[0]; var setLoading = loadingState[1]
   var toastState = useState({ message: '', type: '' })
-  var toast = toastState[0]
-  var setToast = toastState[1]
+  var toast = toastState[0]; var setToast = toastState[1]
 
   function showToast(message, type) {
     setToast({ message: message, type: type || 'success' })
@@ -228,17 +489,13 @@ export function AdminDailyWrap() {
 
 export function AdminDominoTheory() {
   var dominoesState = useState([])
-  var dominoes = dominoesState[0]
-  var setDominoes = dominoesState[1]
+  var dominoes = dominoesState[0]; var setDominoes = dominoesState[1]
   var loadingState = useState(true)
-  var loading = loadingState[0]
-  var setLoading = loadingState[1]
+  var loading = loadingState[0]; var setLoading = loadingState[1]
   var savingState = useState(null)
-  var saving = savingState[0]
-  var setSaving = savingState[1]
+  var saving = savingState[0]; var setSaving = savingState[1]
   var toastState = useState({ message: '', type: '' })
-  var toast = toastState[0]
-  var setToast = toastState[1]
+  var toast = toastState[0]; var setToast = toastState[1]
 
   function showToast(message, type) {
     setToast({ message: message, type: type || 'success' })
@@ -246,7 +503,7 @@ export function AdminDominoTheory() {
   }
 
   useEffect(function() {
-    supabase.from('domino_theory').select('*').order('order_index').then(function(res) {
+    supabase.from('domino_theory').select('*').order('domino_number').then(function(res) {
       if (res.data) setDominoes(res.data)
       setLoading(false)
     })
@@ -263,36 +520,42 @@ export function AdminDominoTheory() {
 
   async function save(domino) {
     setSaving(domino.id)
-    var result = await supabase.from('domino_theory').update({ status: domino.status, assessment: domino.assessment }).eq('id', domino.id)
+    var result = await supabase.from('domino_theory').update({ status: domino.status, notes: domino.notes }).eq('id', domino.id)
     setSaving(null)
     if (result.error) { showToast('Error: ' + result.error.message, 'error'); return }
-    showToast(domino.name + ' saved!', 'success')
+    showToast(domino.domino_name + ' saved!', 'success')
   }
 
   return (
     <AdminLayout title="Domino Theory">
-      {loading ? (<p style={{ color: '#6b7a96' }}>Loading...</p>) : dominoes.map(function(d) {
-        return (
-          <AdminCard key={d.id} title={'Domino ' + d.order_index + ' — ' + d.name}>
-            <Field label="Status">
-              <select
-                value={d.status}
-                onChange={function(e) { updateField(d.id, 'status', e.target.value) }}
-                className="w-full px-3 py-2.5 rounded-lg text-sm outline-none"
-                style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}
-              >
-                <option value="standing">Standing</option>
-                <option value="tipping">Tipping</option>
-                <option value="fallen">Fallen</option>
-              </select>
-            </Field>
-            <Field label="Assessment Notes">
-              <TextArea value={d.assessment || ''} onChange={function(v) { updateField(d.id, 'assessment', v) }} placeholder="Assessment notes..." rows={3} />
-            </Field>
-            <SaveButton onClick={function() { save(d) }} loading={saving === d.id} label="Save" />
-          </AdminCard>
-        )
-      })}
+      {loading ? (
+        <p style={{ color: '#6b7a96' }}>Loading...</p>
+      ) : dominoes.length === 0 ? (
+        <p style={{ color: '#6b7a96' }}>No dominoes found. Check Supabase domino_theory table.</p>
+      ) : (
+        dominoes.map(function(d) {
+          return (
+            <AdminCard key={d.id} title={'Domino ' + d.domino_number + ' — ' + d.domino_name}>
+              <Field label="Status">
+                <select
+                  value={d.status || 'Standing'}
+                  onChange={function(e) { updateField(d.id, 'status', e.target.value) }}
+                  className="w-full px-3 py-2.5 rounded-lg text-sm outline-none"
+                  style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}
+                >
+                  <option value="Standing">Standing</option>
+                  <option value="Tipping">Tipping</option>
+                  <option value="Fallen">Fallen</option>
+                </select>
+              </Field>
+              <Field label="Assessment Notes">
+                <TextArea value={d.notes || ''} onChange={function(v) { updateField(d.id, 'notes', v) }} placeholder="Assessment notes..." rows={3} />
+              </Field>
+              <SaveButton onClick={function() { save(d) }} loading={saving === d.id} label="Save" />
+            </AdminCard>
+          )
+        })
+      )}
       <Toast message={toast.message} type={toast.type} />
     </AdminLayout>
   )
@@ -300,20 +563,15 @@ export function AdminDominoTheory() {
 
 export function AdminHeadlines() {
   var headlinesState = useState([])
-  var headlines = headlinesState[0]
-  var setHeadlines = headlinesState[1]
+  var headlines = headlinesState[0]; var setHeadlines = headlinesState[1]
   var loadingState = useState(true)
-  var loading = loadingState[0]
-  var setLoading = loadingState[1]
+  var loading = loadingState[0]; var setLoading = loadingState[1]
   var formState = useState({ headline: '', source: '', category: '', url: '' })
-  var form = formState[0]
-  var setForm = formState[1]
+  var form = formState[0]; var setForm = formState[1]
   var savingState = useState(false)
-  var saving = savingState[0]
-  var setSaving = savingState[1]
+  var saving = savingState[0]; var setSaving = savingState[1]
   var toastState = useState({ message: '', type: '' })
-  var toast = toastState[0]
-  var setToast = toastState[1]
+  var toast = toastState[0]; var setToast = toastState[1]
 
   function showToast(message, type) {
     setToast({ message: message, type: type || 'success' })
@@ -378,20 +636,15 @@ export function AdminHeadlines() {
 
 export function AdminWatchlist() {
   var symbolsState = useState([])
-  var symbols = symbolsState[0]
-  var setSymbols = symbolsState[1]
+  var symbols = symbolsState[0]; var setSymbols = symbolsState[1]
   var loadingState = useState(true)
-  var loading = loadingState[0]
-  var setLoading = loadingState[1]
+  var loading = loadingState[0]; var setLoading = loadingState[1]
   var formState = useState({ symbol: '', name: '', category: '' })
-  var form = formState[0]
-  var setForm = formState[1]
+  var form = formState[0]; var setForm = formState[1]
   var savingState = useState(false)
-  var saving = savingState[0]
-  var setSaving = savingState[1]
+  var saving = savingState[0]; var setSaving = savingState[1]
   var toastState = useState({ message: '', type: '' })
-  var toast = toastState[0]
-  var setToast = toastState[1]
+  var toast = toastState[0]; var setToast = toastState[1]
 
   function showToast(message, type) {
     setToast({ message: message, type: type || 'success' })
@@ -456,14 +709,11 @@ export function AdminWatchlist() {
 
 export function AdminChatter() {
   var postsState = useState([])
-  var posts = postsState[0]
-  var setPosts = postsState[1]
+  var posts = postsState[0]; var setPosts = postsState[1]
   var loadingState = useState(true)
-  var loading = loadingState[0]
-  var setLoading = loadingState[1]
+  var loading = loadingState[0]; var setLoading = loadingState[1]
   var toastState = useState({ message: '', type: '' })
-  var toast = toastState[0]
-  var setToast = toastState[1]
+  var toast = toastState[0]; var setToast = toastState[1]
 
   function showToast(message, type) {
     setToast({ message: message, type: type || 'success' })
@@ -525,14 +775,11 @@ export function AdminChatter() {
 
 export function AdminETFFlows() {
   var formState = useState({ date: '', net_flow: '', total_aum: '', institutions: '', notes: '' })
-  var form = formState[0]
-  var setForm = formState[1]
+  var form = formState[0]; var setForm = formState[1]
   var savingState = useState(false)
-  var saving = savingState[0]
-  var setSaving = savingState[1]
+  var saving = savingState[0]; var setSaving = savingState[1]
   var toastState = useState({ message: '', type: '' })
-  var toast = toastState[0]
-  var setToast = toastState[1]
+  var toast = toastState[0]; var setToast = toastState[1]
 
   function showToast(message, type) {
     setToast({ message: message, type: type || 'success' })
