@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import AppLayout from '../components/AppLayout'
-import { Badge } from '../components/UI'
-import { TrendingUp, TrendingDown, Building2, Activity, FileText } from 'lucide-react'
+import { TrendingUp, TrendingDown, Building2, FileText } from 'lucide-react'
 
 const etfs = [
   { name: 'Canary Capital XRP ETF', ticker: 'XRPC', issuer: 'Canary Capital', type: 'spot', aum: 1240000000, xrp_holdings: 536900000, flow_24h: 42000000, flow_7d: 187000000, flow_30d: 412000000, price_change: 3.4, status: 'active' },
@@ -17,12 +16,6 @@ const pipeline = [
   { issuer: 'BlackRock', status: 'not_filed', importance: 'high', notes: 'Major institutional catalyst if filed. Largest ETF issuer globally.' },
   { issuer: 'Fidelity', status: 'not_filed', importance: 'high', notes: 'Filed for BTC and ETH. XRP filing would signal full crypto suite.' },
   { issuer: 'Invesco', status: 'not_filed', importance: 'medium', notes: 'Active in crypto ETF space. XRP filing considered likely.' },
-  { issuer: 'Grayscale', status: 'active', importance: 'high', notes: 'Conversion and product expansion underway.' },
-  { issuer: 'Bitwise', status: 'active', importance: 'high', notes: 'Additional XRP products in development.' },
-  { issuer: '21Shares', status: 'active', importance: 'medium', notes: 'Expanded offerings filed with SEC.' },
-  { issuer: 'Franklin Templeton', status: 'active', importance: 'medium', notes: 'Additional approval applications in progress.' },
-  { issuer: 'WisdomTree', status: 'withdrawn', importance: 'low', notes: 'Application withdrawn. May refile.' },
-  { issuer: 'CoinShares', status: 'withdrawn', importance: 'low', notes: 'Application withdrawn pending regulatory clarity.' },
 ]
 
 const flowHistory = {
@@ -240,7 +233,7 @@ export default function ETFFlows() {
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-1">
           <h1 className="text-2xl font-bold" style={{ fontFamily: 'Syne, sans-serif', color: '#eceef5' }}>XRP ETF Intelligence</h1>
-          <span className="text-xs font-semibold px-2 py-0.5 rounded" style={{ background: 'rgba(16,185,129,0.12)', color: '#10b981' }}>LIVE (MOCK)</span>
+          <span className="text-xs font-semibold px-2 py-0.5 rounded" style={{ background: 'rgba(245,158,11,0.12)', color: '#f59e0b' }}>ADMIN-UPDATED</span>
         </div>
         <p className="text-sm" style={{ color: '#9aa8be' }}>Institutional Flow & Market Impact Tracker — For informational purposes only</p>
       </div>
@@ -333,80 +326,24 @@ export default function ETFFlows() {
         </div>
       </div>
 
-      <div className="rounded-xl p-5 border mb-6" style={{ background: '#161a22', borderColor: '#1e2330' }}>
-        <div className="flex items-center gap-2 mb-4">
-          <Activity size={16} style={{ color: '#8b5cf6' }} />
-          <h2 className="text-sm font-semibold" style={{ color: '#eceef5' }}>Market Impact Panel</h2>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-          {[
-            { label: '% XRP Supply in ETFs', value: '3.84%', note: 'Of 100B circulating supply' },
-            { label: 'ETF-Driven Volume (24h)', value: '$412M', note: 'vs $4.2B total XRP volume (9.8%)' },
-            { label: 'Institutional Participation', value: '~42%', note: 'Estimated of total ETF flows' },
-          ].map(function(m, i) {
-            return (
-              <div key={i} className="rounded-lg p-4" style={{ background: '#111318', border: '1px solid #1e2330' }}>
-                <p className="text-xs uppercase tracking-wide mb-2" style={{ color: '#6b7a96' }}>{m.label}</p>
-                <p className="text-xl font-bold font-mono" style={{ color: '#8b5cf6' }}>{m.value}</p>
-                <p className="text-xs mt-1" style={{ color: '#6b7a96' }}>{m.note}</p>
-              </div>
-            )
-          })}
-        </div>
-        <div className="rounded-lg p-4" style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.2)' }}>
-          <p className="text-xs font-semibold mb-2" style={{ color: '#3b82f6' }}>ControlNode Insight</p>
-          <p className="text-sm leading-relaxed" style={{ color: '#9aa8be' }}>XRP ETF inflows have increased for 5 consecutive days, with combined net flows of <span style={{ color: '#eceef5' }}>${fmt(net7d)}</span> over the past 7 days. Spot ETFs now hold approximately <span style={{ color: '#eceef5' }}>{fmtXRP(totalXRP)}</span> — representing 3.84% of circulating supply.</p>
-          <p className="text-xs mt-3 font-semibold" style={{ color: '#6b7a96' }}>Informational context only — not financial advice.</p>
-        </div>
-      </div>
-
       <div className="rounded-xl border mb-6 overflow-hidden" style={{ background: '#161a22', borderColor: '#1e2330' }}>
         <div className="px-5 py-3" style={{ borderBottom: '1px solid #1e2330', background: '#111318' }}>
           <div className="flex items-center gap-2">
             <Building2 size={15} style={{ color: '#8b5cf6' }} />
-            <h2 className="text-sm font-semibold" style={{ color: '#eceef5' }}>ETF Pipeline & Institutional Watchlist</h2>
+            <h2 className="text-sm font-semibold" style={{ color: '#eceef5' }}>ETF Pipeline — High Priority Watch</h2>
           </div>
         </div>
-        <div className="px-5 py-3" style={{ borderBottom: '1px solid #1e2330' }}>
-          <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#6b7a96' }}>Not Yet Filed — High Priority Watch</p>
+        <div className="px-5 py-4">
+          <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#6b7a96' }}>Not Yet Filed</p>
           <div className="space-y-2">
-            {pipeline.filter(function(p) { return p.status === 'not_filed' }).map(function(p, i) {
+            {pipeline.map(function(p, i) {
               return (
                 <div key={i} className="flex items-start justify-between gap-3 p-3 rounded-lg" style={{ background: '#111318', border: '1px solid #1e2330' }}>
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1"><span className="text-sm font-semibold" style={{ color: '#eceef5' }}>{p.issuer}</span><ImportanceBadge importance={p.importance} /></div>
-                    <p className="text-xs" style={{ color: '#9aa8be' }}>{p.notes}</p>
-                  </div>
-                  <StatusBadge status={p.status} />
-                </div>
-              )
-            })}
-          </div>
-        </div>
-        <div className="px-5 py-3" style={{ borderBottom: '1px solid #1e2330' }}>
-          <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#6b7a96' }}>Active / Expanding</p>
-          <div className="space-y-2">
-            {pipeline.filter(function(p) { return p.status === 'active' }).map(function(p, i) {
-              return (
-                <div key={i} className="flex items-start justify-between gap-3 p-3 rounded-lg" style={{ background: '#111318', border: '1px solid #1e2330' }}>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1"><span className="text-sm font-semibold" style={{ color: '#eceef5' }}>{p.issuer}</span><ImportanceBadge importance={p.importance} /></div>
-                    <p className="text-xs" style={{ color: '#9aa8be' }}>{p.notes}</p>
-                  </div>
-                  <StatusBadge status={p.status} />
-                </div>
-              )
-            })}
-          </div>
-        </div>
-        <div className="px-5 py-3">
-          <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#6b7a96' }}>Withdrawn</p>
-          <div className="space-y-2">
-            {pipeline.filter(function(p) { return p.status === 'withdrawn' }).map(function(p, i) {
-              return (
-                <div key={i} className="flex items-start justify-between gap-3 p-3 rounded-lg" style={{ background: '#111318', border: '1px solid #1e2330', opacity: 0.7 }}>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1"><span className="text-sm font-semibold" style={{ color: '#eceef5' }}>{p.issuer}</span><ImportanceBadge importance={p.importance} /></div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-sm font-semibold" style={{ color: '#eceef5' }}>{p.issuer}</span>
+                      <ImportanceBadge importance={p.importance} />
+                    </div>
                     <p className="text-xs" style={{ color: '#9aa8be' }}>{p.notes}</p>
                   </div>
                   <StatusBadge status={p.status} />
@@ -418,7 +355,7 @@ export default function ETFFlows() {
       </div>
 
       <div className="text-center pb-4">
-        <p className="text-xs" style={{ color: '#4a5870' }}>ETF flow data is mock/illustrative. SEC EDGAR filings are live. Not financial advice.</p>
+        <p className="text-xs" style={{ color: '#4a5870' }}>ETF flow data is manually updated by ControlNode admins. SEC EDGAR filings are live. Not financial advice.</p>
       </div>
     </AppLayout>
   )
