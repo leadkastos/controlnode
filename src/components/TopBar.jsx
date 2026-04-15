@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import NotificationBell from './NotificationBell'
+import { useAuth } from '../contexts/AuthContext'
 
 const routeTitles = {
   '/': 'Dashboard',
@@ -70,8 +71,14 @@ function chgLabel(val) {
 export default function TopBar() {
   const location = useLocation()
   const navigate = useNavigate()
+  const { profile } = useAuth()
   const title = routeTitles[location.pathname] || 'ControlNode'
   const [tickers, setTickers] = useState([])
+
+  var initials = 'CN'
+  if (profile && profile.full_name) {
+    initials = profile.full_name.split(' ').map(function(n) { return n[0] }).join('').toUpperCase().slice(0, 2)
+  }
 
   useEffect(function () {
     async function fetchAll() {
@@ -206,7 +213,7 @@ export default function TopBar() {
             style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', color: '#fff' }}
             title="My Profile"
           >
-            JD
+            {initials}
           </button>
         </div>
       </div>
