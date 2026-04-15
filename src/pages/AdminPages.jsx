@@ -38,9 +38,9 @@ function Field({ label, children }) {
   )
 }
 
-function TextInput({ value, onChange, placeholder }) {
+function TextInput({ value, onChange, placeholder, type }) {
   return (
-    <input type="text" value={value} onChange={function(e) { onChange(e.target.value) }} placeholder={placeholder} className="w-full px-3 py-2.5 rounded-lg text-sm outline-none" style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }} onFocus={function(e) { e.target.style.borderColor = '#3b82f6' }} onBlur={function(e) { e.target.style.borderColor = '#1e2330' }} />
+    <input type={type || 'text'} value={value} onChange={function(e) { onChange(e.target.value) }} placeholder={placeholder} className="w-full px-3 py-2.5 rounded-lg text-sm outline-none" style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }} onFocus={function(e) { e.target.style.borderColor = '#3b82f6' }} onBlur={function(e) { e.target.style.borderColor = '#1e2330' }} />
   )
 }
 
@@ -240,7 +240,7 @@ export function Admin() {
           { href: '/admin/headlines', title: 'Top Headlines', desc: 'Manage headline feed' },
           { href: '/admin/watchlist', title: 'Master Watchlist', desc: 'Manage suggested symbols' },
           { href: '/admin/chatter', title: 'Market Chatter', desc: 'Moderate member posts' },
-          { href: '/admin/etf-flows', title: 'XRP ETF Flows', desc: 'Manual override for ETF flow data' },
+          { href: '/admin/etf-flows', title: 'XRP ETF Flows', desc: 'Update ETF data and flow numbers' },
         ].map(function(item) {
           return (
             <a key={item.href} href={item.href} className="rounded-xl p-5 block" style={{ background: '#0d1117', border: '1px solid #1e2330' }}>
@@ -694,32 +694,86 @@ export function AdminChatter() {
 }
 
 export function AdminETFFlows() {
-  var formState = useState({ date: '', net_flow: '', total_aum: '', institutions: '', notes: '' }); var form = formState[0]; var setForm = formState[1]
-  var savingState = useState(false); var saving = savingState[0]; var setSaving = savingState[1]
+  var etfsState = useState([]); var etfs = etfsState[0]; var setEtfs = etfsState[1]
+  var loadingState = useState(true); var loading = loadingState[0]; var setLoading = loadingState[1]
+  var savingState = useState(null); var saving = savingState[0]; var setSaving = savingState[1]
   var toastState = useState({ message: '', type: '' }); var toast = toastState[0]; var setToast = toastState[1]
 
   function showToast(m, t) { setToast({ message: m, type: t || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
 
-  async function save() {
-    if (!form.date) { showToast('Date is required.', 'error'); return }
-    setSaving(true)
-    var result = await supabase.from('xrp_etf_flows').insert(form)
-    setSaving(false)
+  useEffect(function() {
+    supabase.from('xrp_etf_flows').select('*').order('etf_name').then(function(res) {
+      if (res.data) setEtfs(res.data)
+      setLoading(false)
+    })
+  }, [])
+
+  function updateField(id, field, value) {
+    setEtfs(function(prev) {
+      return prev.map(function(e) {
+        if (e.id === id) { var u = Object.assign({}, e); u[field] = value; return u }
+        return e
+      })
+    })
+  }
+
+  async function save(etf) {
+    setSaving(etf.id)
+    var result = await supabase.from('xrp_etf_flows').update({
+      aum: parseFloat(etf.aum) || 0,
+      xrp_holdings: parseFloat(etf.xrp_holdings) || 0,
+      flow_24h: parseFloat(etf.flow_24h) || 0,
+      flow_7d: parseFloat(etf.flow_7d) || 0,
+      flow_30d: parseFloat(etf.flow_30d) || 0,
+      price_change: parseFloat(etf.price_change) || 0,
+      status: etf.status,
+      date: new Date().toISOString().split('T')[0],
+      updated_at: new Date().toISOString()
+    }).eq('id', etf.id)
+    setSaving(null)
     if (result.error) { showToast('Error: ' + result.error.message, 'error'); return }
-    showToast('ETF flow data saved!')
-    setForm({ date: '', net_flow: '', total_aum: '', institutions: '', notes: '' })
+    showToast(etf.etf_name + ' saved!')
   }
 
   return (
     <AdminLayout title="XRP ETF Flows">
-      <AdminCard title="Manual Override — ETF Flow Entry">
-        <Field label="Date"><TextInput value={form.date} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { date: v }) }) }} placeholder="2026-04-07" /></Field>
-        <Field label="Net Flow (USD)"><TextInput value={form.net_flow} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { net_flow: v }) }) }} placeholder="1200000" /></Field>
-        <Field label="Total AUM (USD)"><TextInput value={form.total_aum} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { total_aum: v }) }) }} placeholder="5000000000" /></Field>
-        <Field label="Institutions"><TextInput value={form.institutions} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { institutions: v }) }) }} placeholder="3" /></Field>
-        <Field label="Notes"><TextArea value={form.notes} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { notes: v }) }) }} placeholder="Any notes..." rows={3} /></Field>
-        <SaveButton onClick={save} loading={saving} label="Save Entry" />
-      </AdminCard>
+      <div className="rounded-lg px-4 py-3 mb-6 text-sm" style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.2)', color: '#9aa8be' }}>
+        Update each ETF's numbers below. Check SoSoValue.com for the latest flow data. All dollar amounts in full numbers (e.g. 1240000000 for $1.24B).
+      </div>
+      {loading ? <p style={{ color: '#6b7a96' }}>Loading ETFs...</p> : etfs.map(function(etf) {
+        return (
+          <AdminCard key={etf.id} title={etf.etf_name + ' (' + etf.ticker + ')'}>
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="AUM (USD)">
+                <TextInput value={String(etf.aum || '')} onChange={function(v) { updateField(etf.id, 'aum', v) }} placeholder="1240000000" />
+              </Field>
+              <Field label="XRP Holdings">
+                <TextInput value={String(etf.xrp_holdings || '')} onChange={function(v) { updateField(etf.id, 'xrp_holdings', v) }} placeholder="536900000" />
+              </Field>
+              <Field label="Net Flow 24h (USD)">
+                <TextInput value={String(etf.flow_24h || '')} onChange={function(v) { updateField(etf.id, 'flow_24h', v) }} placeholder="42000000 or -8000000" />
+              </Field>
+              <Field label="Net Flow 7d (USD)">
+                <TextInput value={String(etf.flow_7d || '')} onChange={function(v) { updateField(etf.id, 'flow_7d', v) }} placeholder="187000000" />
+              </Field>
+              <Field label="Net Flow 30d (USD)">
+                <TextInput value={String(etf.flow_30d || '')} onChange={function(v) { updateField(etf.id, 'flow_30d', v) }} placeholder="412000000" />
+              </Field>
+              <Field label="Price Change %">
+                <TextInput value={String(etf.price_change || '')} onChange={function(v) { updateField(etf.id, 'price_change', v) }} placeholder="3.4 or -1.2" />
+              </Field>
+            </div>
+            <Field label="Status">
+              <select value={etf.status || 'active'} onChange={function(e) { updateField(etf.id, 'status', e.target.value) }} className="w-full px-3 py-2.5 rounded-lg text-sm outline-none" style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}>
+                <option value="active">Active</option>
+                <option value="pending">Pending</option>
+                <option value="suspended">Suspended</option>
+              </select>
+            </Field>
+            <SaveButton onClick={function() { save(etf) }} loading={saving === etf.id} label="Save" />
+          </AdminCard>
+        )
+      })}
       <Toast message={toast.message} type={toast.type} />
     </AdminLayout>
   )
