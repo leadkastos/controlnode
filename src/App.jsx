@@ -31,6 +31,7 @@ import {
   AdminWatchlist,
   AdminChatter,
   AdminETFFlows,
+  AdminYouTube,
   AdminUpdates,
 } from './pages/AdminPages'
 
@@ -70,6 +71,7 @@ export default function App() {
         <Route path="/admin/watchlist" element={<ProtectedRoute adminOnly><AdminWatchlist /></ProtectedRoute>} />
         <Route path="/admin/chatter" element={<ProtectedRoute adminOnly><AdminChatter /></ProtectedRoute>} />
         <Route path="/admin/etf-flows" element={<ProtectedRoute adminOnly><AdminETFFlows /></ProtectedRoute>} />
+        <Route path="/admin/youtube" element={<ProtectedRoute adminOnly><AdminYouTube /></ProtectedRoute>} />
         <Route path="/admin/updates" element={<ProtectedRoute adminOnly><AdminUpdates /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
