@@ -216,10 +216,10 @@ export function OilYenCard() {
   useEffect(function() {
     var oilKey = import.meta.env.VITE_OIL_PRICE_API_KEY
 
-    fetch('https://www.freeforexapi.com/api/live?pairs=USDJPY')
+    fetch('https://api.frankfurter.app/latest?from=USD&to=JPY')
       .then(function(r) { return r.json() })
       .then(function(data) {
-        if (data && data.rates && data.rates.USDJPY) setUsdjpy(data.rates.USDJPY.rate)
+        if (data && data.rates && data.rates.JPY) setUsdjpy(data.rates.JPY)
       })
       .catch(function() {})
 
