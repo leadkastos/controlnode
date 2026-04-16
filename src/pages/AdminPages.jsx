@@ -221,6 +221,7 @@ export function Admin() {
           { href: '/admin/chatter', title: 'Market Chatter', desc: 'Moderate member posts' },
           { href: '/admin/etf-flows', title: 'XRP ETF Flows', desc: 'Update ETF data and flow numbers' },
           { href: '/admin/youtube', title: 'YouTube Intel', desc: 'Manage YouTube channels for all members' },
+          { href: '/admin/smart-money', title: 'Smart Money Flow', desc: 'Post whale alerts and update escrow data' },
         ].map(function(item) {
           return (
             <a key={item.href} href={item.href} className="rounded-xl p-5 block" style={{ background: '#0d1117', border: '1px solid #1e2330' }}>
@@ -855,6 +856,110 @@ export function AdminYouTube() {
           {fetching ? 'Fetching...' : '⟳ Fetch Videos Now'}
         </button>
       </AdminCard>
+      <Toast message={toast.message} type={toast.type} />
+    </AdminLayout>
+  )
+}
+
+export function AdminSmartMoney() {
+  var observationsState = useState([]); var observations = observationsState[0]; var setObservations = observationsState[1]
+  var loadingState = useState(true); var loading = loadingState[0]; var setLoading = loadingState[1]
+  var savingState = useState(false); var saving = savingState[0]; var setSaving = savingState[1]
+  var notifyState = useState(false); var notify = notifyState[0]; var setNotify = notifyState[1]
+  var toastState = useState({ message: '', type: '' }); var toast = toastState[0]; var setToast = toastState[1]
+  var formState = useState({ type: 'whale_alert', content: '', source: '' }); var form = formState[0]; var setForm = formState[1]
+  var escrowState = useState({ total_locked: '', next_unlock: '', unlock_frequency: '', remaining_period: '' }); var escrow = escrowState[0]; var setEscrow = escrowState[1]
+  var escrowIdState = useState(null); var escrowId = escrowIdState[0]; var setEscrowId = escrowIdState[1]
+  var savingEscrowState = useState(false); var savingEscrow = savingEscrowState[0]; var setSavingEscrow = savingEscrowState[1]
+
+  function showToast(m, t) { setToast({ message: m, type: t || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
+
+  async function load() {
+    var o = await supabase.from('smart_money_observations').select('*').order('created_at', { ascending: false }).limit(20)
+    if (o.data) setObservations(o.data)
+    var e = await supabase.from('escrow_data').select('*').single()
+    if (e.data) { setEscrow({ total_locked: e.data.total_locked, next_unlock: e.data.next_unlock, unlock_frequency: e.data.unlock_frequency, remaining_period: e.data.remaining_period }); setEscrowId(e.data.id) }
+    setLoading(false)
+  }
+
+  useEffect(function() { load() }, [])
+
+  async function addObservation() {
+    if (!form.content) { showToast('Content is required.', 'error'); return }
+    setSaving(true)
+    var result = await supabase.from('smart_money_observations').insert({ type: form.type, content: form.content, source: form.source })
+    if (result.error) { setSaving(false); showToast('Error: ' + result.error.message, 'error'); return }
+    if (notify) {
+      var title = form.type === 'whale_alert' ? 'Whale Alert' : 'Exchange Flow Update'
+      await sendNotificationToAllMembers(title, form.content, 'smart_money')
+    }
+    setSaving(false)
+    showToast('Posted!')
+    setForm({ type: 'whale_alert', content: '', source: '' })
+    load()
+  }
+
+  async function removeObservation(id) {
+    await supabase.from('smart_money_observations').delete().eq('id', id)
+    showToast('Removed.')
+    load()
+  }
+
+  async function saveEscrow() {
+    setSavingEscrow(true)
+    var result = await supabase.from('escrow_data').update({ total_locked: escrow.total_locked, next_unlock: escrow.next_unlock, unlock_frequency: escrow.unlock_frequency, remaining_period: escrow.remaining_period, updated_at: new Date().toISOString() }).eq('id', escrowId)
+    setSavingEscrow(false)
+    if (result.error) { showToast('Error: ' + result.error.message, 'error'); return }
+    showToast('Escrow data saved!')
+  }
+
+  return (
+    <AdminLayout title="Smart Money Flow">
+      <AdminCard title="Post Whale Alert or Exchange Flow Note">
+        <Field label="Type">
+          <select value={form.type} onChange={function(e) { setForm(function(f) { return Object.assign({}, f, { type: e.target.value }) }) }} className="w-full px-3 py-2.5 rounded-lg text-sm outline-none" style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}>
+            <option value="whale_alert">Whale Alert</option>
+            <option value="exchange_flow">Exchange Flow Note</option>
+          </select>
+        </Field>
+        <Field label="Content"><TextArea value={form.content} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { content: v }) }) }} placeholder="85M XRP moved from unknown wallet to Bitstamp — potential sell pressure..." rows={3} /></Field>
+        <Field label="Source (optional)"><TextInput value={form.source} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { source: v }) }) }} placeholder="Whale Alert, XRP Scan, Bithomp..." /></Field>
+        <NotifyToggle enabled={notify} onToggle={function() { setNotify(!notify) }} />
+        <SaveButton onClick={addObservation} loading={saving} label="Post" />
+      </AdminCard>
+
+      <AdminCard title="Current Observations">
+        {loading ? <p style={{ color: '#6b7a96' }}>Loading...</p> : observations.length === 0 ? <p style={{ color: '#6b7a96' }}>No observations posted yet.</p> : (
+          <div className="space-y-2">
+            {observations.map(function(o) {
+              return (
+                <div key={o.id} className="flex items-start justify-between gap-3 py-2" style={{ borderBottom: '1px solid #1e2330' }}>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs px-2 py-0.5 rounded font-semibold" style={{ background: o.type === 'whale_alert' ? 'rgba(139,92,246,0.12)' : 'rgba(59,130,246,0.12)', color: o.type === 'whale_alert' ? '#8b5cf6' : '#3b82f6' }}>{o.type === 'whale_alert' ? 'Whale Alert' : 'Exchange Flow'}</span>
+                      {o.source && <span className="text-xs" style={{ color: '#3b82f6' }}>{o.source}</span>}
+                    </div>
+                    <p className="text-sm" style={{ color: '#eceef5' }}>{o.content}</p>
+                  </div>
+                  <button onClick={function() { removeObservation(o.id) }} className="text-xs px-3 py-1 rounded flex-shrink-0" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>Remove</button>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </AdminCard>
+
+      <AdminCard title="Escrow & Unlock Schedule">
+        <div className="rounded-lg px-4 py-3 mb-4 text-xs" style={{ background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.15)', color: '#9aa8be' }}>
+          Update these numbers monthly when Ripple publishes their quarterly XRP markets report.
+        </div>
+        <Field label="Total Escrow Locked"><TextInput value={escrow.total_locked} onChange={function(v) { setEscrow(function(e) { return Object.assign({}, e, { total_locked: v }) }) }} placeholder="~38B XRP" /></Field>
+        <Field label="Next Monthly Unlock"><TextInput value={escrow.next_unlock} onChange={function(v) { setEscrow(function(e) { return Object.assign({}, e, { next_unlock: v }) }) }} placeholder="1B XRP" /></Field>
+        <Field label="Unlock Frequency"><TextInput value={escrow.unlock_frequency} onChange={function(v) { setEscrow(function(e) { return Object.assign({}, e, { unlock_frequency: v }) }) }} placeholder="Monthly (1st)" /></Field>
+        <Field label="Remaining Escrow Period"><TextInput value={escrow.remaining_period} onChange={function(v) { setEscrow(function(e) { return Object.assign({}, e, { remaining_period: v }) }) }} placeholder="~38 months" /></Field>
+        <SaveButton onClick={saveEscrow} loading={savingEscrow} label="Save Escrow Data" />
+      </AdminCard>
+
       <Toast message={toast.message} type={toast.type} />
     </AdminLayout>
   )
