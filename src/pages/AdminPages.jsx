@@ -218,7 +218,7 @@ export function Admin() {
           { href: '/admin/oil-yen', title: 'Oil vs Yen', desc: 'Update macro scenarios to monitor' },
           { href: '/admin/headlines', title: 'Top Headlines', desc: 'Manage headline feed' },
           { href: '/admin/watchlist', title: 'Master Watchlist', desc: 'Manage suggested symbols' },
-          { href: '/admin/chatter', title: 'Market Chatter', desc: 'Moderate member posts' },
+          { href: '/admin/chatter', title: 'Market Chatter', desc: 'Post and manage market chatter' },
           { href: '/admin/etf-flows', title: 'XRP ETF Flows', desc: 'Update ETF data and flow numbers' },
           { href: '/admin/youtube', title: 'YouTube Intel', desc: 'Manage YouTube channels for all members' },
           { href: '/admin/smart-money', title: 'Smart Money Flow', desc: 'Post whale alerts and update escrow data' },
@@ -653,7 +653,11 @@ export function AdminWatchlist() {
 export function AdminChatter() {
   var postsState = useState([]); var posts = postsState[0]; var setPosts = postsState[1]
   var loadingState = useState(true); var loading = loadingState[0]; var setLoading = loadingState[1]
+  var savingState = useState(false); var saving = savingState[0]; var setSaving = savingState[1]
+  var notifyState = useState(false); var notify = notifyState[0]; var setNotify = notifyState[1]
   var toastState = useState({ message: '', type: '' }); var toast = toastState[0]; var setToast = toastState[1]
+  var formState = useState({ content: '', category: 'General', source: '', source_url: '' })
+  var form = formState[0]; var setForm = formState[1]
 
   function showToast(m, t) { setToast({ message: m, type: t || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
 
@@ -665,21 +669,77 @@ export function AdminChatter() {
 
   useEffect(function() { load() }, [])
 
+  async function post() {
+    if (!form.content) { showToast('Content is required.', 'error'); return }
+    setSaving(true)
+    var result = await supabase.from('market_chatter').insert({
+      content: form.content,
+      category: form.category,
+      source: form.source,
+      source_url: form.source_url,
+      flagged: false,
+      fire_count: 0,
+      thinking_count: 0,
+      bullish_count: 0,
+      warning_count: 0
+    })
+    if (result.error) { setSaving(false); showToast('Error: ' + result.error.message, 'error'); return }
+    if (notify) { await sendNotificationToAllMembers('Market Chatter', form.content.slice(0, 80) + (form.content.length > 80 ? '...' : ''), 'market_chatter') }
+    setSaving(false)
+    showToast('Posted!')
+    setForm({ content: '', category: 'General', source: '', source_url: '' })
+    load()
+  }
+
+  async function remove(id) {
+    await supabase.from('market_chatter').delete().eq('id', id)
+    showToast('Post removed.')
+    load()
+  }
+
   return (
-    <AdminLayout title="Market Chatter Moderation">
-      <AdminCard title="Recent Posts">
+    <AdminLayout title="Market Chatter">
+      <AdminCard title="Post New Chatter">
+        <Field label="Content">
+          <TextArea value={form.content} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { content: v }) }) }} placeholder="BlackRock internal memo allegedly references XRP ETF timeline — circulating on X, unverified..." rows={4} />
+        </Field>
+        <Field label="Category">
+          <select value={form.category} onChange={function(e) { setForm(function(f) { return Object.assign({}, f, { category: e.target.value }) }) }} className="w-full px-3 py-2.5 rounded-lg text-sm outline-none" style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}>
+            <option value="ETF Rumor">ETF Rumor</option>
+            <option value="Ripple Rumor">Ripple Rumor</option>
+            <option value="XRP Rumor">XRP Rumor</option>
+            <option value="Regulatory">Regulatory</option>
+            <option value="Exchange">Exchange</option>
+            <option value="Macro">Macro</option>
+            <option value="Social Buzz">Social Buzz</option>
+            <option value="General">General</option>
+          </select>
+        </Field>
+        <Field label="Source (e.g. X / Twitter, Telegram)">
+          <TextInput value={form.source} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { source: v }) }) }} placeholder="X / Twitter" />
+        </Field>
+        <Field label="Source URL (optional)">
+          <TextInput value={form.source_url} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { source_url: v }) }) }} placeholder="https://x.com/..." />
+        </Field>
+        <NotifyToggle enabled={notify} onToggle={function() { setNotify(!notify) }} />
+        <SaveButton onClick={post} loading={saving} label="Post" />
+      </AdminCard>
+
+      <AdminCard title="Current Posts">
         {loading ? <p style={{ color: '#6b7a96' }}>Loading...</p> : posts.length === 0 ? <p style={{ color: '#6b7a96' }}>No posts yet.</p> : (
           <div className="space-y-3">
             {posts.map(function(p) {
               return (
-                <div key={p.id} className="rounded-lg p-4" style={{ background: '#111318', border: '1px solid ' + (p.flagged ? 'rgba(239,68,68,0.3)' : '#1e2330') }}>
-                  <p className="text-xs mb-1" style={{ color: '#6b7a96' }}>{p.user_id} · {new Date(p.created_at).toLocaleString()}</p>
-                  <p className="text-sm mb-2" style={{ color: '#eceef5' }}>{p.content}</p>
-                  {p.flagged && <span className="text-xs px-2 py-0.5 rounded" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>Flagged</span>}
-                  <div className="flex gap-2 flex-wrap mt-2">
-                    <button onClick={async function() { await supabase.from('market_chatter').update({ flagged: true }).eq('id', p.id); showToast('Warning issued.'); load() }} className="text-xs px-3 py-1.5 rounded" style={{ background: 'rgba(234,179,8,0.1)', color: '#eab308' }}>Warn</button>
-                    <button onClick={async function() { await supabase.from('market_chatter').delete().eq('id', p.id); showToast('Post removed.'); load() }} className="text-xs px-3 py-1.5 rounded" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>Remove Post</button>
-                    <button onClick={async function() { await supabase.from('profiles').update({ is_banned: true }).eq('id', p.user_id); showToast('User banned.'); load() }} className="text-xs px-3 py-1.5 rounded" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444' }}>Ban User</button>
+                <div key={p.id} className="rounded-lg p-4" style={{ background: '#111318', border: '1px solid #1e2330' }}>
+                  <div className="flex items-center gap-2 mb-2">
+                    {p.category && <span className="text-xs px-2 py-0.5 rounded font-semibold" style={{ background: 'rgba(139,92,246,0.12)', color: '#8b5cf6' }}>{p.category}</span>}
+                    {p.source && <span className="text-xs" style={{ color: '#3b82f6' }}>{p.source}</span>}
+                    <span className="text-xs ml-auto" style={{ color: '#6b7a96' }}>{new Date(p.created_at).toLocaleString()}</span>
+                  </div>
+                  <p className="text-sm mb-3" style={{ color: '#eceef5' }}>{p.content}</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs" style={{ color: '#6b7a96' }}>🔥 {p.fire_count || 0} · 🤔 {p.thinking_count || 0} · 📈 {p.bullish_count || 0} · ⚠️ {p.warning_count || 0}</span>
+                    <button onClick={function() { remove(p.id) }} className="text-xs px-3 py-1 rounded ml-auto" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>Remove</button>
                   </div>
                 </div>
               )
