@@ -98,13 +98,12 @@ export default function TopBar() {
 
   useEffect(function() {
     async function fetchMacro() {
-      var tdKey = import.meta.env.VITE_TWELVE_DATA_API_KEY
       var oilKey = import.meta.env.VITE_OIL_PRICE_API_KEY
 
       try {
-        var tdRes = await fetch('https://api.twelvedata.com/price?symbol=USD/JPY&apikey=' + tdKey)
-        var td = await tdRes.json()
-        if (td && td.price) setUsdjpy(parseFloat(td.price))
+        var fxRes = await fetch('https://www.freeforexapi.com/api/live?pairs=USDJPY')
+        var fx = await fxRes.json()
+        if (fx && fx.rates && fx.rates.USDJPY) setUsdjpy(fx.rates.USDJPY.rate)
       } catch(e) {}
 
       try {
