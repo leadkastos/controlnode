@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import AppLayout from '../components/AppLayout'
 import DetailPageLayout, { DetailSection, DataRow } from '../components/DetailPageLayout'
 import { Badge } from '../components/UI'
-import { Trash2, ExternalLink, Plus } from 'lucide-react'
+import { Trash2, ExternalLink, Bell } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -58,6 +58,20 @@ function SaveButton({ onClick, loading, label }) {
   )
 }
 
+function NotifyToggle({ enabled, onToggle }) {
+  return (
+    <div className="flex items-center gap-3 p-3 rounded-lg mb-4" style={{ background: enabled ? 'rgba(59,130,246,0.07)' : '#111318', border: '1px solid ' + (enabled ? 'rgba(59,130,246,0.2)' : '#1e2330') }}>
+      <Bell size={14} style={{ color: enabled ? '#3b82f6' : '#6b7a96' }} />
+      <div className="flex-1">
+        <p className="text-xs font-semibold" style={{ color: enabled ? '#3b82f6' : '#6b7a96' }}>Send bell notification to all active members</p>
+      </div>
+      <div onClick={onToggle} className="w-10 h-5 rounded-full flex items-center px-0.5 cursor-pointer transition-all" style={{ background: enabled ? '#3b82f6' : '#1e2330' }}>
+        <div className="w-4 h-4 rounded-full" style={{ background: '#fff', transform: enabled ? 'translateX(20px)' : 'translateX(0)', transition: 'transform 0.15s' }} />
+      </div>
+    </div>
+  )
+}
+
 function Toast({ message, type }) {
   if (!message) return null
   return <div className="fixed bottom-6 right-6 px-5 py-3 rounded-lg text-sm font-medium z-50" style={{ background: type === 'error' ? '#ef4444' : '#10b981', color: '#fff' }}>{message}</div>
@@ -69,6 +83,15 @@ function Toggle({ enabled, onToggle }) {
       <div className="w-4 h-4 rounded-full" style={{ background: '#fff', transform: enabled ? 'translateX(20px)' : 'translateX(0)', transition: 'transform 0.15s' }} />
     </div>
   )
+}
+
+async function sendNotificationToAllMembers(title, message, type) {
+  var res = await supabase.from('profiles').select('id').eq('subscription_status', 'active')
+  if (!res.data || res.data.length === 0) return
+  var notifications = res.data.map(function(p) {
+    return { user_id: p.id, type: type, title: title, message: message, read: false }
+  })
+  await supabase.from('notifications').insert(notifications)
 }
 
 function EmailNotificationsSection() {
@@ -217,6 +240,7 @@ export function AdminMorningBrief() {
   var summaryState = useState(''); var summary = summaryState[0]; var setSummary = summaryState[1]
   var catalystsState = useState(''); var catalysts = catalystsState[0]; var setCatalysts = catalystsState[1]
   var loadingState = useState(false); var loading = loadingState[0]; var setLoading = loadingState[1]
+  var notifyState = useState(true); var notify = notifyState[0]; var setNotify = notifyState[1]
   var toastState = useState({ message: '', type: '' }); var toast = toastState[0]; var setToast = toastState[1]
 
   function showToast(m, t) { setToast({ message: m, type: t || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
@@ -225,8 +249,9 @@ export function AdminMorningBrief() {
     if (!date || !headline || !summary) { showToast('Date, headline, and summary are required.', 'error'); return }
     setLoading(true)
     var result = await supabase.from('morning_briefs').insert({ date: date, headline: headline, summary: summary, catalysts: catalysts.split('\n').map(function(c) { return c.trim() }).filter(Boolean), published: true })
+    if (result.error) { setLoading(false); showToast('Error: ' + result.error.message, 'error'); return }
+    if (notify) { await sendNotificationToAllMembers('New Morning Brief', headline, 'morning_brief') }
     setLoading(false)
-    if (result.error) { showToast('Error: ' + result.error.message, 'error'); return }
     showToast('Morning Brief published!'); setDate(''); setHeadline(''); setSummary(''); setCatalysts('')
   }
 
@@ -237,6 +262,7 @@ export function AdminMorningBrief() {
         <Field label="Headline"><TextInput value={headline} onChange={setHeadline} placeholder="Brief headline..." /></Field>
         <Field label="Summary"><TextArea value={summary} onChange={setSummary} placeholder="Summary paragraph..." rows={5} /></Field>
         <Field label="Catalysts (one per line)"><TextArea value={catalysts} onChange={setCatalysts} placeholder="Catalyst one" rows={4} /></Field>
+        <NotifyToggle enabled={notify} onToggle={function() { setNotify(!notify) }} />
         <SaveButton onClick={publish} loading={loading} label="Publish" />
       </AdminCard>
       <Toast message={toast.message} type={toast.type} />
@@ -250,6 +276,7 @@ export function AdminDailyWrap() {
   var summaryState = useState(''); var summary = summaryState[0]; var setSummary = summaryState[1]
   var catalystsState = useState(''); var catalysts = catalystsState[0]; var setCatalysts = catalystsState[1]
   var loadingState = useState(false); var loading = loadingState[0]; var setLoading = loadingState[1]
+  var notifyState = useState(true); var notify = notifyState[0]; var setNotify = notifyState[1]
   var toastState = useState({ message: '', type: '' }); var toast = toastState[0]; var setToast = toastState[1]
 
   function showToast(m, t) { setToast({ message: m, type: t || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
@@ -258,8 +285,9 @@ export function AdminDailyWrap() {
     if (!date || !headline || !summary) { showToast('Date, headline, and summary are required.', 'error'); return }
     setLoading(true)
     var result = await supabase.from('daily_wraps').insert({ date: date, headline: headline, summary: summary, catalysts: catalysts.split('\n').map(function(c) { return c.trim() }).filter(Boolean), published: true })
+    if (result.error) { setLoading(false); showToast('Error: ' + result.error.message, 'error'); return }
+    if (notify) { await sendNotificationToAllMembers('New Daily Wrap', headline, 'daily_wrap') }
     setLoading(false)
-    if (result.error) { showToast('Error: ' + result.error.message, 'error'); return }
     showToast('Daily Wrap published!'); setDate(''); setHeadline(''); setSummary(''); setCatalysts('')
   }
 
@@ -270,6 +298,7 @@ export function AdminDailyWrap() {
         <Field label="Headline"><TextInput value={headline} onChange={setHeadline} placeholder="Wrap headline..." /></Field>
         <Field label="Summary"><TextArea value={summary} onChange={setSummary} placeholder="Summary paragraph..." rows={5} /></Field>
         <Field label="Catalysts (one per line)"><TextArea value={catalysts} onChange={setCatalysts} placeholder="Catalyst one" rows={4} /></Field>
+        <NotifyToggle enabled={notify} onToggle={function() { setNotify(!notify) }} />
         <SaveButton onClick={publish} loading={loading} label="Publish" />
       </AdminCard>
       <Toast message={toast.message} type={toast.type} />
@@ -281,6 +310,7 @@ export function AdminDominoTheory() {
   var dominoesState = useState([]); var dominoes = dominoesState[0]; var setDominoes = dominoesState[1]
   var loadingState = useState(true); var loading = loadingState[0]; var setLoading = loadingState[1]
   var savingState = useState(null); var saving = savingState[0]; var setSaving = savingState[1]
+  var notifyState = useState(false); var notify = notifyState[0]; var setNotify = notifyState[1]
   var toastState = useState({ message: '', type: '' }); var toast = toastState[0]; var setToast = toastState[1]
 
   function showToast(m, t) { setToast({ message: m, type: t || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
@@ -299,13 +329,15 @@ export function AdminDominoTheory() {
   async function save(domino) {
     setSaving(domino.id)
     var result = await supabase.from('domino_theory').update({ status: domino.status, notes: domino.notes }).eq('id', domino.id)
+    if (result.error) { setSaving(null); showToast('Error: ' + result.error.message, 'error'); return }
+    if (notify) { await sendNotificationToAllMembers('Domino Theory Update', 'Domino ' + domino.domino_number + ' — ' + domino.domino_name + ' status changed to ' + domino.status, 'domino_theory') }
     setSaving(null)
-    if (result.error) { showToast('Error: ' + result.error.message, 'error'); return }
     showToast(domino.domino_name + ' saved!')
   }
 
   return (
     <AdminLayout title="Domino Theory">
+      <NotifyToggle enabled={notify} onToggle={function() { setNotify(!notify) }} />
       {loading ? <p style={{ color: '#6b7a96' }}>Loading...</p> : dominoes.length === 0 ? <p style={{ color: '#6b7a96' }}>No dominoes found.</p> : dominoes.map(function(d) {
         return (
           <AdminCard key={d.id} title={'Domino ' + d.domino_number + ' — ' + d.domino_name}>
@@ -330,6 +362,7 @@ export function AdminGeopoliticalWatch() {
   var itemsState = useState([]); var items = itemsState[0]; var setItems = itemsState[1]
   var loadingState = useState(true); var loading = loadingState[0]; var setLoading = loadingState[1]
   var savingState = useState(false); var saving = savingState[0]; var setSaving = savingState[1]
+  var notifyState = useState(false); var notify = notifyState[0]; var setNotify = notifyState[1]
   var toastState = useState({ message: '', type: '' }); var toast = toastState[0]; var setToast = toastState[1]
   var formState = useState({ section: 'flashpoint', title: '', subtitle: '', level: 'Elevated', confirmed: true, sort_order: 0 }); var form = formState[0]; var setForm = formState[1]
 
@@ -347,8 +380,9 @@ export function AdminGeopoliticalWatch() {
     if (!form.title) { showToast('Title is required.', 'error'); return }
     setSaving(true)
     var result = await supabase.from('geopolitical_watch').insert(form)
+    if (result.error) { setSaving(false); showToast('Error: ' + result.error.message, 'error'); return }
+    if (notify) { await sendNotificationToAllMembers('Geopolitical Alert', form.title + (form.subtitle ? ' — ' + form.subtitle : ''), 'geopolitical_watch') }
     setSaving(false)
-    if (result.error) { showToast('Error: ' + result.error.message, 'error'); return }
     showToast('Item added!')
     setForm({ section: 'flashpoint', title: '', subtitle: '', level: 'Elevated', confirmed: true, sort_order: 0 })
     load()
@@ -390,6 +424,7 @@ export function AdminGeopoliticalWatch() {
           </Field>
         )}
         <Field label="Sort Order"><TextInput value={String(form.sort_order)} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { sort_order: parseInt(v) || 0 }) }) }} placeholder="0" /></Field>
+        <NotifyToggle enabled={notify} onToggle={function() { setNotify(!notify) }} />
         <SaveButton onClick={add} loading={saving} label="Add Item" />
       </AdminCard>
       <AdminCard title="Active Flash Points">
@@ -429,6 +464,7 @@ export function AdminOilYen() {
   var itemsState = useState([]); var items = itemsState[0]; var setItems = itemsState[1]
   var loadingState = useState(true); var loading = loadingState[0]; var setLoading = loadingState[1]
   var savingState = useState(false); var saving = savingState[0]; var setSaving = savingState[1]
+  var notifyState = useState(false); var notify = notifyState[0]; var setNotify = notifyState[1]
   var toastState = useState({ message: '', type: '' }); var toast = toastState[0]; var setToast = toastState[1]
   var formState = useState({ scenario: '', context: '', color: '#f59e0b', sort_order: 0 }); var form = formState[0]; var setForm = formState[1]
 
@@ -446,8 +482,9 @@ export function AdminOilYen() {
     if (!form.scenario || !form.context) { showToast('Scenario and context are required.', 'error'); return }
     setSaving(true)
     var result = await supabase.from('oil_yen_scenarios').insert(form)
+    if (result.error) { setSaving(false); showToast('Error: ' + result.error.message, 'error'); return }
+    if (notify) { await sendNotificationToAllMembers('Oil vs Yen Update', form.scenario, 'oil_yen') }
     setSaving(false)
-    if (result.error) { showToast('Error: ' + result.error.message, 'error'); return }
     showToast('Scenario added!')
     setForm({ scenario: '', context: '', color: '#f59e0b', sort_order: 0 })
     load()
@@ -469,6 +506,7 @@ export function AdminOilYen() {
           </select>
         </Field>
         <Field label="Sort Order"><TextInput value={String(form.sort_order)} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { sort_order: parseInt(v) || 0 }) }) }} placeholder="0" /></Field>
+        <NotifyToggle enabled={notify} onToggle={function() { setNotify(!notify) }} />
         <SaveButton onClick={add} loading={saving} label="Add Scenario" />
       </AdminCard>
       <AdminCard title="Current Scenarios">
@@ -498,6 +536,7 @@ export function AdminHeadlines() {
   var loadingState = useState(true); var loading = loadingState[0]; var setLoading = loadingState[1]
   var formState = useState({ headline: '', source: '', category: '', url: '' }); var form = formState[0]; var setForm = formState[1]
   var savingState = useState(false); var saving = savingState[0]; var setSaving = savingState[1]
+  var notifyState = useState(false); var notify = notifyState[0]; var setNotify = notifyState[1]
   var toastState = useState({ message: '', type: '' }); var toast = toastState[0]; var setToast = toastState[1]
 
   function showToast(m, t) { setToast({ message: m, type: t || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
@@ -514,8 +553,9 @@ export function AdminHeadlines() {
     if (!form.headline || !form.source) { showToast('Headline and source are required.', 'error'); return }
     setSaving(true)
     var result = await supabase.from('top_headlines').insert(form)
+    if (result.error) { setSaving(false); showToast('Error: ' + result.error.message, 'error'); return }
+    if (notify) { await sendNotificationToAllMembers('Breaking Headline', form.headline + ' — ' + form.source, 'headline') }
     setSaving(false)
-    if (result.error) { showToast('Error: ' + result.error.message, 'error'); return }
     showToast('Headline added!')
     setForm({ headline: '', source: '', category: '', url: '' })
     load()
@@ -530,6 +570,7 @@ export function AdminHeadlines() {
         <Field label="Source"><TextInput value={form.source} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { source: v }) }) }} placeholder="Reuters, Bloomberg..." /></Field>
         <Field label="Category"><TextInput value={form.category} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { category: v }) }) }} placeholder="Regulatory, Macro, ETF..." /></Field>
         <Field label="URL"><TextInput value={form.url} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { url: v }) }) }} placeholder="https://..." /></Field>
+        <NotifyToggle enabled={notify} onToggle={function() { setNotify(!notify) }} />
         <SaveButton onClick={add} loading={saving} label="Add Headline" />
       </AdminCard>
       <AdminCard title="Current Headlines">
@@ -654,6 +695,7 @@ export function AdminETFFlows() {
   var etfsState = useState([]); var etfs = etfsState[0]; var setEtfs = etfsState[1]
   var loadingState = useState(true); var loading = loadingState[0]; var setLoading = loadingState[1]
   var savingState = useState(null); var saving = savingState[0]; var setSaving = savingState[1]
+  var notifyState = useState(false); var notify = notifyState[0]; var setNotify = notifyState[1]
   var toastState = useState({ message: '', type: '' }); var toast = toastState[0]; var setToast = toastState[1]
 
   function showToast(m, t) { setToast({ message: m, type: t || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
@@ -687,16 +729,18 @@ export function AdminETFFlows() {
       date: new Date().toISOString().split('T')[0],
       updated_at: new Date().toISOString()
     }).eq('id', etf.id)
+    if (result.error) { setSaving(null); showToast('Error: ' + result.error.message, 'error'); return }
+    if (notify) { await sendNotificationToAllMembers('ETF Flow Update', etf.etf_name + ' data has been updated.', 'etf_flows') }
     setSaving(null)
-    if (result.error) { showToast('Error: ' + result.error.message, 'error'); return }
     showToast(etf.etf_name + ' saved!')
   }
 
   return (
     <AdminLayout title="XRP ETF Flows">
-      <div className="rounded-lg px-4 py-3 mb-6 text-sm" style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.2)', color: '#9aa8be' }}>
+      <div className="rounded-lg px-4 py-3 mb-4 text-sm" style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.2)', color: '#9aa8be' }}>
         Update each ETF's numbers below. Check SoSoValue.com for the latest flow data. All dollar amounts in full numbers (e.g. 1240000000 for $1.24B).
       </div>
+      <NotifyToggle enabled={notify} onToggle={function() { setNotify(!notify) }} />
       {loading ? <p style={{ color: '#6b7a96' }}>Loading ETFs...</p> : etfs.map(function(etf) {
         return (
           <AdminCard key={etf.id} title={etf.etf_name + ' (' + etf.ticker + ')'}>
@@ -766,10 +810,7 @@ export function AdminYouTube() {
     try {
       var res = await fetch('https://oubwxjhvqjlaxscqbutl.supabase.co/functions/v1/fetch-youtube-videos', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + import.meta.env.VITE_SUPABASE_ANON_KEY
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + import.meta.env.VITE_SUPABASE_ANON_KEY },
         body: JSON.stringify({})
       })
       var data = await res.json()
@@ -786,15 +827,9 @@ export function AdminYouTube() {
         Add up to 4 YouTube channels. Videos refresh automatically every hour (7AM–9PM CT) and every 3 hours overnight. All members see the same channels.
       </div>
       <AdminCard title="Add Channel">
-        <Field label="Channel Handle (e.g. @JakeClaver)">
-          <TextInput value={form.channel_handle} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { channel_handle: v }) }) }} placeholder="@JakeClaver" />
-        </Field>
-        <Field label="Display Name">
-          <TextInput value={form.channel_name} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { channel_name: v }) }) }} placeholder="Jake Claver" />
-        </Field>
-        <Field label="Sort Order">
-          <TextInput value={String(form.sort_order)} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { sort_order: parseInt(v) || 0 }) }) }} placeholder="0" />
-        </Field>
+        <Field label="Channel Handle (e.g. @JakeClaver)"><TextInput value={form.channel_handle} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { channel_handle: v }) }) }} placeholder="@JakeClaver" /></Field>
+        <Field label="Display Name"><TextInput value={form.channel_name} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { channel_name: v }) }) }} placeholder="Jake Claver" /></Field>
+        <Field label="Sort Order"><TextInput value={String(form.sort_order)} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { sort_order: parseInt(v) || 0 }) }) }} placeholder="0" /></Field>
         <SaveButton onClick={add} loading={saving} label="Add Channel" />
       </AdminCard>
       <AdminCard title={'Active Channels (' + channels.length + '/4)'}>
