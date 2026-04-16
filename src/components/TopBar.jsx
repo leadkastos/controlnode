@@ -85,7 +85,9 @@ export default function TopBar() {
   const { profile } = useAuth()
   const prices = usePrices()
   const title = routeTitles[location.pathname] || 'ControlNode'
-  const [macro, setMacro] = useState({})
+  const [usdjpy, setUsdjpy] = useState(null)
+  const [wti, setWti] = useState(null)
+  const [brent, setBrent] = useState(null)
   const [fng, setFng] = useState(null)
   const [tickers, setTickers] = useState([])
 
@@ -96,15 +98,31 @@ export default function TopBar() {
 
   useEffect(function() {
     async function fetchMacro() {
+      var tdKey = import.meta.env.VITE_TWELVE_DATA_API_KEY
+      var oilKey = import.meta.env.VITE_OIL_PRICE_API_KEY
+
       try {
-        var tdKey = import.meta.env.VITE_TWELVE_DATA_API_KEY
-        var tdSymbols = 'USD/JPY,XAU/USD,WTI,BZ,US10Y,JP10Y'
-        var tdRes = await fetch('https://api.twelvedata.com/price?symbol=' + tdSymbols + '&apikey=' + tdKey)
+        var tdRes = await fetch('https://api.twelvedata.com/price?symbol=USD/JPY&apikey=' + tdKey)
         var td = await tdRes.json()
-        setMacro(td || {})
-      } catch(e) {
-        console.error('TopBar macro fetch error', e)
-      }
+        if (td && td.price) setUsdjpy(parseFloat(td.price))
+      } catch(e) {}
+
+      try {
+        var wtiRes = await fetch('https://api.oilpriceapi.com/v1/prices/latest?by_code=WTI_USD', {
+          headers: { 'Authorization': 'Token ' + oilKey, 'Content-Type': 'application/json' }
+        })
+        var wtiData = await wtiRes.json()
+        if (wtiData && wtiData.data && wtiData.data.price) setWti(wtiData.data.price)
+      } catch(e) {}
+
+      try {
+        var brentRes = await fetch('https://api.oilpriceapi.com/v1/prices/latest?by_code=BRENT_CRUDE_USD', {
+          headers: { 'Authorization': 'Token ' + oilKey, 'Content-Type': 'application/json' }
+        })
+        var brentData = await brentRes.json()
+        if (brentData && brentData.data && brentData.data.price) setBrent(brentData.data.price)
+      } catch(e) {}
+
       try {
         var fgRes = await fetch('https://api.alternative.me/fng/?limit=1')
         var fg = await fgRes.json()
@@ -117,38 +135,28 @@ export default function TopBar() {
   }, [])
 
   useEffect(function() {
-    function tdp(sym) {
-      return macro && macro[sym] && macro[sym].price ? macro[sym].price : null
-    }
-
     var xrp = prices && prices.ripple
     var btc = prices && prices.bitcoin
     var eth = prices && prices.ethereum
     var xlm = prices && prices.stellar
 
-    var wti = parseFloat(tdp('WTI') || 0)
-    var brent = parseFloat(tdp('BZ') || 0)
-    var usdjpy = parseFloat(tdp('USD/JPY') || 0)
-    var oilPrice = brent > 0 ? brent : wti
-    var oilJpy = (oilPrice > 0 && usdjpy > 0) ? (oilPrice * usdjpy) : null
+    var oilPrice = brent || wti
+    var oilJpy = (oilPrice && usdjpy) ? (oilPrice * usdjpy) : null
 
     var items = [
       { sym: 'XRP', price: xrp ? fmt(xrp.usd, '$', '', 4) : '—', chg: xrp ? chgLabel(xrp.usd_24h_change) : '—', up: xrp ? xrp.usd_24h_change >= 0 : true },
       { sym: 'BTC', price: btc ? fmt(btc.usd, '$', '', 0) : '—', chg: btc ? chgLabel(btc.usd_24h_change) : '—', up: btc ? btc.usd_24h_change >= 0 : true },
       { sym: 'ETH', price: eth ? fmt(eth.usd, '$', '', 0) : '—', chg: eth ? chgLabel(eth.usd_24h_change) : '—', up: eth ? eth.usd_24h_change >= 0 : true },
       { sym: 'XLM', price: xlm ? fmt(xlm.usd, '$', '', 4) : '—', chg: xlm ? chgLabel(xlm.usd_24h_change) : '—', up: xlm ? xlm.usd_24h_change >= 0 : true },
-      { sym: 'GOLD', price: fmt(tdp('XAU/USD'), '$', '', 0), chg: '—', up: true },
-      { sym: 'BRENT CRUDE', price: fmt(tdp('BZ'), '$', '', 2), chg: '—', up: true },
-      { sym: 'WTI CRUDE', price: fmt(tdp('WTI'), '$', '', 2), chg: '—', up: true },
+      { sym: 'WTI CRUDE', price: wti ? '$' + wti.toFixed(2) : '—', chg: '—', up: true },
+      { sym: 'BRENT CRUDE', price: brent ? '$' + brent.toFixed(2) : '—', chg: '—', up: true },
       { sym: 'OIL/JPY', price: oilJpy ? '¥' + oilJpy.toLocaleString('en-US', { maximumFractionDigits: 0 }) : '—', chg: '—', up: true },
-      { sym: 'USD/JPY', price: fmt(tdp('USD/JPY'), '', '', 2), chg: '—', up: false },
-      { sym: 'US 10Y', price: fmt(tdp('US10Y'), '', '%', 2), chg: '—', up: false },
-      { sym: 'JAPAN 10Y', price: fmt(tdp('JP10Y'), '', '%', 2), chg: '—', up: true },
+      { sym: 'USD/JPY', price: usdjpy ? usdjpy.toFixed(2) : '—', chg: '—', up: false },
       { sym: 'F&G INDEX', price: fng ? fng.value : '—', chg: fng ? fng.value_classification : '—', up: fng ? parseInt(fng.value) >= 50 : true },
     ]
 
     setTickers(items)
-  }, [prices, macro, fng])
+  }, [prices, usdjpy, wti, brent, fng])
 
   return (
     <header
