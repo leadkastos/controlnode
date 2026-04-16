@@ -7,7 +7,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 
-const mainNav = [
+const xrpNav = [
   { label: 'Dashboard', icon: LayoutDashboard, path: '/', color: '#3b82f6' },
   { label: 'Market Overview', icon: TrendingUp, path: '/market-overview', color: '#06b6d4' },
   { label: 'XRP Intelligence', icon: Zap, path: '/xrp-intelligence', color: '#8b5cf6' },
@@ -20,6 +20,19 @@ const mainNav = [
   { label: 'YouTube Intel', icon: Youtube, path: '/youtube-intel', color: '#ef4444' },
   { label: 'Smart Money Flow', icon: Activity, path: '/smart-money-flow', color: '#10b981' },
   { label: 'Market Chatter', icon: MessageCircleWarning, path: '/market-chatter', color: '#8b5cf6' },
+]
+
+const btcNav = [
+  { label: 'Dashboard', icon: LayoutDashboard, color: '#f7931a' },
+  { label: 'Market Overview', icon: TrendingUp, color: '#06b6d4' },
+  { label: 'Bitcoin Intelligence', icon: Bitcoin, color: '#f7931a' },
+  { label: 'Geopolitical Watch', icon: Globe, color: '#ef4444' },
+  { label: 'Media & Narratives', icon: Newspaper, color: '#ec4899' },
+  { label: 'ETF Flows', icon: LineChart, color: '#10b981' },
+  { label: 'Watchlist', icon: Star, color: '#eab308' },
+  { label: 'YouTube Intel', icon: Youtube, color: '#ef4444' },
+  { label: 'Smart Money Flow', icon: Activity, color: '#10b981' },
+  { label: 'Market Chatter', icon: MessageCircleWarning, color: '#8b5cf6' },
 ]
 
 const bottomNav = [
@@ -51,17 +64,35 @@ function NavItem({ item, onClose }) {
   )
 }
 
+function BtcNavItem({ item }) {
+  return (
+    <div
+      className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium"
+      style={{
+        background: 'transparent',
+        color: '#4a5568',
+        borderLeft: '2px solid transparent',
+        cursor: 'not-allowed',
+        opacity: 0.5,
+      }}
+    >
+      <item.icon size={16} strokeWidth={1.8} style={{ color: '#4a5568', flexShrink: 0 }} />
+      <span className="flex-1">{item.label}</span>
+      <Lock size={10} style={{ color: '#4a5568', flexShrink: 0 }} />
+    </div>
+  )
+}
+
 function SidebarContent({ onClose }) {
   const { signOut, profile } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  const isBtc = location.pathname === '/bitcoin'
 
   const handleLogout = async () => {
     await signOut()
     navigate('/login')
   }
-
-  const isBtcActive = location.pathname === '/bitcoin'
 
   return (
     <>
@@ -98,9 +129,9 @@ function SidebarContent({ onClose }) {
         <div className="grid grid-cols-2 gap-1.5">
           <NavLink to="/" onClick={onClose} style={{ textDecoration: 'none' }}>
             <div className="flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-all" style={{
-              background: !isBtcActive ? 'rgba(139,92,246,0.15)' : '#111318',
-              border: !isBtcActive ? '1px solid rgba(139,92,246,0.4)' : '1px solid #1e2330',
-              color: !isBtcActive ? '#8b5cf6' : '#6b7a96'
+              background: !isBtc ? 'rgba(139,92,246,0.15)' : '#111318',
+              border: !isBtc ? '1px solid rgba(139,92,246,0.4)' : '1px solid #1e2330',
+              color: !isBtc ? '#8b5cf6' : '#6b7a96'
             }}>
               <Zap size={12} />
               XRP
@@ -108,13 +139,13 @@ function SidebarContent({ onClose }) {
           </NavLink>
           <NavLink to="/bitcoin" onClick={onClose} style={{ textDecoration: 'none' }}>
             <div className="flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-all" style={{
-              background: isBtcActive ? 'rgba(247,147,26,0.15)' : '#111318',
-              border: isBtcActive ? '1px solid rgba(247,147,26,0.4)' : '1px solid #1e2330',
-              color: isBtcActive ? '#f7931a' : '#6b7a96'
+              background: isBtc ? 'rgba(247,147,26,0.15)' : '#111318',
+              border: isBtc ? '1px solid rgba(247,147,26,0.4)' : '1px solid #1e2330',
+              color: isBtc ? '#f7931a' : '#6b7a96'
             }}>
               <Bitcoin size={12} />
               BTC
-              <Lock size={9} style={{ opacity: 0.6 }} />
+              {!isBtc && <Lock size={9} style={{ opacity: 0.6 }} />}
             </div>
           </NavLink>
         </div>
@@ -122,11 +153,23 @@ function SidebarContent({ onClose }) {
 
       <nav className="flex-1 px-2 py-3 overflow-y-auto space-y-0.5">
         <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-widest" style={{ color: '#6b7a96' }}>
-          Intelligence
+          {isBtc ? 'Bitcoin Intelligence' : 'Intelligence'}
         </p>
-        {mainNav.map((item) => (
-          <NavItem key={item.path} item={item} onClose={onClose} />
-        ))}
+        {isBtc ? (
+          <>
+            <div className="rounded-lg px-3 py-2 mb-2 text-xs" style={{ background: 'rgba(247,147,26,0.07)', border: '1px solid rgba(247,147,26,0.15)', color: '#f7931a' }}>
+              <Lock size={10} className="inline mr-1" />
+              Coming Soon — Founding members get early access
+            </div>
+            {btcNav.map(function(item, i) {
+              return <BtcNavItem key={i} item={item} />
+            })}
+          </>
+        ) : (
+          xrpNav.map((item) => (
+            <NavItem key={item.path} item={item} onClose={onClose} />
+          ))
+        )}
       </nav>
 
       <div className="px-2 py-4 space-y-0.5" style={{ borderTop: '1px solid #1e2330' }}>
