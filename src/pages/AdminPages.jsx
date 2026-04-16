@@ -180,7 +180,7 @@ export function Billing() {
         <DetailSection title="Current Plan">
           <div className="rounded-lg p-4 mb-4" style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)' }}>
             <div className="flex items-center justify-between">
-              <div><p className="font-semibold" style={{ color: '#eceef5' }}>ControlNode Pro</p><p className="text-sm" style={{ color: '#9aa8be' }}>$29/month</p></div>
+              <div><p className="font-semibold" style={{ color: '#eceef5' }}>ControlNode Pro</p><p className="text-sm" style={{ color: '#9aa8be' }}>$29.99/month</p></div>
               <Badge color="blue">Active</Badge>
             </div>
           </div>
@@ -255,7 +255,7 @@ export function AdminMorningBrief() {
   async function publish() {
     if (!date || !headline || !summary) { showToast('Date, headline, and summary are required.', 'error'); return }
     setLoading(true)
-    var formattedDate = new Date(date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+    var formattedDate = new Date(date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
     var result = await supabase.from('morning_briefs').insert({ date: formattedDate, headline: headline, summary: summary, catalysts: catalysts.split('\n').map(function(c) { return c.trim() }).filter(Boolean), published: true })
     if (result.error) { setLoading(false); showToast('Error: ' + result.error.message, 'error'); return }
     if (notify) { await sendNotificationToAllMembers('New Morning Brief', headline, 'morning_brief') }
@@ -292,7 +292,7 @@ export function AdminDailyWrap() {
   async function publish() {
     if (!date || !headline || !summary) { showToast('Date, headline, and summary are required.', 'error'); return }
     setLoading(true)
-    var formattedDate = new Date(date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+    var formattedDate = new Date(date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
     var result = await supabase.from('daily_wraps').insert({ date: formattedDate, headline: headline, summary: summary, catalysts: catalysts.split('\n').map(function(c) { return c.trim() }).filter(Boolean), published: true })
     if (result.error) { setLoading(false); showToast('Error: ' + result.error.message, 'error'); return }
     if (notify) { await sendNotificationToAllMembers('New Daily Wrap', headline, 'daily_wrap') }
