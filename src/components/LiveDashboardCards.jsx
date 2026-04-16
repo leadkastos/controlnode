@@ -33,40 +33,42 @@ function Row({ label, value, color }) {
 }
 
 export function XRPPriceCard() {
-  const { prices } = usePrices()
+  const prices = usePrices()
   const xrp = prices && prices.ripple
   const price = xrp ? '$' + xrp.usd.toFixed(4) : '—'
   const change24h = xrp ? ((xrp.usd_24h_change >= 0 ? '+' : '') + xrp.usd_24h_change.toFixed(2) + '%') : '—'
-  const change7d = xrp ? ((xrp.usd_7d_change >= 0 ? '+' : '') + xrp.usd_7d_change.toFixed(2) + '%') : '—'
-  const changeColor = xrp ? (xrp.usd_24h_change >= 0 ? '#10b981' : '#ef4444') : '#8892a4'
-  const change7dColor = xrp ? (xrp.usd_7d_change >= 0 ? '#10b981' : '#ef4444') : '#8892a4'
+  const change24hColor = xrp ? (xrp.usd_24h_change >= 0 ? '#10b981' : '#ef4444') : '#8892a4'
+  const marketCap = xrp && xrp.usd_24h_vol ? '$' + (xrp.usd_24h_vol / 1e9).toFixed(1) + 'B' : '—'
 
   return (
     <DashCard title="XRP Price Snapshot" route="/xrp-intelligence">
       <Row label="Current Price" value={price} color="#eceef5" />
-      <Row label="24h Change" value={change24h} color={changeColor} />
-      <Row label="7d Change" value={change7d} color={change7dColor} />
+      <Row label="24h Change" value={change24h} color={change24hColor} />
+      <Row label="24h Volume" value={marketCap} color="#8892a4" />
     </DashCard>
   )
 }
 
 export function TechnicalCard() {
-  const { prices } = usePrices()
+  const prices = usePrices()
   const xrp = prices && prices.ripple
-  const price = xrp ? xrp.usd : null
   const change = xrp ? xrp.usd_24h_change : null
   var structure = '—'
   var momentum = '—'
-  if (price && change !== null) {
-    structure = change > 2 ? 'Bullish Momentum' : change > 0 ? 'Mild Uptrend' : change > -2 ? 'Consolidating' : 'Bearish Pressure'
+  var structureColor = '#8892a4'
+  if (change !== null) {
+    if (change > 3) { structure = 'Strong Uptrend'; structureColor = '#10b981' }
+    else if (change > 0) { structure = 'Mild Uptrend'; structureColor = '#10b981' }
+    else if (change > -3) { structure = 'Consolidating'; structureColor = '#f59e0b' }
+    else { structure = 'Bearish Pressure'; structureColor = '#ef4444' }
     momentum = change > 0 ? 'Positive' : 'Negative'
   }
 
   return (
     <DashCard title="Daily Technical Analysis" route="/xrp-intelligence">
-      <Row label="Price Structure" value={structure} color={change > 0 ? '#10b981' : '#ef4444'} />
+      <Row label="Price Structure" value={structure} color={structureColor} />
       <Row label="24h Momentum" value={momentum} color={change > 0 ? '#10b981' : '#ef4444'} />
-      <Row label="Current Price" value={price ? '$' + price.toFixed(4) : '—'} color="#eceef5" />
+      <Row label="Source" value="CoinGecko Live" color="#6b7a96" />
     </DashCard>
   )
 }
@@ -92,12 +94,12 @@ export function XRPNewsCard() {
   }
 
   var source = article ? (article.source_info ? article.source_info.name : article.source) : '—'
-  var title = article ? (article.title.length > 50 ? article.title.slice(0, 50) + '...' : article.title) : 'Loading...'
+  var title = article ? (article.title.length > 55 ? article.title.slice(0, 55) + '...' : article.title) : 'Loading...'
   var time = article ? timeAgo(article.published_on) : '—'
 
   return (
     <DashCard title="XRP & Ripple News" route="/media-narratives">
-      <Row label="Latest" value={time} color="#6b7a96" />
+      <Row label="Posted" value={time} color="#6b7a96" />
       <div className="text-xs leading-snug" style={{ color: '#9aa8be' }}>{title}</div>
       <Row label="Source" value={source} color="#3b82f6" />
     </DashCard>
@@ -116,14 +118,14 @@ export function DominoTheoryCard() {
   var fallen = dominoes.filter(function(d) { return d.status === 'Fallen' }).length
   var tipping = dominoes.filter(function(d) { return d.status === 'Tipping' })
   var latestTipping = tipping.length > 0 ? tipping[tipping.length - 1] : null
-  var stage = fallen === 0 ? 'Early Stage' : 'Stage ' + fallen + ' — ' + (fallen <= 3 ? 'Building' : fallen <= 6 ? 'Activating' : 'Advanced')
-  var stageColor = fallen === 0 ? '#6b7a96' : fallen <= 3 ? '#f59e0b' : fallen <= 6 ? '#ef4444' : '#8b5cf6'
+  var stageColor = fallen === 0 ? '#6b7a96' : fallen <= 3 ? '#f59e0b' : '#ef4444'
+  var stageLabel = fallen === 0 ? 'Early Stage' : 'Stage ' + fallen + ' Active'
 
   return (
     <DashCard title="Domino Theory" route="/domino-theory">
-      <Row label="Dominoes Fallen" value={String(fallen) + ' of 9'} color={stageColor} />
-      <Row label="Stage" value={stage} color={stageColor} />
-      <Row label="Tipping" value={latestTipping ? 'Domino ' + latestTipping.domino_number + ' — ' + latestTipping.domino_name : 'None'} color={latestTipping ? '#f59e0b' : '#6b7a96'} />
+      <Row label="Dominoes Fallen" value={dominoes.length > 0 ? fallen + ' of 9' : '—'} color={stageColor} />
+      <Row label="Stage" value={dominoes.length > 0 ? stageLabel : '—'} color={stageColor} />
+      <Row label="Tipping Now" value={latestTipping ? 'D' + latestTipping.domino_number + ' — ' + latestTipping.domino_name : 'None'} color={latestTipping ? '#f59e0b' : '#6b7a96'} />
     </DashCard>
   )
 }
@@ -172,7 +174,7 @@ export function ETFFlowCard() {
     <DashCard title="XRP ETF Flow Tracker" route="/etf-flows">
       <Row label="Total AUM" value={totalAUM > 0 ? fmt(totalAUM) : '—'} color="#3b82f6" />
       <Row label="Net Flow 7d" value={net7d !== 0 ? (net7d >= 0 ? '+' : '') + fmt(net7d) : '—'} color={net7d >= 0 ? '#10b981' : '#ef4444'} />
-      <Row label="Active ETFs" value={active > 0 ? String(active) + ' products' : '—'} color="#eceef5" />
+      <Row label="Active ETFs" value={active > 0 ? active + ' products' : '—'} color="#eceef5" />
     </DashCard>
   )
 }
@@ -196,30 +198,39 @@ export function MediaIntelCard() {
     categories[cat] = (categories[cat] || 0) + 1
   })
   var topCat = Object.keys(categories).sort(function(a, b) { return categories[b] - categories[a] })[0] || '—'
-  var count = articles.length
 
   return (
     <DashCard title="Media Intelligence" route="/media-narratives">
-      <Row label="Articles Tracked" value={count > 0 ? String(count) + ' recent' : '—'} color="#eceef5" />
+      <Row label="Articles Tracked" value={articles.length > 0 ? articles.length + ' recent' : '—'} color="#eceef5" />
       <Row label="Top Category" value={topCat} color="#8b5cf6" />
-      <Row label="Feed Status" value={count > 0 ? 'Live' : 'Loading'} color={count > 0 ? '#10b981' : '#6b7a96'} />
+      <Row label="Feed Status" value={articles.length > 0 ? 'Live' : 'Loading...'} color={articles.length > 0 ? '#10b981' : '#6b7a96'} />
     </DashCard>
   )
 }
 
 export function OilYenCard() {
-  const { macro } = usePrices()
+  const [brent, setBrent] = useState(null)
+  const [usdjpy, setUsdjpy] = useState(null)
 
-  var brent = macro && macro['BRENT'] ? '$' + parseFloat(macro['BRENT']).toFixed(2) : '—'
-  var usdjpy = macro && macro['USD/JPY'] ? parseFloat(macro['USD/JPY']).toFixed(2) : '—'
-  var oilJpy = (macro && macro['BRENT'] && macro['USD/JPY'])
-    ? '¥' + (parseFloat(macro['BRENT']) * parseFloat(macro['USD/JPY'])).toLocaleString('en-US', { maximumFractionDigits: 0 })
-    : '—'
+  useEffect(function() {
+    var key = import.meta.env.VITE_TWELVE_DATA_API_KEY
+    fetch('https://api.twelvedata.com/price?symbol=BRENT,USD/JPY&apikey=' + key)
+      .then(function(r) { return r.json() })
+      .then(function(data) {
+        if (data.BRENT && data.BRENT.price) setBrent(parseFloat(data.BRENT.price))
+        if (data['USD/JPY'] && data['USD/JPY'].price) setUsdjpy(parseFloat(data['USD/JPY'].price))
+      })
+      .catch(function() {})
+  }, [])
+
+  var brentStr = brent ? '$' + brent.toFixed(2) : '—'
+  var usdjpyStr = usdjpy ? usdjpy.toFixed(2) : '—'
+  var oilJpy = (brent && usdjpy) ? '¥' + (brent * usdjpy).toLocaleString('en-US', { maximumFractionDigits: 0 }) : '—'
 
   return (
     <DashCard title="Oil vs Yen" route="/oil-vs-yen">
-      <Row label="Brent Crude" value={brent} color="#eceef5" />
-      <Row label="USD/JPY" value={usdjpy} color="#eceef5" />
+      <Row label="Brent Crude" value={brentStr} color="#eceef5" />
+      <Row label="USD/JPY" value={usdjpyStr} color="#eceef5" />
       <Row label="Oil in JPY" value={oilJpy} color="#f59e0b" />
     </DashCard>
   )
