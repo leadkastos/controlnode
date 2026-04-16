@@ -209,34 +209,43 @@ export function MediaIntelCard() {
 }
 
 export function OilYenCard() {
+  const [wti, setWti] = useState(null)
   const [brent, setBrent] = useState(null)
   const [usdjpy, setUsdjpy] = useState(null)
 
   useEffect(function() {
-    var key = import.meta.env.VITE_TWELVE_DATA_API_KEY
-    fetch('https://api.twelvedata.com/price?symbol=USD/JPY&apikey=' + key)
+    var tdKey = import.meta.env.VITE_TWELVE_DATA_API_KEY
+    var oilKey = import.meta.env.VITE_OIL_PRICE_API_KEY
+
+    fetch('https://api.twelvedata.com/price?symbol=USD/JPY&apikey=' + tdKey)
       .then(function(r) { return r.json() })
-      .then(function(data) {
-        if (data && data.price) setUsdjpy(parseFloat(data.price))
-      })
+      .then(function(data) { if (data && data.price) setUsdjpy(parseFloat(data.price)) })
       .catch(function() {})
-    fetch('https://api.twelvedata.com/price?symbol=BCO/USD&apikey=' + key)
+
+    fetch('https://api.oilpriceapi.com/v1/prices/latest?by_code=WTI_USD', {
+      headers: { 'Authorization': 'Token ' + oilKey, 'Content-Type': 'application/json' }
+    })
       .then(function(r) { return r.json() })
-      .then(function(data) {
-        if (data && data.price) setBrent(parseFloat(data.price))
-      })
+      .then(function(data) { if (data && data.data && data.data.price) setWti(data.data.price) })
+      .catch(function() {})
+
+    fetch('https://api.oilpriceapi.com/v1/prices/latest?by_code=BRENT_CRUDE_USD', {
+      headers: { 'Authorization': 'Token ' + oilKey, 'Content-Type': 'application/json' }
+    })
+      .then(function(r) { return r.json() })
+      .then(function(data) { if (data && data.data && data.data.price) setBrent(data.data.price) })
       .catch(function() {})
   }, [])
 
-  var brentStr = brent ? '$' + brent.toFixed(2) : '—'
-  var usdjpyStr = usdjpy ? usdjpy.toFixed(2) : '—'
-  var oilJpy = (brent && usdjpy) ? '¥' + (brent * usdjpy).toLocaleString('en-US', { maximumFractionDigits: 0 }) : '—'
+  var oilPrice = brent || wti
+  var oilJpy = (oilPrice && usdjpy) ? (oilPrice * usdjpy) : null
 
   return (
     <DashCard title="Oil vs Yen" route="/oil-vs-yen">
-      <Row label="Brent Crude" value={brentStr} color="#eceef5" />
-      <Row label="USD/JPY" value={usdjpyStr} color="#eceef5" />
-      <Row label="Oil in JPY" value={oilJpy} color="#f59e0b" />
+      <Row label="WTI Crude" value={wti ? '$' + wti.toFixed(2) : '—'} color="#eceef5" />
+      <Row label="Brent Crude" value={brent ? '$' + brent.toFixed(2) : '—'} color="#eceef5" />
+      <Row label="USD/JPY" value={usdjpy ? usdjpy.toFixed(2) : '—'} color="#eceef5" />
+      <Row label="Oil in JPY" value={oilJpy ? '¥' + oilJpy.toLocaleString('en-US', { maximumFractionDigits: 0 }) : '—'} color="#f59e0b" />
     </DashCard>
   )
 }
