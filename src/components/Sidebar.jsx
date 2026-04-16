@@ -69,16 +69,15 @@ function BtcNavItem({ item }) {
     <div
       className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium"
       style={{
-        background: 'transparent',
-        color: '#4a5568',
-        borderLeft: '2px solid transparent',
-        cursor: 'not-allowed',
-        opacity: 0.5,
+        background: `${item.color}10`,
+        color: item.color,
+        borderLeft: `2px solid ${item.color}40`,
+        cursor: 'default',
       }}
     >
-      <item.icon size={16} strokeWidth={1.8} style={{ color: '#4a5568', flexShrink: 0 }} />
+      <item.icon size={16} strokeWidth={1.8} style={{ color: item.color, flexShrink: 0 }} />
       <span className="flex-1">{item.label}</span>
-      <Lock size={10} style={{ color: '#4a5568', flexShrink: 0 }} />
+      <Lock size={10} style={{ color: item.color, opacity: 0.5, flexShrink: 0 }} />
     </div>
   )
 }
@@ -123,7 +122,6 @@ function SidebarContent({ onClose }) {
         )}
       </div>
 
-      {/* Coin Selector */}
       <div className="px-3 pt-4 pb-2">
         <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: '#6b7a96' }}>Intelligence Hub</p>
         <div className="grid grid-cols-2 gap-1.5">
