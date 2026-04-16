@@ -24,13 +24,8 @@ const signalColors = {
   green: { bg: 'rgba(16,185,129,0.12)', text: '#10b981' },
   yellow: { bg: 'rgba(245,158,11,0.12)', text: '#f59e0b' },
   red: { bg: 'rgba(239,68,68,0.12)', text: '#ef4444' },
+  blue: { bg: 'rgba(59,130,246,0.12)', text: '#3b82f6' },
 }
-
-const mockSignals = [
-  { label: 'XRP Momentum', value: 'Bullish', color: 'green' },
-  { label: 'BTC Dominance', value: 'Neutral', color: 'yellow' },
-  { label: 'Risk Appetite', value: 'Cautious', color: 'red' },
-]
 
 function fmt(n) {
   if (n === null || n === undefined) return '—'
@@ -66,6 +61,7 @@ export default function RightSidebar() {
   const prices = usePrices()
   const [symbols, setSymbols] = useState(DEFAULT_SYMBOLS)
   const [news, setNews] = useState([])
+  const [marketSignals, setMarketSignals] = useState([])
 
   useEffect(function() {
     if (!user) return
@@ -81,6 +77,26 @@ export default function RightSidebar() {
     }
     loadWatchlist()
   }, [user])
+
+  useEffect(function() {
+    async function loadMarketSignals() {
+      try {
+        var result = await supabase
+          .from('market_signals')
+          .select('signal_name, signal_value, color')
+          .order('signal_name')
+        if (result.data) {
+          setMarketSignals(result.data)
+        }
+      } catch(e) {
+        console.error('Market signals fetch error:', e)
+      }
+    }
+    loadMarketSignals()
+    // Refresh signals every 30 seconds
+    var interval = setInterval(loadMarketSignals, 30 * 1000)
+    return function() { clearInterval(interval) }
+  }, [])
 
   useEffect(function() {
     async function fetchNews() {
@@ -152,23 +168,36 @@ export default function RightSidebar() {
             Market Signals
           </p>
           <div className="space-y-2">
-            {mockSignals.map(function(s) {
-              return (
-                <div
-                  key={s.label}
-                  className="flex items-center justify-between px-3 py-2 rounded-lg"
-                  style={{ background: '#161a22', border: '1px solid #1e2330' }}
-                >
-                  <span className="text-xs" style={{ color: '#9aa8be' }}>{s.label}</span>
-                  <span
-                    className="text-xs font-semibold px-2 py-0.5 rounded"
-                    style={{ background: signalColors[s.color].bg, color: signalColors[s.color].text }}
+            {marketSignals.length === 0 ? (
+              <div className="space-y-2">
+                {[1, 2, 3].map(function(i) {
+                  return (
+                    <div key={i} className="px-3 py-2 rounded-lg" style={{ background: '#161a22', border: '1px solid #1e2330' }}>
+                      <div className="h-2 rounded animate-pulse" style={{ background: '#1e2330', width: '60%' }} />
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              marketSignals.map(function(s) {
+                var color = signalColors[s.color] || signalColors['blue']
+                return (
+                  <div
+                    key={s.signal_name}
+                    className="flex items-center justify-between px-3 py-2 rounded-lg"
+                    style={{ background: '#161a22', border: '1px solid #1e2330' }}
                   >
-                    {s.value}
-                  </span>
-                </div>
-              )
-            })}
+                    <span className="text-xs" style={{ color: '#9aa8be' }}>{s.signal_name}</span>
+                    <span
+                      className="text-xs font-semibold px-2 py-0.5 rounded"
+                      style={{ background: color.bg, color: color.text }}
+                    >
+                      {s.signal_value}
+                    </span>
+                  </div>
+                )
+              })
+            )}
           </div>
         </div>
 
