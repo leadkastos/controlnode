@@ -2,12 +2,19 @@ import React from 'react'
 import AppLayout from '../components/AppLayout'
 import MorningBriefCard from '../components/MorningBriefCard'
 import DailyWrapCard from '../components/DailyWrapCard'
-import DashboardCard from '../components/DashboardCard'
 import SmartMoneyCard from '../components/SmartMoneyCard'
-import { dashboardCards } from '../data/mockData'
+import {
+  XRPPriceCard,
+  TechnicalCard,
+  XRPNewsCard,
+  DominoTheoryCard,
+  GeopoliticalCard,
+  ETFFlowCard,
+  MediaIntelCard,
+  OilYenCard,
+} from '../components/LiveDashboardCards'
 
 export default function Dashboard() {
-  const filteredCards = dashboardCards.filter(function(card) { return card.id !== 'youtube' })
   return (
     <AppLayout>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
@@ -20,12 +27,16 @@ export default function Dashboard() {
         </h2>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-        {filteredCards.map(function(card) {
-          return <DashboardCard key={card.id} card={card} />
-        })}
+        <XRPPriceCard />
+        <TechnicalCard />
+        <XRPNewsCard />
+        <DominoTheoryCard />
+        <GeopoliticalCard />
+        <ETFFlowCard />
+        <MediaIntelCard />
+        <OilYenCard />
         <SmartMoneyCard />
       </div>
     </AppLayout>
   )
 }
-
