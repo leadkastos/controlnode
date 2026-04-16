@@ -54,7 +54,7 @@ var macroCacheTime = 0
 
 async function fetchAndCacheMacro() {
   var oilKey = import.meta.env.VITE_OIL_PRICE_API_KEY
-  var result = { WTI_USD: null, BRENT_USD: null, USD_JPY: null, FEAR_GREED: null, FEAR_GREED_LABEL: null }
+  var result = { WTI_USD: null, BRENT_USD: null, USD_JPY: null, FEAR_GREED: null }
 
   try {
     var fxRes = await fetch('https://open.er-api.com/v6/latest/USD')
@@ -81,10 +81,7 @@ async function fetchAndCacheMacro() {
   try {
     var fgRes = await fetch('https://api.alternative.me/fng/?limit=1')
     var fg = await fgRes.json()
-    if (fg && fg.data && fg.data[0]) {
-      result.FEAR_GREED = parseInt(fg.data[0].value)
-      result.FEAR_GREED_LABEL = fg.data[0].value_classification
-    }
+    if (fg && fg.data && fg.data[0]) result.FEAR_GREED = parseInt(fg.data[0].value)
   } catch(e) {}
 
   var updates = []
@@ -92,9 +89,7 @@ async function fetchAndCacheMacro() {
   if (result.WTI_USD) updates.push({ key: 'WTI_USD', value: result.WTI_USD, updated_at: new Date().toISOString() })
   if (result.BRENT_USD) updates.push({ key: 'BRENT_USD', value: result.BRENT_USD, updated_at: new Date().toISOString() })
   if (result.FEAR_GREED) updates.push({ key: 'FEAR_GREED', value: result.FEAR_GREED, updated_at: new Date().toISOString() })
-  if (updates.length > 0) {
-    await supabase.from('market_data').upsert(updates, { onConflict: 'key' })
-  }
+  if (updates.length > 0) await supabase.from('market_data').upsert(updates, { onConflict: 'key' })
 
   macroCache = result
   macroCacheTime = Date.now()
@@ -112,14 +107,8 @@ async function getMacro() {
       var t = new Date(row.updated_at).getTime()
       if (!oldestUpdate || t < oldestUpdate) oldestUpdate = t
     })
-    var age = Date.now() - oldestUpdate
-    if (age < 5 * 60 * 1000) {
-      macroCache = {
-        WTI_USD: cached.WTI_USD || null,
-        BRENT_USD: cached.BRENT_USD || null,
-        USD_JPY: cached.USD_JPY || null,
-        FEAR_GREED: cached.FEAR_GREED || null,
-      }
+    if (Date.now() - oldestUpdate < 5 * 60 * 1000) {
+      macroCache = { WTI_USD: cached.WTI_USD || null, BRENT_USD: cached.BRENT_USD || null, USD_JPY: cached.USD_JPY || null, FEAR_GREED: cached.FEAR_GREED || null }
       macroCacheTime = Date.now()
       return macroCache
     }
@@ -154,8 +143,6 @@ export default function TopBar() {
     var btc = prices && prices.bitcoin
     var eth = prices && prices.ethereum
     var xlm = prices && prices.stellar
-    var oilPrice = macro.BRENT_USD || macro.WTI_USD
-    var oilJpy = (oilPrice && macro.USD_JPY) ? (oilPrice * macro.USD_JPY) : null
 
     var items = [
       { sym: 'XRP', price: xrp ? fmt(xrp.usd, '$', '', 4) : '—', chg: xrp ? chgLabel(xrp.usd_24h_change) : '—', up: xrp ? xrp.usd_24h_change >= 0 : true },
@@ -164,7 +151,6 @@ export default function TopBar() {
       { sym: 'XLM', price: xlm ? fmt(xlm.usd, '$', '', 4) : '—', chg: xlm ? chgLabel(xlm.usd_24h_change) : '—', up: xlm ? xlm.usd_24h_change >= 0 : true },
       { sym: 'WTI CRUDE', price: macro.WTI_USD ? '$' + parseFloat(macro.WTI_USD).toFixed(2) : '—', chg: '—', up: true },
       { sym: 'BRENT CRUDE', price: macro.BRENT_USD ? '$' + parseFloat(macro.BRENT_USD).toFixed(2) : '—', chg: '—', up: true },
-      { sym: 'OIL/JPY', price: oilJpy ? '¥' + oilJpy.toLocaleString('en-US', { maximumFractionDigits: 0 }) : '—', chg: '—', up: true },
       { sym: 'USD/JPY', price: macro.USD_JPY ? parseFloat(macro.USD_JPY).toFixed(2) : '—', chg: '—', up: false },
       { sym: 'F&G INDEX', price: macro.FEAR_GREED ? String(macro.FEAR_GREED) : '—', chg: macro.FEAR_GREED ? (macro.FEAR_GREED >= 50 ? 'Greed' : 'Fear') : '—', up: macro.FEAR_GREED ? macro.FEAR_GREED >= 50 : true },
     ]
