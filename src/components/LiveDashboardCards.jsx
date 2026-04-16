@@ -38,13 +38,13 @@ export function XRPPriceCard() {
   const price = xrp ? '$' + xrp.usd.toFixed(4) : '—'
   const change24h = xrp ? ((xrp.usd_24h_change >= 0 ? '+' : '') + xrp.usd_24h_change.toFixed(2) + '%') : '—'
   const change24hColor = xrp ? (xrp.usd_24h_change >= 0 ? '#10b981' : '#ef4444') : '#8892a4'
-  const marketCap = xrp && xrp.usd_24h_vol ? '$' + (xrp.usd_24h_vol / 1e9).toFixed(1) + 'B' : '—'
+  const volume = xrp && xrp.usd_24h_vol ? '$' + (xrp.usd_24h_vol / 1e9).toFixed(1) + 'B' : '—'
 
   return (
     <DashCard title="XRP Price Snapshot" route="/xrp-intelligence">
       <Row label="Current Price" value={price} color="#eceef5" />
       <Row label="24h Change" value={change24h} color={change24hColor} />
-      <Row label="24h Volume" value={marketCap} color="#8892a4" />
+      <Row label="24h Volume" value={volume} color="#8892a4" />
     </DashCard>
   )
 }
@@ -54,8 +54,8 @@ export function TechnicalCard() {
   const xrp = prices && prices.ripple
   const change = xrp ? xrp.usd_24h_change : null
   var structure = '—'
-  var momentum = '—'
   var structureColor = '#8892a4'
+  var momentum = '—'
   if (change !== null) {
     if (change > 3) { structure = 'Strong Uptrend'; structureColor = '#10b981' }
     else if (change > 0) { structure = 'Mild Uptrend'; structureColor = '#10b981' }
@@ -67,7 +67,7 @@ export function TechnicalCard() {
   return (
     <DashCard title="Daily Technical Analysis" route="/xrp-intelligence">
       <Row label="Price Structure" value={structure} color={structureColor} />
-      <Row label="24h Momentum" value={momentum} color={change > 0 ? '#10b981' : '#ef4444'} />
+      <Row label="24h Momentum" value={momentum} color={change !== null ? (change > 0 ? '#10b981' : '#ef4444') : '#8892a4'} />
       <Row label="Source" value="CoinGecko Live" color="#6b7a96" />
     </DashCard>
   )
@@ -214,11 +214,16 @@ export function OilYenCard() {
 
   useEffect(function() {
     var key = import.meta.env.VITE_TWELVE_DATA_API_KEY
-    fetch('https://api.twelvedata.com/price?symbol=BRENT,USD/JPY&apikey=' + key)
+    fetch('https://api.twelvedata.com/price?symbol=USD/JPY&apikey=' + key)
       .then(function(r) { return r.json() })
       .then(function(data) {
-        if (data.BRENT && data.BRENT.price) setBrent(parseFloat(data.BRENT.price))
-        if (data['USD/JPY'] && data['USD/JPY'].price) setUsdjpy(parseFloat(data['USD/JPY'].price))
+        if (data && data.price) setUsdjpy(parseFloat(data.price))
+      })
+      .catch(function() {})
+    fetch('https://api.twelvedata.com/price?symbol=BCO/USD&apikey=' + key)
+      .then(function(r) { return r.json() })
+      .then(function(data) {
+        if (data && data.price) setBrent(parseFloat(data.price))
       })
       .catch(function() {})
   }, [])
