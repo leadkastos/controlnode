@@ -44,6 +44,12 @@ function TextInput({ value, onChange, placeholder, type }) {
   )
 }
 
+function DatePicker({ value, onChange }) {
+  return (
+    <input type="date" value={value} onChange={function(e) { onChange(e.target.value) }} className="w-full px-3 py-2.5 rounded-lg text-sm outline-none" style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }} onFocus={function(e) { e.target.style.borderColor = '#3b82f6' }} onBlur={function(e) { e.target.style.borderColor = '#1e2330' }} />
+  )
+}
+
 function TextArea({ value, onChange, placeholder, rows }) {
   return (
     <textarea value={value} onChange={function(e) { onChange(e.target.value) }} placeholder={placeholder} rows={rows || 5} className="w-full px-3 py-2.5 rounded-lg text-sm outline-none resize-none" style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }} onFocus={function(e) { e.target.style.borderColor = '#3b82f6' }} onBlur={function(e) { e.target.style.borderColor = '#1e2330' }} />
@@ -249,7 +255,8 @@ export function AdminMorningBrief() {
   async function publish() {
     if (!date || !headline || !summary) { showToast('Date, headline, and summary are required.', 'error'); return }
     setLoading(true)
-    var result = await supabase.from('morning_briefs').insert({ date: date, headline: headline, summary: summary, catalysts: catalysts.split('\n').map(function(c) { return c.trim() }).filter(Boolean), published: true })
+    var formattedDate = new Date(date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+    var result = await supabase.from('morning_briefs').insert({ date: formattedDate, headline: headline, summary: summary, catalysts: catalysts.split('\n').map(function(c) { return c.trim() }).filter(Boolean), published: true })
     if (result.error) { setLoading(false); showToast('Error: ' + result.error.message, 'error'); return }
     if (notify) { await sendNotificationToAllMembers('New Morning Brief', headline, 'morning_brief') }
     setLoading(false)
@@ -259,7 +266,7 @@ export function AdminMorningBrief() {
   return (
     <AdminLayout title="Morning Brief">
       <AdminCard title="Publish New Morning Brief">
-        <Field label="Date"><TextInput value={date} onChange={setDate} placeholder="Monday, April 7, 2026" /></Field>
+        <Field label="Date"><DatePicker value={date} onChange={setDate} /></Field>
         <Field label="Headline"><TextInput value={headline} onChange={setHeadline} placeholder="Brief headline..." /></Field>
         <Field label="Summary"><TextArea value={summary} onChange={setSummary} placeholder="Summary paragraph..." rows={5} /></Field>
         <Field label="Catalysts (one per line)"><TextArea value={catalysts} onChange={setCatalysts} placeholder="Catalyst one" rows={4} /></Field>
@@ -285,7 +292,8 @@ export function AdminDailyWrap() {
   async function publish() {
     if (!date || !headline || !summary) { showToast('Date, headline, and summary are required.', 'error'); return }
     setLoading(true)
-    var result = await supabase.from('daily_wraps').insert({ date: date, headline: headline, summary: summary, catalysts: catalysts.split('\n').map(function(c) { return c.trim() }).filter(Boolean), published: true })
+    var formattedDate = new Date(date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+    var result = await supabase.from('daily_wraps').insert({ date: formattedDate, headline: headline, summary: summary, catalysts: catalysts.split('\n').map(function(c) { return c.trim() }).filter(Boolean), published: true })
     if (result.error) { setLoading(false); showToast('Error: ' + result.error.message, 'error'); return }
     if (notify) { await sendNotificationToAllMembers('New Daily Wrap', headline, 'daily_wrap') }
     setLoading(false)
@@ -295,7 +303,7 @@ export function AdminDailyWrap() {
   return (
     <AdminLayout title="Daily Wrap">
       <AdminCard title="Publish New Daily Wrap">
-        <Field label="Date"><TextInput value={date} onChange={setDate} placeholder="Monday, April 7, 2026" /></Field>
+        <Field label="Date"><DatePicker value={date} onChange={setDate} /></Field>
         <Field label="Headline"><TextInput value={headline} onChange={setHeadline} placeholder="Wrap headline..." /></Field>
         <Field label="Summary"><TextArea value={summary} onChange={setSummary} placeholder="Summary paragraph..." rows={5} /></Field>
         <Field label="Catalysts (one per line)"><TextArea value={catalysts} onChange={setCatalysts} placeholder="Catalyst one" rows={4} /></Field>
@@ -724,7 +732,6 @@ export function AdminChatter() {
         <NotifyToggle enabled={notify} onToggle={function() { setNotify(!notify) }} />
         <SaveButton onClick={post} loading={saving} label="Post" />
       </AdminCard>
-
       <AdminCard title="Current Posts">
         {loading ? <p style={{ color: '#6b7a96' }}>Loading...</p> : posts.length === 0 ? <p style={{ color: '#6b7a96' }}>No posts yet.</p> : (
           <div className="space-y-3">
@@ -987,7 +994,6 @@ export function AdminSmartMoney() {
         <NotifyToggle enabled={notify} onToggle={function() { setNotify(!notify) }} />
         <SaveButton onClick={addObservation} loading={saving} label="Post" />
       </AdminCard>
-
       <AdminCard title="Current Observations">
         {loading ? <p style={{ color: '#6b7a96' }}>Loading...</p> : observations.length === 0 ? <p style={{ color: '#6b7a96' }}>No observations posted yet.</p> : (
           <div className="space-y-2">
@@ -1008,7 +1014,6 @@ export function AdminSmartMoney() {
           </div>
         )}
       </AdminCard>
-
       <AdminCard title="Escrow & Unlock Schedule">
         <div className="rounded-lg px-4 py-3 mb-4 text-xs" style={{ background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.15)', color: '#9aa8be' }}>
           Update these numbers monthly when Ripple publishes their quarterly XRP markets report.
@@ -1019,7 +1024,6 @@ export function AdminSmartMoney() {
         <Field label="Remaining Escrow Period"><TextInput value={escrow.remaining_period} onChange={function(v) { setEscrow(function(e) { return Object.assign({}, e, { remaining_period: v }) }) }} placeholder="~38 months" /></Field>
         <SaveButton onClick={saveEscrow} loading={savingEscrow} label="Save Escrow Data" />
       </AdminCard>
-
       <Toast message={toast.message} type={toast.type} />
     </AdminLayout>
   )
