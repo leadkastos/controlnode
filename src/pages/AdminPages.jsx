@@ -219,6 +219,7 @@ export function Admin() {
         {[
           { href: '/admin/morning-brief', title: 'Morning Brief', desc: 'Publish the morning brief' },
           { href: '/admin/daily-wrap', title: 'Daily Wrap', desc: 'Publish the daily wrap' },
+          { href: '/admin/market-signals', title: 'Market Signals', desc: 'Update market intelligence signals' },
           { href: '/admin/domino-theory', title: 'Domino Theory', desc: 'Update domino statuses and notes' },
           { href: '/admin/geopolitical-watch', title: 'Geopolitical Watch', desc: 'Update flash points and weekly watch' },
           { href: '/admin/oil-yen', title: 'Oil vs Yen', desc: 'Update macro scenarios to monitor' },
@@ -237,6 +238,93 @@ export function Admin() {
           )
         })}
       </div>
+    </AdminLayout>
+  )
+}
+
+export function AdminMarketSignals() {
+  var signalsState = useState([]); var signals = signalsState[0]; var setSignals = signalsState[1]
+  var loadingState = useState(true); var loading = loadingState[0]; var setLoading = loadingState[1]
+  var savingState = useState(null); var saving = savingState[0]; var setSaving = savingState[1]
+  var notifyState = useState(false); var notify = notifyState[0]; var setNotify = notifyState[1]
+  var toastState = useState({ message: '', type: '' }); var toast = toastState[0]; var setToast = toastState[1]
+
+  function showToast(m, t) { setToast({ message: m, type: t || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
+
+  useEffect(function() {
+    supabase.from('market_signals').select('*').order('signal_name').then(function(res) {
+      if (res.data) setSignals(res.data)
+      setLoading(false)
+    })
+  }, [])
+
+  function updateField(id, field, value) {
+    setSignals(function(prev) { return prev.map(function(s) { if (s.id === id) { var u = Object.assign({}, s); u[field] = value; return u } return s }) })
+  }
+
+  function getColorForValue(value) {
+    if (value === 'Bullish') return 'green'
+    if (value === 'Bearish') return 'red'
+    if (value === 'Cautious') return 'yellow'
+    return 'blue'
+  }
+
+  async function save(signal) {
+    setSaving(signal.id)
+    var color = getColorForValue(signal.signal_value)
+    var result = await supabase.from('market_signals').update({ 
+      signal_value: signal.signal_value, 
+      color: color, 
+      updated_at: new Date().toISOString() 
+    }).eq('id', signal.id)
+    if (result.error) { setSaving(null); showToast('Error: ' + result.error.message, 'error'); return }
+    if (notify) { await sendNotificationToAllMembers('Market Signal Update', signal.signal_name + ' changed to ' + signal.signal_value, 'market_signals') }
+    setSaving(null)
+    showToast(signal.signal_name + ' saved!')
+    // Update the color in local state
+    updateField(signal.id, 'color', color)
+  }
+
+  return (
+    <AdminLayout title="Market Signals">
+      <div className="rounded-lg px-4 py-3 mb-6 text-sm" style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.2)', color: '#9aa8be' }}>
+        Update market intelligence signals shown in the right sidebar. These are your editorial intelligence calls based on your analysis of market conditions.
+      </div>
+      <NotifyToggle enabled={notify} onToggle={function() { setNotify(!notify) }} />
+      {loading ? <p style={{ color: '#6b7a96' }}>Loading...</p> : signals.length === 0 ? <p style={{ color: '#6b7a96' }}>No signals found.</p> : signals.map(function(s) {
+        return (
+          <AdminCard key={s.id} title={s.signal_name}>
+            <Field label="Signal Value">
+              <select value={s.signal_value || 'Neutral'} onChange={function(e) { updateField(s.id, 'signal_value', e.target.value) }} className="w-full px-3 py-2.5 rounded-lg text-sm outline-none" style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}>
+                <option value="Bullish">Bullish</option>
+                <option value="Neutral">Neutral</option>
+                <option value="Cautious">Cautious</option>
+                <option value="Bearish">Bearish</option>
+              </select>
+            </Field>
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-xs" style={{ color: '#6b7a96' }}>Preview:</span>
+              <span
+                className="text-xs font-semibold px-2 py-0.5 rounded"
+                style={{ 
+                  background: s.signal_value === 'Bullish' ? 'rgba(16,185,129,0.12)' : 
+                             s.signal_value === 'Bearish' ? 'rgba(239,68,68,0.12)' :
+                             s.signal_value === 'Cautious' ? 'rgba(245,158,11,0.12)' : 
+                             'rgba(59,130,246,0.12)',
+                  color: s.signal_value === 'Bullish' ? '#10b981' : 
+                        s.signal_value === 'Bearish' ? '#ef4444' :
+                        s.signal_value === 'Cautious' ? '#f59e0b' : 
+                        '#3b82f6'
+                }}
+              >
+                {s.signal_value || 'Neutral'}
+              </span>
+            </div>
+            <SaveButton onClick={function() { save(s) }} loading={saving === s.id} label="Save" />
+          </AdminCard>
+        )
+      })}
+      <Toast message={toast.message} type={toast.type} />
     </AdminLayout>
   )
 }
