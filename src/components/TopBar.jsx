@@ -98,7 +98,7 @@ export default function TopBar() {
     async function fetchMacro() {
       try {
         var tdKey = import.meta.env.VITE_TWELVE_DATA_API_KEY
-        var tdSymbols = 'EUR/USD,USD/JPY,XAU/USD,WTI/USD,BCO/USD,DXY,SPX,US10Y,JP10Y'
+        var tdSymbols = 'USD/JPY,XAU/USD,WTI,BZ,US10Y,JP10Y'
         var tdRes = await fetch('https://api.twelvedata.com/price?symbol=' + tdSymbols + '&apikey=' + tdKey)
         var td = await tdRes.json()
         setMacro(td || {})
@@ -126,8 +126,8 @@ export default function TopBar() {
     var eth = prices && prices.ethereum
     var xlm = prices && prices.stellar
 
-    var wti = parseFloat(tdp('WTI/USD') || 0)
-    var brent = parseFloat(tdp('BCO/USD') || 0)
+    var wti = parseFloat(tdp('WTI') || 0)
+    var brent = parseFloat(tdp('BZ') || 0)
     var usdjpy = parseFloat(tdp('USD/JPY') || 0)
     var oilPrice = brent > 0 ? brent : wti
     var oilJpy = (oilPrice > 0 && usdjpy > 0) ? (oilPrice * usdjpy) : null
@@ -138,13 +138,10 @@ export default function TopBar() {
       { sym: 'ETH', price: eth ? fmt(eth.usd, '$', '', 0) : '—', chg: eth ? chgLabel(eth.usd_24h_change) : '—', up: eth ? eth.usd_24h_change >= 0 : true },
       { sym: 'XLM', price: xlm ? fmt(xlm.usd, '$', '', 4) : '—', chg: xlm ? chgLabel(xlm.usd_24h_change) : '—', up: xlm ? xlm.usd_24h_change >= 0 : true },
       { sym: 'GOLD', price: fmt(tdp('XAU/USD'), '$', '', 0), chg: '—', up: true },
-      { sym: 'BRENT CRUDE', price: fmt(tdp('BCO/USD'), '$', '', 2), chg: '—', up: true },
-      { sym: 'WTI CRUDE', price: fmt(tdp('WTI/USD'), '$', '', 2), chg: '—', up: true },
+      { sym: 'BRENT CRUDE', price: fmt(tdp('BZ'), '$', '', 2), chg: '—', up: true },
+      { sym: 'WTI CRUDE', price: fmt(tdp('WTI'), '$', '', 2), chg: '—', up: true },
       { sym: 'OIL/JPY', price: oilJpy ? '¥' + oilJpy.toLocaleString('en-US', { maximumFractionDigits: 0 }) : '—', chg: '—', up: true },
-      { sym: 'DXY', price: fmt(tdp('DXY'), '', '', 2), chg: '—', up: false },
-      { sym: 'EUR/USD', price: fmt(tdp('EUR/USD'), '', '', 3), chg: '—', up: true },
       { sym: 'USD/JPY', price: fmt(tdp('USD/JPY'), '', '', 2), chg: '—', up: false },
-      { sym: 'S&P 500', price: fmt(tdp('SPX'), '', '', 0), chg: '—', up: false },
       { sym: 'US 10Y', price: fmt(tdp('US10Y'), '', '%', 2), chg: '—', up: false },
       { sym: 'JAPAN 10Y', price: fmt(tdp('JP10Y'), '', '%', 2), chg: '—', up: true },
       { sym: 'F&G INDEX', price: fng ? fng.value : '—', chg: fng ? fng.value_classification : '—', up: fng ? parseInt(fng.value) >= 50 : true },
