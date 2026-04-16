@@ -3,7 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, TrendingUp, Zap, GitBranch, Globe,
   BarChart2, Newspaper, LineChart, Star, User, CreditCard,
-  Settings, Menu, X, Youtube, MessageCircleWarning, LogOut, Activity
+  Settings, Menu, X, Youtube, MessageCircleWarning, LogOut, Activity, Bitcoin, Lock
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -54,11 +54,14 @@ function NavItem({ item, onClose }) {
 function SidebarContent({ onClose }) {
   const { signOut, profile } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
 
   const handleLogout = async () => {
     await signOut()
     navigate('/login')
   }
+
+  const isBtcActive = location.pathname === '/bitcoin'
 
   return (
     <>
@@ -89,7 +92,35 @@ function SidebarContent({ onClose }) {
         )}
       </div>
 
-      <nav className="flex-1 px-2 py-4 overflow-y-auto space-y-0.5">
+      {/* Coin Selector */}
+      <div className="px-3 pt-4 pb-2">
+        <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: '#6b7a96' }}>Intelligence Hub</p>
+        <div className="grid grid-cols-2 gap-1.5">
+          <NavLink to="/" onClick={onClose} style={{ textDecoration: 'none' }}>
+            <div className="flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-all" style={{
+              background: !isBtcActive ? 'rgba(139,92,246,0.15)' : '#111318',
+              border: !isBtcActive ? '1px solid rgba(139,92,246,0.4)' : '1px solid #1e2330',
+              color: !isBtcActive ? '#8b5cf6' : '#6b7a96'
+            }}>
+              <Zap size={12} />
+              XRP
+            </div>
+          </NavLink>
+          <NavLink to="/bitcoin" onClick={onClose} style={{ textDecoration: 'none' }}>
+            <div className="flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-all" style={{
+              background: isBtcActive ? 'rgba(247,147,26,0.15)' : '#111318',
+              border: isBtcActive ? '1px solid rgba(247,147,26,0.4)' : '1px solid #1e2330',
+              color: isBtcActive ? '#f7931a' : '#6b7a96'
+            }}>
+              <Bitcoin size={12} />
+              BTC
+              <Lock size={9} style={{ opacity: 0.6 }} />
+            </div>
+          </NavLink>
+        </div>
+      </div>
+
+      <nav className="flex-1 px-2 py-3 overflow-y-auto space-y-0.5">
         <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-widest" style={{ color: '#6b7a96' }}>
           Intelligence
         </p>
