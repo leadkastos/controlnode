@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import NotificationBell from './NotificationBell'
 import { useAuth } from '../contexts/AuthContext'
 import { usePrices } from '../contexts/PriceContext'
+import { supabase } from '../lib/supabase'
 
 const routeTitles = {
   '/': 'Dashboard', '/dashboard': 'Dashboard', '/morning-brief': 'Morning Brief',
@@ -48,16 +49,91 @@ function chgLabel(val) {
   return (n >= 0 ? '+' : '') + n.toFixed(2) + '%'
 }
 
+var macroCache = null
+var macroCacheTime = 0
+
+async function fetchAndCacheMacro() {
+  var oilKey = import.meta.env.VITE_OIL_PRICE_API_KEY
+  var result = { WTI_USD: null, BRENT_USD: null, USD_JPY: null, FEAR_GREED: null, FEAR_GREED_LABEL: null }
+
+  try {
+    var fxRes = await fetch('https://open.er-api.com/v6/latest/USD')
+    var fx = await fxRes.json()
+    if (fx && fx.rates && fx.rates.JPY) result.USD_JPY = fx.rates.JPY
+  } catch(e) {}
+
+  try {
+    var wtiRes = await fetch('https://api.oilpriceapi.com/v1/prices/latest?by_code=WTI_USD', {
+      headers: { 'Authorization': 'Token ' + oilKey, 'Content-Type': 'application/json' }
+    })
+    var wtiData = await wtiRes.json()
+    if (wtiData && wtiData.data && wtiData.data.price) result.WTI_USD = wtiData.data.price
+  } catch(e) {}
+
+  try {
+    var brentRes = await fetch('https://api.oilpriceapi.com/v1/prices/latest?by_code=BRENT_CRUDE_USD', {
+      headers: { 'Authorization': 'Token ' + oilKey, 'Content-Type': 'application/json' }
+    })
+    var brentData = await brentRes.json()
+    if (brentData && brentData.data && brentData.data.price) result.BRENT_USD = brentData.data.price
+  } catch(e) {}
+
+  try {
+    var fgRes = await fetch('https://api.alternative.me/fng/?limit=1')
+    var fg = await fgRes.json()
+    if (fg && fg.data && fg.data[0]) {
+      result.FEAR_GREED = parseInt(fg.data[0].value)
+      result.FEAR_GREED_LABEL = fg.data[0].value_classification
+    }
+  } catch(e) {}
+
+  var updates = []
+  if (result.USD_JPY) updates.push({ key: 'USD_JPY', value: result.USD_JPY, updated_at: new Date().toISOString() })
+  if (result.WTI_USD) updates.push({ key: 'WTI_USD', value: result.WTI_USD, updated_at: new Date().toISOString() })
+  if (result.BRENT_USD) updates.push({ key: 'BRENT_USD', value: result.BRENT_USD, updated_at: new Date().toISOString() })
+  if (result.FEAR_GREED) updates.push({ key: 'FEAR_GREED', value: result.FEAR_GREED, updated_at: new Date().toISOString() })
+  if (updates.length > 0) {
+    await supabase.from('market_data').upsert(updates, { onConflict: 'key' })
+  }
+
+  macroCache = result
+  macroCacheTime = Date.now()
+  return result
+}
+
+async function getMacro() {
+  if (macroCache && (Date.now() - macroCacheTime) < 5 * 60 * 1000) return macroCache
+  var res = await supabase.from('market_data').select('*')
+  if (res.data && res.data.length > 0) {
+    var cached = {}
+    var oldestUpdate = null
+    res.data.forEach(function(row) {
+      cached[row.key] = row.value
+      var t = new Date(row.updated_at).getTime()
+      if (!oldestUpdate || t < oldestUpdate) oldestUpdate = t
+    })
+    var age = Date.now() - oldestUpdate
+    if (age < 5 * 60 * 1000) {
+      macroCache = {
+        WTI_USD: cached.WTI_USD || null,
+        BRENT_USD: cached.BRENT_USD || null,
+        USD_JPY: cached.USD_JPY || null,
+        FEAR_GREED: cached.FEAR_GREED || null,
+      }
+      macroCacheTime = Date.now()
+      return macroCache
+    }
+  }
+  return fetchAndCacheMacro()
+}
+
 export default function TopBar() {
   const location = useLocation()
   const navigate = useNavigate()
   const { profile } = useAuth()
   const prices = usePrices()
   const title = routeTitles[location.pathname] || 'ControlNode'
-  const [usdjpy, setUsdjpy] = useState(null)
-  const [wti, setWti] = useState(null)
-  const [brent, setBrent] = useState(null)
-  const [fng, setFng] = useState(null)
+  const [macro, setMacro] = useState({ WTI_USD: null, BRENT_USD: null, USD_JPY: null, FEAR_GREED: null })
   const [tickers, setTickers] = useState([])
 
   var initials = 'CN'
@@ -66,39 +142,10 @@ export default function TopBar() {
   }
 
   useEffect(function() {
-    async function fetchMacro() {
-      var oilKey = import.meta.env.VITE_OIL_PRICE_API_KEY
-
-      try {
-        var fxRes = await fetch('https://open.er-api.com/v6/latest/USD')
-        var fx = await fxRes.json()
-        if (fx && fx.rates && fx.rates.JPY) setUsdjpy(fx.rates.JPY)
-      } catch(e) {}
-
-      try {
-        var wtiRes = await fetch('https://api.oilpriceapi.com/v1/prices/latest?by_code=WTI_USD', {
-          headers: { 'Authorization': 'Token ' + oilKey, 'Content-Type': 'application/json' }
-        })
-        var wtiData = await wtiRes.json()
-        if (wtiData && wtiData.data && wtiData.data.price) setWti(wtiData.data.price)
-      } catch(e) {}
-
-      try {
-        var brentRes = await fetch('https://api.oilpriceapi.com/v1/prices/latest?by_code=BRENT_CRUDE_USD', {
-          headers: { 'Authorization': 'Token ' + oilKey, 'Content-Type': 'application/json' }
-        })
-        var brentData = await brentRes.json()
-        if (brentData && brentData.data && brentData.data.price) setBrent(brentData.data.price)
-      } catch(e) {}
-
-      try {
-        var fgRes = await fetch('https://api.alternative.me/fng/?limit=1')
-        var fg = await fgRes.json()
-        if (fg && fg.data && fg.data[0]) setFng(fg.data[0])
-      } catch(e) {}
-    }
-    fetchMacro()
-    var interval = setInterval(fetchMacro, 5 * 60 * 1000)
+    getMacro().then(function(m) { setMacro(m) })
+    var interval = setInterval(function() {
+      fetchAndCacheMacro().then(function(m) { setMacro(m) })
+    }, 5 * 60 * 1000)
     return function() { clearInterval(interval) }
   }, [])
 
@@ -107,22 +154,22 @@ export default function TopBar() {
     var btc = prices && prices.bitcoin
     var eth = prices && prices.ethereum
     var xlm = prices && prices.stellar
-    var oilPrice = brent || wti
-    var oilJpy = (oilPrice && usdjpy) ? (oilPrice * usdjpy) : null
+    var oilPrice = macro.BRENT_USD || macro.WTI_USD
+    var oilJpy = (oilPrice && macro.USD_JPY) ? (oilPrice * macro.USD_JPY) : null
 
     var items = [
       { sym: 'XRP', price: xrp ? fmt(xrp.usd, '$', '', 4) : '—', chg: xrp ? chgLabel(xrp.usd_24h_change) : '—', up: xrp ? xrp.usd_24h_change >= 0 : true },
       { sym: 'BTC', price: btc ? fmt(btc.usd, '$', '', 0) : '—', chg: btc ? chgLabel(btc.usd_24h_change) : '—', up: btc ? btc.usd_24h_change >= 0 : true },
       { sym: 'ETH', price: eth ? fmt(eth.usd, '$', '', 0) : '—', chg: eth ? chgLabel(eth.usd_24h_change) : '—', up: eth ? eth.usd_24h_change >= 0 : true },
       { sym: 'XLM', price: xlm ? fmt(xlm.usd, '$', '', 4) : '—', chg: xlm ? chgLabel(xlm.usd_24h_change) : '—', up: xlm ? xlm.usd_24h_change >= 0 : true },
-      { sym: 'WTI CRUDE', price: wti ? '$' + wti.toFixed(2) : '—', chg: '—', up: true },
-      { sym: 'BRENT CRUDE', price: brent ? '$' + brent.toFixed(2) : '—', chg: '—', up: true },
+      { sym: 'WTI CRUDE', price: macro.WTI_USD ? '$' + parseFloat(macro.WTI_USD).toFixed(2) : '—', chg: '—', up: true },
+      { sym: 'BRENT CRUDE', price: macro.BRENT_USD ? '$' + parseFloat(macro.BRENT_USD).toFixed(2) : '—', chg: '—', up: true },
       { sym: 'OIL/JPY', price: oilJpy ? '¥' + oilJpy.toLocaleString('en-US', { maximumFractionDigits: 0 }) : '—', chg: '—', up: true },
-      { sym: 'USD/JPY', price: usdjpy ? usdjpy.toFixed(2) : '—', chg: '—', up: false },
-      { sym: 'F&G INDEX', price: fng ? fng.value : '—', chg: fng ? fng.value_classification : '—', up: fng ? parseInt(fng.value) >= 50 : true },
+      { sym: 'USD/JPY', price: macro.USD_JPY ? parseFloat(macro.USD_JPY).toFixed(2) : '—', chg: '—', up: false },
+      { sym: 'F&G INDEX', price: macro.FEAR_GREED ? String(macro.FEAR_GREED) : '—', chg: macro.FEAR_GREED ? (macro.FEAR_GREED >= 50 ? 'Greed' : 'Fear') : '—', up: macro.FEAR_GREED ? macro.FEAR_GREED >= 50 : true },
     ]
     setTickers(items)
-  }, [prices, usdjpy, wti, brent, fng])
+  }, [prices, macro])
 
   return (
     <header className="sticky top-0 z-20" style={{ background: 'rgba(10,11,15,0.85)', borderBottom: '1px solid #1e2330', backdropFilter: 'blur(12px)' }}>
