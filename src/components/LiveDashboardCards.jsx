@@ -214,12 +214,13 @@ export function OilYenCard() {
   const [usdjpy, setUsdjpy] = useState(null)
 
   useEffect(function() {
-    var tdKey = import.meta.env.VITE_TWELVE_DATA_API_KEY
     var oilKey = import.meta.env.VITE_OIL_PRICE_API_KEY
 
-    fetch('https://api.twelvedata.com/price?symbol=USD/JPY&apikey=' + tdKey)
+    fetch('https://www.freeforexapi.com/api/live?pairs=USDJPY')
       .then(function(r) { return r.json() })
-      .then(function(data) { if (data && data.price) setUsdjpy(parseFloat(data.price)) })
+      .then(function(data) {
+        if (data && data.rates && data.rates.USDJPY) setUsdjpy(data.rates.USDJPY.rate)
+      })
       .catch(function() {})
 
     fetch('https://api.oilpriceapi.com/v1/prices/latest?by_code=WTI_USD', {
