@@ -43,6 +43,7 @@ const bottomNav = [
 
 function NavItem({ item, onClose }) {
   const location = useLocation()
+  const [hovered, setHovered] = useState(false)
   const isActive = item.path === '/'
     ? location.pathname === '/'
     : location.pathname.startsWith(item.path)
@@ -52,10 +53,12 @@ function NavItem({ item, onClose }) {
       <div
         className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer"
         style={{
-          background: isActive ? `${item.color}22` : `${item.color}10`,
+          background: isActive ? `${item.color}22` : hovered ? 'rgba(255,255,255,0.05)' : 'transparent',
           color: '#eceef5',
-          borderLeft: isActive ? `2px solid ${item.color}` : `2px solid ${item.color}40`,
+          borderLeft: isActive ? `2px solid ${item.color}` : '2px solid transparent',
         }}
+        onMouseEnter={function() { setHovered(true) }}
+        onMouseLeave={function() { setHovered(false) }}
       >
         <item.icon size={16} strokeWidth={1.8} style={{ color: item.color, flexShrink: 0 }} />
         <span>{item.label}</span>
@@ -65,15 +68,18 @@ function NavItem({ item, onClose }) {
 }
 
 function BtcNavItem({ item }) {
+  const [hovered, setHovered] = useState(false)
   return (
     <div
-      className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium"
+      className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150"
       style={{
-        background: `${item.color}10`,
+        background: hovered ? 'rgba(255,255,255,0.05)' : 'transparent',
         color: '#eceef5',
-        borderLeft: `2px solid ${item.color}40`,
+        borderLeft: '2px solid transparent',
         cursor: 'default',
       }}
+      onMouseEnter={function() { setHovered(true) }}
+      onMouseLeave={function() { setHovered(false) }}
     >
       <item.icon size={16} strokeWidth={1.8} style={{ color: item.color, flexShrink: 0 }} />
       <span className="flex-1">{item.label}</span>
@@ -179,16 +185,21 @@ function SidebarContent({ onClose }) {
         ))}
         <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer hover:bg-red-500/10"
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer"
           style={{ color: '#eceef5', borderLeft: '2px solid transparent' }}
+          onMouseEnter={function(e) { e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
+          onMouseLeave={function(e) { e.currentTarget.style.background = 'transparent' }}
         >
           <LogOut size={16} strokeWidth={1.8} style={{ color: '#9aa8be', flexShrink: 0 }} />
           <span>Sign Out</span>
         </button>
         {profile?.role === 'super_admin' && (
           <NavLink to="/admin" style={{ textDecoration: 'none' }}>
-            <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer hover:bg-yellow-500/10"
-              style={{ color: '#f59e0b', borderLeft: '2px solid transparent' }}>
+            <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer"
+              style={{ color: '#f59e0b', borderLeft: '2px solid transparent' }}
+              onMouseEnter={function(e) { e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
+              onMouseLeave={function(e) { e.currentTarget.style.background = 'transparent' }}
+            >
               <Settings size={16} strokeWidth={1.8} style={{ color: '#f59e0b', flexShrink: 0 }} />
               <span>Admin Panel</span>
             </div>
