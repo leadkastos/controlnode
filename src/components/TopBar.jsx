@@ -101,9 +101,9 @@ export default function TopBar() {
       var oilKey = import.meta.env.VITE_OIL_PRICE_API_KEY
 
       try {
-        var fxRes = await fetch('https://www.freeforexapi.com/api/live?pairs=USDJPY')
+        var fxRes = await fetch('https://api.frankfurter.app/latest?from=USD&to=JPY')
         var fx = await fxRes.json()
-        if (fx && fx.rates && fx.rates.USDJPY) setUsdjpy(fx.rates.USDJPY.rate)
+        if (fx && fx.rates && fx.rates.JPY) setUsdjpy(fx.rates.JPY)
       } catch(e) {}
 
       try {
