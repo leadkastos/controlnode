@@ -170,41 +170,55 @@ export function MediaIntelCard() {
 }
 
 export function OilYenCard() {
-  const [wti, setWti] = useState(null)
-  const [brent, setBrent] = useState(null)
-  const [usdjpy, setUsdjpy] = useState(null)
+  const [data, setData] = useState({ wti: null, brent: null, usdjpy: null })
 
   useEffect(function() {
-    var oilKey = import.meta.env.VITE_OIL_PRICE_API_KEY
-
-    fetch('https://open.er-api.com/v6/latest/USD')
-      .then(function(r) { return r.json() })
-      .then(function(data) { if (data && data.rates && data.rates.JPY) setUsdjpy(data.rates.JPY) })
-      .catch(function() {})
-
-    fetch('https://api.oilpriceapi.com/v1/prices/latest?by_code=WTI_USD', {
-      headers: { 'Authorization': 'Token ' + oilKey, 'Content-Type': 'application/json' }
-    })
-      .then(function(r) { return r.json() })
-      .then(function(data) { if (data && data.data && data.data.price) setWti(data.data.price) })
-      .catch(function() {})
-
-    fetch('https://api.oilpriceapi.com/v1/prices/latest?by_code=BRENT_CRUDE_USD', {
-      headers: { 'Authorization': 'Token ' + oilKey, 'Content-Type': 'application/json' }
-    })
-      .then(function(r) { return r.json() })
-      .then(function(data) { if (data && data.data && data.data.price) setBrent(data.data.price) })
-      .catch(function() {})
+    async function load() {
+      var res = await supabase.from('market_data').select('*')
+      if (res.data && res.data.length > 0) {
+        var cached = {}
+        res.data.forEach(function(row) { cached[row.key] = parseFloat(row.value) })
+        var age = Date.now() - new Date(res.data[0].updated_at).getTime()
+        if (cached.WTI_USD > 0 && age < 5 * 60 * 1000) {
+          setData({ wti: cached.WTI_USD, brent: cached.BRENT_USD, usdjpy: cached.USD_JPY })
+          return
+        }
+      }
+      var oilKey = import.meta.env.VITE_OIL_PRICE_API_KEY
+      var wti = null; var brent = null; var usdjpy = null
+      try {
+        var fxRes = await fetch('https://open.er-api.com/v6/latest/USD')
+        var fx = await fxRes.json()
+        if (fx && fx.rates && fx.rates.JPY) usdjpy = fx.rates.JPY
+      } catch(e) {}
+      try {
+        var wtiRes = await fetch('https://api.oilpriceapi.com/v1/prices/latest?by_code=WTI_USD', { headers: { 'Authorization': 'Token ' + oilKey } })
+        var wtiData = await wtiRes.json()
+        if (wtiData && wtiData.data) wti = wtiData.data.price
+      } catch(e) {}
+      try {
+        var brentRes = await fetch('https://api.oilpriceapi.com/v1/prices/latest?by_code=BRENT_CRUDE_USD', { headers: { 'Authorization': 'Token ' + oilKey } })
+        var brentData = await brentRes.json()
+        if (brentData && brentData.data) brent = brentData.data.price
+      } catch(e) {}
+      setData({ wti, brent, usdjpy })
+      var updates = []
+      if (usdjpy) updates.push({ key: 'USD_JPY', value: usdjpy, updated_at: new Date().toISOString() })
+      if (wti) updates.push({ key: 'WTI_USD', value: wti, updated_at: new Date().toISOString() })
+      if (brent) updates.push({ key: 'BRENT_USD', value: brent, updated_at: new Date().toISOString() })
+      if (updates.length > 0) await supabase.from('market_data').upsert(updates, { onConflict: 'key' })
+    }
+    load()
   }, [])
 
-  var oilPrice = brent || wti
-  var oilJpy = (oilPrice && usdjpy) ? (oilPrice * usdjpy) : null
+  var oilPrice = data.brent || data.wti
+  var oilJpy = (oilPrice && data.usdjpy) ? (oilPrice * data.usdjpy) : null
 
   return (
     <DashCard title="Oil vs Yen" route="/oil-vs-yen">
-      <Row label="WTI Crude" value={wti ? '$' + wti.toFixed(2) : '—'} color="#eceef5" />
-      <Row label="Brent Crude" value={brent ? '$' + brent.toFixed(2) : '—'} color="#eceef5" />
-      <Row label="USD/JPY" value={usdjpy ? usdjpy.toFixed(2) : '—'} color="#eceef5" />
+      <Row label="WTI Crude" value={data.wti ? '$' + data.wti.toFixed(2) : '—'} color="#eceef5" />
+      <Row label="Brent Crude" value={data.brent ? '$' + data.brent.toFixed(2) : '—'} color="#eceef5" />
+      <Row label="USD/JPY" value={data.usdjpy ? data.usdjpy.toFixed(2) : '—'} color="#eceef5" />
       <Row label="Oil in JPY" value={oilJpy ? '¥' + oilJpy.toLocaleString('en-US', { maximumFractionDigits: 0 }) : '—'} color="#f59e0b" />
     </DashCard>
   )
