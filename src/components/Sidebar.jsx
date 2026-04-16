@@ -52,12 +52,12 @@ function NavItem({ item, onClose }) {
       <div
         className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer"
         style={{
-          background: isActive ? `${item.color}18` : 'transparent',
-          color: isActive ? item.color : item.color + 'aa',
-          borderLeft: isActive ? `2px solid ${item.color}` : '2px solid transparent',
+          background: isActive ? `${item.color}22` : `${item.color}10`,
+          color: isActive ? item.color : item.color + 'bb',
+          borderLeft: isActive ? `2px solid ${item.color}` : `2px solid ${item.color}40`,
         }}
       >
-        <item.icon size={16} strokeWidth={1.8} style={{ color: isActive ? item.color : item.color + 'aa', flexShrink: 0 }} />
+        <item.icon size={16} strokeWidth={1.8} style={{ color: isActive ? item.color : item.color + 'bb', flexShrink: 0 }} />
         <span>{item.label}</span>
       </div>
     </NavLink>
