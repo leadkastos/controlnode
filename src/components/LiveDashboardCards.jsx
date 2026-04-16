@@ -211,15 +211,11 @@ export function OilYenCard() {
     load()
   }, [])
 
-  var oilPrice = data.brent || data.wti
-  var oilJpy = (oilPrice && data.usdjpy) ? (oilPrice * data.usdjpy) : null
-
   return (
     <DashCard title="Oil vs Yen" route="/oil-vs-yen">
       <Row label="WTI Crude" value={data.wti ? '$' + data.wti.toFixed(2) : '—'} color="#eceef5" />
       <Row label="Brent Crude" value={data.brent ? '$' + data.brent.toFixed(2) : '—'} color="#eceef5" />
       <Row label="USD/JPY" value={data.usdjpy ? data.usdjpy.toFixed(2) : '—'} color="#eceef5" />
-      <Row label="Oil in JPY" value={oilJpy ? '¥' + oilJpy.toLocaleString('en-US', { maximumFractionDigits: 0 }) : '—'} color="#f59e0b" />
     </DashCard>
   )
 }
