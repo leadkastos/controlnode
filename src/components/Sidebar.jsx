@@ -53,11 +53,11 @@ function NavItem({ item, onClose }) {
         className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer"
         style={{
           background: isActive ? `${item.color}22` : `${item.color}10`,
-          color: isActive ? item.color : item.color + 'bb',
+          color: '#eceef5',
           borderLeft: isActive ? `2px solid ${item.color}` : `2px solid ${item.color}40`,
         }}
       >
-        <item.icon size={16} strokeWidth={1.8} style={{ color: isActive ? item.color : item.color + 'bb', flexShrink: 0 }} />
+        <item.icon size={16} strokeWidth={1.8} style={{ color: item.color, flexShrink: 0 }} />
         <span>{item.label}</span>
       </div>
     </NavLink>
@@ -70,7 +70,7 @@ function BtcNavItem({ item }) {
       className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium"
       style={{
         background: `${item.color}10`,
-        color: item.color,
+        color: '#eceef5',
         borderLeft: `2px solid ${item.color}40`,
         cursor: 'default',
       }}
@@ -180,9 +180,9 @@ function SidebarContent({ onClose }) {
         <button
           onClick={handleLogout}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer hover:bg-red-500/10"
-          style={{ color: '#6b7a96', borderLeft: '2px solid transparent' }}
+          style={{ color: '#eceef5', borderLeft: '2px solid transparent' }}
         >
-          <LogOut size={16} strokeWidth={1.8} style={{ color: '#6b7a96', flexShrink: 0 }} />
+          <LogOut size={16} strokeWidth={1.8} style={{ color: '#9aa8be', flexShrink: 0 }} />
           <span>Sign Out</span>
         </button>
         {profile?.role === 'super_admin' && (
