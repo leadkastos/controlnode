@@ -1,81 +1,123 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { Bell } from 'lucide-react'
-import { mockNotifications } from '../data/mockData'
+import { supabase } from '../lib/supabase'
+import { useAuth } from '../contexts/AuthContext'
 
 export default function NotificationBell() {
   const [open, setOpen] = useState(false)
+  const [notifications, setNotifications] = useState([])
+  const { user } = useAuth()
   const ref = useRef(null)
-  const unreadCount = mockNotifications.filter(n => n.unread).length
 
-  useEffect(() => {
+  async function load() {
+    if (!user) return
+    var res = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(10)
+    if (res.data) setNotifications(res.data)
+  }
+
+  useEffect(function() {
+    load()
+  }, [user])
+
+  useEffect(function() {
     function handleClick(e) {
       if (ref.current && !ref.current.contains(e.target)) {
         setOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
+    return function() { document.removeEventListener('mousedown', handleClick) }
   }, [])
+
+  async function markRead(id) {
+    await supabase.from('notifications').update({ read: true }).eq('id', id)
+    setNotifications(function(prev) {
+      return prev.map(function(n) { return n.id === id ? Object.assign({}, n, { read: true }) : n })
+    })
+  }
+
+  async function markAllRead() {
+    if (!user) return
+    await supabase.from('notifications').update({ read: true }).eq('user_id', user.id)
+    setNotifications(function(prev) { return prev.map(function(n) { return Object.assign({}, n, { read: true }) }) })
+  }
+
+  var unreadCount = notifications.filter(function(n) { return !n.read }).length
+
+  function timeAgo(ts) {
+    var diff = Math.floor((Date.now() - new Date(ts).getTime()) / 1000)
+    if (diff < 3600) return Math.floor(diff / 60) + ' min ago'
+    if (diff < 86400) return Math.floor(diff / 3600) + ' hrs ago'
+    return Math.floor(diff / 86400) + ' days ago'
+  }
 
   return (
     <div className="relative" ref={ref}>
       <button
-        onClick={() => setOpen(!open)}
+        onClick={function() { setOpen(!open); if (!open) load() }}
         className="relative p-2 rounded-lg transition-colors"
         style={{ color: '#9aa8be', background: open ? '#161a22' : 'transparent' }}
       >
         <Bell size={18} strokeWidth={1.8} />
         {unreadCount > 0 && (
-          <span
-            className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center text-white"
-            style={{ fontSize: '10px', background: '#ef4444', fontWeight: 600 }}
-          >
+          <span className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center text-white" style={{ fontSize: '10px', background: '#ef4444', fontWeight: 600 }}>
             {unreadCount}
           </span>
         )}
       </button>
-
       {open && (
-        <div
-          className="absolute right-0 top-full mt-2 w-80 rounded-xl shadow-2xl z-50 overflow-hidden"
-          style={{ background: '#161a22', border: '1px solid #1e2330' }}
-        >
+        <div className="absolute right-0 top-full mt-2 w-80 rounded-xl shadow-2xl z-50 overflow-hidden" style={{ background: '#161a22', border: '1px solid #1e2330' }}>
           <div className="px-4 py-3" style={{ borderBottom: '1px solid #1e2330' }}>
             <div className="flex items-center justify-between">
               <span className="text-sm font-semibold" style={{ color: '#eceef5' }}>Notifications</span>
-              <span
-                className="text-xs px-2 py-0.5 rounded-full"
-                style={{ background: 'rgba(59,130,246,0.15)', color: '#3b82f6' }}
-              >
-                {unreadCount} new
-              </span>
+              <div className="flex items-center gap-2">
+                {unreadCount > 0 && (
+                  <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(59,130,246,0.15)', color: '#3b82f6' }}>{unreadCount} new</span>
+                )}
+                {unreadCount > 0 && (
+                  <button onClick={markAllRead} className="text-xs" style={{ color: '#6b7a96' }}>Mark all read</button>
+                )}
+              </div>
             </div>
           </div>
-
           <div className="divide-y" style={{ borderColor: '#1e2330' }}>
-            {mockNotifications.map((n) => (
-              <button
-                key={n.id}
-                className="w-full px-4 py-3 text-left transition-colors hover:bg-white/5 flex gap-3"
-              >
-                {n.unread && (
-                  <div className="mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: '#3b82f6' }} />
-                )}
-                {!n.unread && <div className="mt-1.5 w-1.5 h-1.5 flex-shrink-0" />}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate" style={{ color: '#eceef5' }}>{n.title}</p>
-                  <p className="text-xs mt-0.5 leading-snug" style={{ color: '#9aa8be' }}>{n.snippet}</p>
-                  <p className="text-xs mt-1" style={{ color: '#6b7a96' }}>{n.time}</p>
-                </div>
+            {notifications.length === 0 ? (
+              <div className="px-4 py-6 text-center">
+                <p className="text-sm" style={{ color: '#6b7a96' }}>No notifications yet.</p>
+              </div>
+            ) : (
+              notifications.map(function(n) {
+                return (
+                  <button
+                    key={n.id}
+                    onClick={function() { markRead(n.id) }}
+                    className="w-full px-4 py-3 text-left transition-colors hover:bg-white/5 flex gap-3"
+                    style={{ opacity: n.read ? 0.5 : 1 }}
+                  >
+                    {!n.read && <div className="mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: '#3b82f6' }} />}
+                    {n.read && <div className="mt-1.5 w-1.5 h-1.5 flex-shrink-0" />}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate" style={{ color: '#eceef5' }}>{n.title}</p>
+                      <p className="text-xs mt-0.5 leading-snug" style={{ color: '#9aa8be' }}>{n.message}</p>
+                      <p className="text-xs mt-1" style={{ color: '#6b7a96' }}>{timeAgo(n.created_at)}</p>
+                    </div>
+                  </button>
+                )
+              })
+            )}
+          </div>
+          {notifications.length > 0 && (
+            <div className="px-4 py-2.5" style={{ borderTop: '1px solid #1e2330' }}>
+              <button onClick={markAllRead} className="text-xs w-full text-center" style={{ color: '#3b82f6' }}>
+                Mark all as read
               </button>
-            ))}
-          </div>
-
-          <div className="px-4 py-2.5" style={{ borderTop: '1px solid #1e2330' }}>
-            <button className="text-xs w-full text-center" style={{ color: '#3b82f6' }}>
-              View all notifications
-            </button>
-          </div>
+            </div>
+          )}
         </div>
       )}
     </div>
