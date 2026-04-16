@@ -53,11 +53,11 @@ function NavItem({ item, onClose }) {
         className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer"
         style={{
           background: isActive ? `${item.color}18` : 'transparent',
-          color: isActive ? item.color : '#8892a4',
+          color: isActive ? item.color : item.color + 'aa',
           borderLeft: isActive ? `2px solid ${item.color}` : '2px solid transparent',
         }}
       >
-        <item.icon size={16} strokeWidth={1.8} style={{ color: isActive ? item.color : item.color + '99', flexShrink: 0 }} />
+        <item.icon size={16} strokeWidth={1.8} style={{ color: isActive ? item.color : item.color + 'aa', flexShrink: 0 }} />
         <span>{item.label}</span>
       </div>
     </NavLink>
