@@ -19,6 +19,7 @@ import Watchlist from './pages/Watchlist'
 import YouTubeIntel from './pages/YouTubeIntel'
 import SmartMoneyFlow from './pages/SmartMoneyFlow'
 import MarketChatter from './pages/MarketChatter'
+import BitcoinDashboard from './pages/BitcoinDashboard'
 import { Account, Billing, Settings } from './pages/AccountPages'
 import {
   Admin,
@@ -59,6 +60,7 @@ export default function App() {
         <Route path="/youtube-intel" element={<ProtectedRoute><YouTubeIntel /></ProtectedRoute>} />
         <Route path="/smart-money-flow" element={<ProtectedRoute><SmartMoneyFlow /></ProtectedRoute>} />
         <Route path="/market-chatter" element={<ProtectedRoute><MarketChatter /></ProtectedRoute>} />
+        <Route path="/bitcoin" element={<ProtectedRoute><BitcoinDashboard /></ProtectedRoute>} />
         <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
         <Route path="/billing" element={<ProtectedRoute><Billing /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
