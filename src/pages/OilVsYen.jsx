@@ -35,53 +35,52 @@ function Section({ title, children }) {
   )
 }
 
-function fmt(val, prefix, suffix, decimals) {
-  prefix = prefix || ''
-  suffix = suffix || ''
-  decimals = decimals !== undefined ? decimals : 2
-  if (val === null || val === undefined) return '—'
-  var n = parseFloat(val)
-  if (isNaN(n)) return '—'
-  if (Math.abs(n) >= 1000) return prefix + n.toLocaleString('en-US', { maximumFractionDigits: decimals }) + suffix
-  return prefix + n.toFixed(decimals) + suffix
-}
-
 export default function OilVsYen() {
-  const [macro, setMacro] = useState({})
+  const [wti, setWti] = useState(null)
+  const [brent, setBrent] = useState(null)
+  const [usdjpy, setUsdjpy] = useState(null)
   const [scenarios, setScenarios] = useState([])
 
   useEffect(function() {
-    async function fetchMacro() {
-      try {
-        var tdKey = import.meta.env.VITE_TWELVE_DATA_API_KEY
-        var res = await fetch(
-          'https://api.twelvedata.com/price?symbol=BRENT,USOIL,USD/JPY,EUR/JPY&apikey=' + tdKey
-        )
-        var data = await res.json()
-        setMacro(data)
-      } catch(e) {
-        console.error('OilVsYen macro error:', e)
+    async function load() {
+      var res = await supabase.from('market_data').select('*')
+      if (res.data && res.data.length > 0) {
+        var cached = {}
+        res.data.forEach(function(row) { cached[row.key] = parseFloat(row.value) })
+        var age = Date.now() - new Date(res.data[0].updated_at).getTime()
+        if (cached.WTI_USD > 0 && age < 5 * 60 * 1000) {
+          setWti(cached.WTI_USD)
+          setBrent(cached.BRENT_USD)
+          setUsdjpy(cached.USD_JPY)
+          return
+        }
       }
+      var oilKey = import.meta.env.VITE_OIL_PRICE_API_KEY
+      try {
+        var fxRes = await fetch('https://open.er-api.com/v6/latest/USD')
+        var fx = await fxRes.json()
+        if (fx && fx.rates && fx.rates.JPY) setUsdjpy(fx.rates.JPY)
+      } catch(e) {}
+      try {
+        var wtiRes = await fetch('https://api.oilpriceapi.com/v1/prices/latest?by_code=WTI_USD', {
+          headers: { 'Authorization': 'Token ' + oilKey, 'Content-Type': 'application/json' }
+        })
+        var wtiData = await wtiRes.json()
+        if (wtiData && wtiData.data && wtiData.data.price) setWti(wtiData.data.price)
+      } catch(e) {}
+      try {
+        var brentRes = await fetch('https://api.oilpriceapi.com/v1/prices/latest?by_code=BRENT_CRUDE_USD', {
+          headers: { 'Authorization': 'Token ' + oilKey, 'Content-Type': 'application/json' }
+        })
+        var brentData = await brentRes.json()
+        if (brentData && brentData.data && brentData.data.price) setBrent(brentData.data.price)
+      } catch(e) {}
     }
-    fetchMacro()
-    var interval = setInterval(fetchMacro, 60 * 60 * 1000)
-    return function() { clearInterval(interval) }
-  }, [])
-
-  useEffect(function() {
+    load()
     supabase.from('oil_yen_scenarios').select('*').order('sort_order', { ascending: true }).then(function(res) {
       if (res.data) setScenarios(res.data)
     })
   }, [])
-
-  function tdp(sym) {
-    return macro && macro[sym] && macro[sym].price ? parseFloat(macro[sym].price) : null
-  }
-
-  var brent = tdp('BRENT')
-  var wti = tdp('USOIL')
-  var usdjpy = tdp('USD/JPY')
-  var eurjpy = tdp('EUR/JPY')
 
   return (
     <AppLayout>
@@ -94,16 +93,14 @@ export default function OilVsYen() {
       </div>
 
       <div className="space-y-6">
-
         <Section title="Current Readings">
-          <DataRow label="Brent Crude" value={brent ? fmt(brent, '$', '', 2) : '—'} valueColor={brent ? '#10b981' : '#6b7a96'} />
-          <DataRow label="WTI Crude" value={wti ? fmt(wti, '$', '', 2) : '—'} valueColor={wti ? '#10b981' : '#6b7a96'} />
-          <DataRow label="USD/JPY" value={usdjpy ? fmt(usdjpy, '', '', 2) : '—'} valueColor={usdjpy ? '#f59e0b' : '#6b7a96'} />
-          <DataRow label="EUR/JPY" value={eurjpy ? fmt(eurjpy, '', '', 2) : '—'} />
+          <DataRow label="Brent Crude" value={brent ? '$' + brent.toFixed(2) : '—'} valueColor={brent ? '#10b981' : '#6b7a96'} />
+          <DataRow label="WTI Crude" value={wti ? '$' + wti.toFixed(2) : '—'} valueColor={wti ? '#10b981' : '#6b7a96'} />
+          <DataRow label="USD/JPY" value={usdjpy ? usdjpy.toFixed(2) : '—'} valueColor={usdjpy ? '#f59e0b' : '#6b7a96'} />
           <DataRow label="BOJ Rate" value="0.5% (Hold)" />
           <DataRow label="OPEC+ Stance" value="Production cuts maintained" />
           <p className="text-xs mt-3" style={{ color: '#6b7a96' }}>
-            Oil and forex: Twelve Data · Updates hourly · BOJ Rate and OPEC+ manually updated · For informational purposes only.
+            Oil: OilPriceAPI · Forex: ExchangeRate API · Updates every 5 min · BOJ Rate and OPEC+ manually updated · For informational purposes only.
           </p>
         </Section>
 
@@ -146,7 +143,6 @@ export default function OilVsYen() {
           )}
           <p className="text-xs mt-3" style={{ color: '#6b7a96' }}>Scenarios are observational frameworks only — not predictions or recommendations.</p>
         </Section>
-
       </div>
     </AppLayout>
   )
