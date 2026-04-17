@@ -16,7 +16,7 @@ export default function NotificationBell() {
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
-      .limit(10)
+      .limit(50) // Increased limit to show more notifications
     if (res.data) setNotifications(res.data)
   }
 
@@ -45,6 +45,12 @@ export default function NotificationBell() {
     if (!user) return
     await supabase.from('notifications').update({ read: true }).eq('user_id', user.id)
     setNotifications(function(prev) { return prev.map(function(n) { return Object.assign({}, n, { read: true }) }) })
+  }
+
+  async function clearAllNotifications() {
+    if (!user) return
+    await supabase.from('notifications').delete().eq('user_id', user.id)
+    setNotifications([])
   }
 
   var unreadCount = notifications.filter(function(n) { return !n.read }).length
@@ -80,12 +86,13 @@ export default function NotificationBell() {
                   <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(59,130,246,0.15)', color: '#3b82f6' }}>{unreadCount} new</span>
                 )}
                 {unreadCount > 0 && (
-                  <button onClick={markAllRead} className="text-xs" style={{ color: '#6b7a96' }}>Mark all read</button>
+                  <button onClick={markAllRead} className="text-xs hover:underline" style={{ color: '#6b7a96' }}>Mark all read</button>
                 )}
               </div>
             </div>
           </div>
-          <div className="divide-y" style={{ borderColor: '#1e2330' }}>
+          {/* SCROLLABLE NOTIFICATIONS CONTAINER */}
+          <div className="max-h-96 overflow-y-auto divide-y" style={{ borderColor: '#1e2330' }}>
             {notifications.length === 0 ? (
               <div className="px-4 py-6 text-center">
                 <p className="text-sm" style={{ color: '#6b7a96' }}>No notifications yet.</p>
@@ -111,10 +118,16 @@ export default function NotificationBell() {
               })
             )}
           </div>
+          {/* FOOTER WITH ACTIONS */}
           {notifications.length > 0 && (
-            <div className="px-4 py-2.5" style={{ borderTop: '1px solid #1e2330' }}>
-              <button onClick={markAllRead} className="text-xs w-full text-center" style={{ color: '#3b82f6' }}>
-                Mark all as read
+            <div className="px-4 py-3 flex justify-between items-center" style={{ borderTop: '1px solid #1e2330' }}>
+              {unreadCount > 0 && (
+                <button onClick={markAllRead} className="text-xs hover:underline" style={{ color: '#3b82f6' }}>
+                  Mark all as read
+                </button>
+              )}
+              <button onClick={clearAllNotifications} className="text-xs hover:underline ml-auto" style={{ color: '#ef4444' }}>
+                Clear all
               </button>
             </div>
           )}
