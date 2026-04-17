@@ -35,6 +35,7 @@ import {
   AdminYouTube,
   AdminSmartMoney,
   AdminUpdates,
+  AdminMarketSignals,
 } from './pages/AdminPages'
 
 export default function App() {
@@ -71,6 +72,7 @@ export default function App() {
         <Route path="/admin/geopolitical-watch" element={<ProtectedRoute adminOnly><AdminGeopoliticalWatch /></ProtectedRoute>} />
         <Route path="/admin/oil-yen" element={<ProtectedRoute adminOnly><AdminOilYen /></ProtectedRoute>} />
         <Route path="/admin/headlines" element={<ProtectedRoute adminOnly><AdminHeadlines /></ProtectedRoute>} />
+        <Route path="/admin/market-signals" element={<ProtectedRoute adminOnly><AdminMarketSignals /></ProtectedRoute>} />
         <Route path="/admin/watchlist" element={<ProtectedRoute adminOnly><AdminWatchlist /></ProtectedRoute>} />
         <Route path="/admin/chatter" element={<ProtectedRoute adminOnly><AdminChatter /></ProtectedRoute>} />
         <Route path="/admin/etf-flows" element={<ProtectedRoute adminOnly><AdminETFFlows /></ProtectedRoute>} />
