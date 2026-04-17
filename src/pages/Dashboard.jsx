@@ -1,8 +1,9 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import AppLayout from '../components/AppLayout'
 import MorningBriefCard from '../components/MorningBriefCard'
 import DailyWrapCard from '../components/DailyWrapCard'
 import SmartMoneyCard from '../components/SmartMoneyCard'
+import { supabase } from '../lib/supabase'
 import {
   XRPPriceCard,
   TechnicalCard,
@@ -14,6 +15,94 @@ import {
   OilYenCard,
 } from '../components/LiveDashboardCards'
 
+function BreakingNewsCard() {
+  const [breakingNews, setBreakingNews] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(function() {
+    async function loadBreakingNews() {
+      try {
+        var result = await supabase
+          .from('top_headlines')
+          .select('id, title, source, url, created_at')
+          .eq('is_breaking', true)
+          .order('created_at', { ascending: false })
+          .limit(3)
+        
+        if (result.data) {
+          setBreakingNews(result.data)
+        }
+      } catch(e) {
+        console.error('Breaking news fetch error:', e)
+      }
+      setLoading(false)
+    }
+
+    loadBreakingNews()
+    // Refresh every 30 seconds
+    var interval = setInterval(loadBreakingNews, 30 * 1000)
+    return function() { clearInterval(interval) }
+  }, [])
+
+  if (loading || breakingNews.length === 0) {
+    return null // Don't show anything if no breaking news
+  }
+
+  return (
+    <div className="mb-6">
+      <div className="flex items-center justify-center">
+        <div className="rounded-xl p-4 max-w-4xl w-full" style={{ background: 'rgba(239,68,68,0.08)', border: '2px solid rgba(239,68,68,0.2)' }}>
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-bold px-3 py-1.5 rounded-lg flex-shrink-0" style={{ background: '#ef4444', color: '#fff' }}>
+              🚨 BREAKING NEWS
+            </span>
+            <div className="flex-1 min-w-0">
+              {breakingNews.length === 1 ? (
+                // Single breaking news - show full headline
+                <div>
+                  {breakingNews[0].url ? (
+                    <a href={breakingNews[0].url} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold hover:underline" style={{ color: '#ef4444' }}>
+                      {breakingNews[0].title}
+                    </a>
+                  ) : (
+                    <span className="text-sm font-semibold" style={{ color: '#ef4444' }}>
+                      {breakingNews[0].title}
+                    </span>
+                  )}
+                  <span className="text-xs ml-2" style={{ color: '#9aa8be' }}>— {breakingNews[0].source}</span>
+                </div>
+              ) : (
+                // Multiple breaking news - scrolling ticker
+                <div className="overflow-hidden">
+                  <div className="animate-marquee whitespace-nowrap">
+                    {breakingNews.map(function(news, index) {
+                      return (
+                        <span key={news.id} className="inline-block">
+                          {news.url ? (
+                            <a href={news.url} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold hover:underline" style={{ color: '#ef4444' }}>
+                              {news.title}
+                            </a>
+                          ) : (
+                            <span className="text-sm font-semibold" style={{ color: '#ef4444' }}>
+                              {news.title}
+                            </span>
+                          )}
+                          <span className="text-xs ml-1" style={{ color: '#9aa8be' }}>— {news.source}</span>
+                          {index < breakingNews.length - 1 && <span className="mx-8 text-sm" style={{ color: '#ef4444' }}>•</span>}
+                        </span>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function Dashboard() {
   return (
     <AppLayout>
@@ -21,6 +110,9 @@ export default function Dashboard() {
         <MorningBriefCard />
         <DailyWrapCard />
       </div>
+      
+      <BreakingNewsCard />
+      
       <div className="mb-4">
         <h2 className="text-xs font-semibold uppercase tracking-widest" style={{ color: '#6b7a96' }}>
           Intelligence Modules
