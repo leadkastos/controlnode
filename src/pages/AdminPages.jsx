@@ -223,7 +223,7 @@ export function Admin() {
           { href: '/admin/domino-theory', title: 'Domino Theory', desc: 'Update domino statuses and notes' },
           { href: '/admin/geopolitical-watch', title: 'Geopolitical Watch', desc: 'Update flash points and weekly watch' },
           { href: '/admin/oil-yen', title: 'Oil vs Yen', desc: 'Update macro scenarios to monitor' },
-          { href: '/admin/headlines', title: 'Top Headlines', desc: 'Manage headline feed' },
+          { href: '/admin/headlines', title: 'Breaking News', desc: 'Post breaking news and headlines' },
           { href: '/admin/watchlist', title: 'Master Watchlist', desc: 'Manage suggested symbols' },
           { href: '/admin/chatter', title: 'Market Chatter', desc: 'Post and manage market chatter' },
           { href: '/admin/etf-flows', title: 'XRP ETF Flows', desc: 'Update ETF data and flow numbers' },
@@ -631,7 +631,7 @@ export function AdminOilYen() {
 export function AdminHeadlines() {
   var headlinesState = useState([]); var headlines = headlinesState[0]; var setHeadlines = headlinesState[1]
   var loadingState = useState(true); var loading = loadingState[0]; var setLoading = loadingState[1]
-  var formState = useState({ headline: '', source: '', category: '', url: '' }); var form = formState[0]; var setForm = formState[1]
+  var formState = useState({ title: '', source: '', category: '', url: '', is_breaking: false }); var form = formState[0]; var setForm = formState[1]
   var savingState = useState(false); var saving = savingState[0]; var setSaving = savingState[1]
   var notifyState = useState(false); var notify = notifyState[0]; var setNotify = notifyState[1]
   var toastState = useState({ message: '', type: '' }); var toast = toastState[0]; var setToast = toastState[1]
@@ -647,36 +647,62 @@ export function AdminHeadlines() {
   useEffect(function() { load() }, [])
 
   async function add() {
-    if (!form.headline || !form.source) { showToast('Headline and source are required.', 'error'); return }
+    if (!form.title || !form.source) { showToast('Title and source are required.', 'error'); return }
     setSaving(true)
-    var result = await supabase.from('top_headlines').insert(form)
+    var result = await supabase.from('top_headlines').insert({
+      title: form.title,
+      source: form.source,
+      category: form.category || 'General',
+      url: form.url,
+      is_breaking: form.is_breaking,
+      active: true
+    })
     if (result.error) { setSaving(false); showToast('Error: ' + result.error.message, 'error'); return }
-    if (notify) { await sendNotificationToAllMembers('Breaking Headline', form.headline + ' — ' + form.source, 'headline') }
+    if (notify) { 
+      var title = form.is_breaking ? 'BREAKING NEWS' : 'News Update'
+      await sendNotificationToAllMembers(title, form.title, 'headline') 
+    }
     setSaving(false)
-    showToast('Headline added!')
-    setForm({ headline: '', source: '', category: '', url: '' })
+    showToast(form.is_breaking ? 'Breaking news posted!' : 'Headline added!')
+    setForm({ title: '', source: '', category: '', url: '', is_breaking: false })
     load()
   }
 
   async function remove(id) { await supabase.from('top_headlines').delete().eq('id', id); showToast('Removed.'); load() }
 
   return (
-    <AdminLayout title="Top Headlines">
-      <AdminCard title="Add Headline">
-        <Field label="Headline"><TextInput value={form.headline} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { headline: v }) }) }} placeholder="Headline text..." /></Field>
-        <Field label="Source"><TextInput value={form.source} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { source: v }) }) }} placeholder="Reuters, Bloomberg..." /></Field>
+    <AdminLayout title="Breaking News">
+      <AdminCard title="Add Breaking News or Headline">
+        <Field label="Title"><TextInput value={form.title} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { title: v }) }) }} placeholder="Breaking: XRP ETF approved by SEC..." /></Field>
+        <Field label="Source"><TextInput value={form.source} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { source: v }) }) }} placeholder="Reuters, Bloomberg, SEC..." /></Field>
         <Field label="Category"><TextInput value={form.category} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { category: v }) }) }} placeholder="Regulatory, Macro, ETF..." /></Field>
         <Field label="URL"><TextInput value={form.url} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { url: v }) }) }} placeholder="https://..." /></Field>
+        <div className="flex items-center gap-3 mb-4 p-3 rounded-lg" style={{ background: form.is_breaking ? 'rgba(239,68,68,0.07)' : '#111318', border: '1px solid ' + (form.is_breaking ? 'rgba(239,68,68,0.2)' : '#1e2330') }}>
+          <div className="flex-1">
+            <p className="text-sm font-semibold" style={{ color: form.is_breaking ? '#ef4444' : '#eceef5' }}>🚨 Breaking News</p>
+            <p className="text-xs" style={{ color: form.is_breaking ? '#ef4444' : '#6b7a96' }}>Display prominently on dashboard</p>
+          </div>
+          <div onClick={function() { setForm(function(f) { return Object.assign({}, f, { is_breaking: !f.is_breaking }) }) }} className="w-10 h-5 rounded-full flex items-center px-0.5 cursor-pointer transition-all" style={{ background: form.is_breaking ? '#ef4444' : '#1e2330' }}>
+            <div className="w-4 h-4 rounded-full" style={{ background: '#fff', transform: form.is_breaking ? 'translateX(20px)' : 'translateX(0)', transition: 'transform 0.15s' }} />
+          </div>
+        </div>
         <NotifyToggle enabled={notify} onToggle={function() { setNotify(!notify) }} />
-        <SaveButton onClick={add} loading={saving} label="Add Headline" />
+        <SaveButton onClick={add} loading={saving} label={form.is_breaking ? "Post Breaking News" : "Add Headline"} />
       </AdminCard>
       <AdminCard title="Current Headlines">
         {loading ? <p style={{ color: '#6b7a96' }}>Loading...</p> : headlines.length === 0 ? <p style={{ color: '#6b7a96' }}>No headlines yet.</p> : (
           <div className="space-y-2">
             {headlines.map(function(h) {
               return (
-                <div key={h.id} className="flex items-start justify-between gap-3 py-2" style={{ borderBottom: '1px solid #1e2330' }}>
-                  <div className="flex-1 min-w-0"><p className="text-sm font-medium" style={{ color: '#eceef5' }}>{h.headline}</p><p className="text-xs mt-0.5" style={{ color: '#6b7a96' }}>{h.source} · {h.category}</p></div>
+                <div key={h.id} className="flex items-start justify-between gap-3 py-3 px-3 rounded-lg" style={{ background: h.is_breaking ? 'rgba(239,68,68,0.05)' : '#111318', border: '1px solid ' + (h.is_breaking ? 'rgba(239,68,68,0.2)' : '#1e2330') }}>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      {h.is_breaking && <span className="text-xs px-2 py-0.5 rounded font-bold" style={{ background: 'rgba(239,68,68,0.12)', color: '#ef4444' }}>🚨 BREAKING</span>}
+                      <span className="text-xs" style={{ color: '#6b7a96' }}>{h.category}</span>
+                    </div>
+                    <p className="text-sm font-medium mb-1" style={{ color: '#eceef5' }}>{h.title}</p>
+                    <p className="text-xs" style={{ color: '#6b7a96' }}>{h.source} · {new Date(h.created_at).toLocaleDateString()}</p>
+                  </div>
                   <button onClick={function() { remove(h.id) }} className="text-xs px-3 py-1 rounded" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>Remove</button>
                 </div>
               )
