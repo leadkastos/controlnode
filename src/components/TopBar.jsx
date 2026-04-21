@@ -10,8 +10,8 @@ const routeTitles = {
   '/daily-wrap': 'Daily Wrap', '/market-overview': 'Market Overview',
   '/xrp-intelligence': 'XRP Intelligence', '/domino-theory': 'Domino Theory',
   '/geopolitical-watch': 'Geopolitical Watch', '/oil-vs-yen': 'Oil vs Yen',
-  '/media-narratives': 'Media & Narratives', '/etf-flows': 'XRP ETF Flow Tracker',
-  '/watchlist': 'Watchlist', '/youtube-intel': 'YouTube Intel',
+  '/media-narratives': 'Media & Narratives', '/media-intelligence': 'Media Intelligence',
+  '/etf-flows': 'XRP ETF Flow Tracker', '/watchlist': 'Watchlist', '/youtube-intel': 'YouTube Intel',
   '/smart-money-flow': 'Smart Money Flow', '/market-chatter': 'Unconfirmed Market Chatter',
   '/account': 'My Profile', '/billing': 'Billing', '/settings': 'Settings',
   '/admin': 'Admin', '/admin/morning-brief': 'Admin — Morning Brief',
@@ -34,6 +34,20 @@ const tickerStyle = `
   .cn-dash-track:hover { animation-play-state: paused; }
   .cn-dash-wrapper { overflow: hidden; flex: 1; display: flex; }
 `
+
+// Symbol mapping for CoinGecko IDs
+const COINGECKO_MAP = {
+  XRP: 'ripple',
+  BTC: 'bitcoin', 
+  ETH: 'ethereum',
+  SOL: 'solana',
+  ADA: 'cardano',
+  XLM: 'stellar',
+  HBAR: 'hedera-hashgraph',
+  DOT: 'polkadot',
+  MATIC: 'matic-network',
+  AVAX: 'avalanche-2'
+}
 
 function fmt(val, prefix, suffix, decimals) {
   prefix = prefix || ''; suffix = suffix || ''; decimals = decimals !== undefined ? decimals : 2
@@ -123,12 +137,39 @@ export default function TopBar() {
   const prices = usePrices()
   const title = routeTitles[location.pathname] || 'ControlNode'
   const [macro, setMacro] = useState({ WTI_USD: null, BRENT_USD: null, USD_JPY: null, FEAR_GREED: null })
+  const [masterSymbols, setMasterSymbols] = useState([])
   const [tickers, setTickers] = useState([])
 
   var initials = 'CN'
   if (profile && profile.full_name) {
     initials = profile.full_name.split(' ').map(function(n) { return n[0] }).join('').toUpperCase().slice(0, 2)
   }
+
+  // Load master watchlist symbols from admin
+  useEffect(function() {
+    async function loadMasterSymbols() {
+      try {
+        var result = await supabase
+          .from('master_watchlist')
+          .select('symbol')
+          .order('symbol')
+        
+        if (result.data) {
+          setMasterSymbols(result.data.map(function(row) { return row.symbol }))
+        }
+      } catch(e) {
+        console.error('Error loading master symbols:', e)
+        // Fallback to default symbols if master_watchlist fails
+        setMasterSymbols(['XRP', 'BTC', 'ETH', 'XLM'])
+      }
+    }
+
+    loadMasterSymbols()
+
+    // Refresh master symbols every 30 seconds (in case admin updates)
+    var interval = setInterval(loadMasterSymbols, 30 * 1000)
+    return function() { clearInterval(interval) }
+  }, [])
 
   useEffect(function() {
     getMacro().then(function(m) { setMacro(m) })
@@ -139,23 +180,41 @@ export default function TopBar() {
   }, [])
 
   useEffect(function() {
-    var xrp = prices && prices.ripple
-    var btc = prices && prices.bitcoin
-    var eth = prices && prices.ethereum
-    var xlm = prices && prices.stellar
+    var items = []
 
-    var items = [
-      { sym: 'XRP', price: xrp ? fmt(xrp.usd, '$', '', 4) : '—', chg: xrp ? chgLabel(xrp.usd_24h_change) : '—', up: xrp ? xrp.usd_24h_change >= 0 : true },
-      { sym: 'BTC', price: btc ? fmt(btc.usd, '$', '', 0) : '—', chg: btc ? chgLabel(btc.usd_24h_change) : '—', up: btc ? btc.usd_24h_change >= 0 : true },
-      { sym: 'ETH', price: eth ? fmt(eth.usd, '$', '', 0) : '—', chg: eth ? chgLabel(eth.usd_24h_change) : '—', up: eth ? eth.usd_24h_change >= 0 : true },
-      { sym: 'XLM', price: xlm ? fmt(xlm.usd, '$', '', 4) : '—', chg: xlm ? chgLabel(xlm.usd_24h_change) : '—', up: xlm ? xlm.usd_24h_change >= 0 : true },
+    // Dynamic crypto symbols from master_watchlist
+    masterSymbols.forEach(function(symbol) {
+      var coinId = COINGECKO_MAP[symbol]
+      if (coinId && prices && prices[coinId]) {
+        var coin = prices[coinId]
+        var decimals = symbol === 'XRP' || symbol === 'XLM' ? 4 : symbol === 'BTC' ? 0 : 2
+        items.push({
+          sym: symbol,
+          price: fmt(coin.usd, '$', '', decimals),
+          chg: chgLabel(coin.usd_24h_change),
+          up: coin.usd_24h_change >= 0
+        })
+      } else {
+        // Show symbol even if price data isn't available yet
+        items.push({
+          sym: symbol,
+          price: '—',
+          chg: '—',
+          up: true
+        })
+      }
+    })
+
+    // Hardcoded macro data (keep these always)
+    items.push(
       { sym: 'WTI CRUDE', price: macro.WTI_USD ? '$' + parseFloat(macro.WTI_USD).toFixed(2) : '—', chg: '—', up: true },
       { sym: 'BRENT CRUDE', price: macro.BRENT_USD ? '$' + parseFloat(macro.BRENT_USD).toFixed(2) : '—', chg: '—', up: true },
       { sym: 'USD/JPY', price: macro.USD_JPY ? parseFloat(macro.USD_JPY).toFixed(2) : '—', chg: '—', up: false },
-      { sym: 'F&G INDEX', price: macro.FEAR_GREED ? String(macro.FEAR_GREED) : '—', chg: macro.FEAR_GREED ? (macro.FEAR_GREED >= 50 ? 'Greed' : 'Fear') : '—', up: macro.FEAR_GREED ? macro.FEAR_GREED >= 50 : true },
-    ]
+      { sym: 'F&G INDEX', price: macro.FEAR_GREED ? String(macro.FEAR_GREED) : '—', chg: macro.FEAR_GREED ? (macro.FEAR_GREED >= 50 ? 'Greed' : 'Fear') : '—', up: macro.FEAR_GREED ? macro.FEAR_GREED >= 50 : true }
+    )
+
     setTickers(items)
-  }, [prices, macro])
+  }, [prices, macro, masterSymbols])
 
   return (
     <header className="sticky top-0 z-20" style={{ background: 'rgba(10,11,15,0.85)', borderBottom: '1px solid #1e2330', backdropFilter: 'blur(12px)' }}>
