@@ -14,7 +14,7 @@ const xrpNav = [
   { label: 'Domino Theory', icon: GitBranch, path: '/domino-theory', color: '#f59e0b' },
   { label: 'Geopolitical Watch', icon: Globe, path: '/geopolitical-watch', color: '#ef4444' },
   { label: 'Oil vs Yen', icon: BarChart2, path: '/oil-vs-yen', color: '#f97316' },
-  { label: 'Media Intelligence', icon: Newspaper, path: '/media-narratives', color: '#ec4899' },
+  { label: 'Media Intelligence', icon: Newspaper, path: '/media-intelligence', color: '#ec4899' },
   { label: 'ETF Flows', icon: LineChart, path: '/etf-flows', color: '#10b981' },
   { label: 'Watchlist', icon: Star, path: '/watchlist', color: '#eab308' },
   { label: 'YouTube Intel', icon: Youtube, path: '/youtube-intel', color: '#ef4444' },
