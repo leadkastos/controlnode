@@ -1,10 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import AppLayout from '../components/AppLayout'
-import { TrendingUp, TrendingDown, Star, X, Search, Plus } from 'lucide-react'
-import { supabase } from '../lib/supabase'
-import { useAuth } from '../contexts/AuthContext'
-
-const DEFAULT_SYMBOLS = ['XRP', 'BTC', 'SOL', 'ETH', 'HBAR', 'XLM']
+import { TrendingUp, TrendingDown } from 'lucide-react'
 
 const COINGECKO_IDS = {
   XRP: 'ripple', BTC: 'bitcoin', ETH: 'ethereum', SOL: 'solana',
@@ -43,42 +39,34 @@ function fmtVol(n) {
 }
 
 export default function Watchlist() {
-  const { user } = useAuth()
   const [symbols, setSymbols] = useState([])
   const [prices, setPrices] = useState({})
   const [loading, setLoading] = useState(true)
-  const [showModal, setShowModal] = useState(false)
-  const [search, setSearch] = useState('')
-  const [adding, setAdding] = useState(false)
 
+  // Load symbols from admin master_watchlist table
   useEffect(function() {
-    if (!user) return
     async function loadWatchlist() {
-      var result = await supabase
-        .from('user_watchlist')
-        .select('symbol')
-        .eq('user_id', user.id)
-        .order('added_at', { ascending: true })
+      try {
+        var result = await supabase
+          .from('master_watchlist')
+          .select('symbol')
+          .order('symbol')
 
-      if (result.error) {
-        setSymbols(DEFAULT_SYMBOLS)
-        setLoading(false)
-        return
-      }
-
-      if (!result.data || result.data.length === 0) {
-        var inserts = DEFAULT_SYMBOLS.map(function(s) {
-          return { user_id: user.id, symbol: s }
-        })
-        await supabase.from('user_watchlist').insert(inserts)
-        setSymbols(DEFAULT_SYMBOLS)
-      } else {
-        setSymbols(result.data.map(function(d) { return d.symbol }))
+        if (result.data) {
+          setSymbols(result.data.map(function(d) { return d.symbol }))
+        }
+      } catch(e) {
+        console.error('Error loading master watchlist:', e)
       }
       setLoading(false)
     }
+
     loadWatchlist()
-  }, [user])
+
+    // Refresh every 30 seconds when admin updates
+    var interval = setInterval(loadWatchlist, 30 * 1000)
+    return function() { clearInterval(interval) }
+  }, [])
 
   useEffect(function() {
     if (symbols.length === 0) return
@@ -89,7 +77,7 @@ export default function Watchlist() {
         .join(',')
       if (!ids) return
       try {
-        // Delay slightly to avoid competing with RightSidebar call
+        // Delay slightly to avoid competing with other API calls
         await new Promise(function(resolve) { setTimeout(resolve, 1500) })
         var res = await fetch(
           'https://api.coingecko.com/api/v3/simple/price?ids=' + ids + '&vs_currencies=usd&include_24hr_change=true&include_24hr_vol=true'
@@ -104,35 +92,6 @@ export default function Watchlist() {
     var interval = setInterval(fetchPrices, 60 * 1000)
     return function() { clearInterval(interval) }
   }, [symbols])
-
-  async function removeAsset(symbol) {
-    setSymbols(function(prev) { return prev.filter(function(s) { return s !== symbol }) })
-    await supabase
-      .from('user_watchlist')
-      .delete()
-      .eq('user_id', user.id)
-      .eq('symbol', symbol)
-  }
-
-  async function addAsset(symbol) {
-    if (symbols.includes(symbol)) return
-    setAdding(true)
-    var result = await supabase
-      .from('user_watchlist')
-      .insert({ user_id: user.id, symbol: symbol })
-    if (!result.error) {
-      setSymbols(function(prev) { return [...prev, symbol] })
-    }
-    setAdding(false)
-    setShowModal(false)
-    setSearch('')
-  }
-
-  var availableSymbols = Object.keys(COINGECKO_IDS).filter(function(s) {
-    return !symbols.includes(s) &&
-      (s.toLowerCase().includes(search.toLowerCase()) ||
-        (SYMBOL_NAMES[s] || '').toLowerCase().includes(search.toLowerCase()))
-  })
 
   return (
     <AppLayout>
@@ -157,7 +116,8 @@ export default function Watchlist() {
           </div>
         ) : symbols.length === 0 ? (
           <div className="px-5 py-8 text-center">
-            <p className="text-sm" style={{ color: '#6b7a96' }}>No assets in your watchlist yet.</p>
+            <p className="text-sm" style={{ color: '#6b7a96' }}>No assets in watchlist yet.</p>
+            <p className="text-xs mt-1" style={{ color: '#6b7a96' }}>Admin can add symbols via the admin panel.</p>
           </div>
         ) : (
           symbols.map(function(symbol, i) {
@@ -199,102 +159,15 @@ export default function Watchlist() {
                 </div>
                 <p className="text-sm text-right" style={{ color: '#9aa8be' }}>{fmtVol(vol)}</p>
                 <div className="flex justify-end">
-                  <button
-                    onClick={function() { removeAsset(symbol) }}
-                    className="p-1.5 rounded-lg transition-colors hover:bg-red-500/10"
-                    style={{ color: '#6b7a96' }}
-                    title="Remove from watchlist"
-                  >
-                    <X size={14} />
-                  </button>
+                  <span className="text-xs px-2 py-1 rounded" style={{ background: 'rgba(59,130,246,0.1)', color: '#3b82f6' }}>
+                    Admin Controlled
+                  </span>
                 </div>
               </div>
             )
           })
         )}
       </div>
-
-      <div className="mt-4 flex justify-end">
-        <button
-          onClick={function() { setShowModal(true) }}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-          style={{ background: 'rgba(59,130,246,0.15)', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.3)' }}
-        >
-          <Plus size={14} />
-          Add Asset
-        </button>
-      </div>
-
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: 'rgba(0,0,0,0.7)' }}
-          onClick={function() { setShowModal(false) }}>
-          <div
-            className="w-full max-w-md rounded-xl border overflow-hidden"
-            style={{ background: '#161a22', borderColor: '#1e2330' }}
-            onClick={function(e) { e.stopPropagation() }}
-          >
-            <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #1e2330' }}>
-              <h2 className="text-sm font-semibold" style={{ color: '#eceef5' }}>Add Asset to Watchlist</h2>
-              <button onClick={function() { setShowModal(false) }} style={{ color: '#6b7a96' }}>
-                <X size={16} />
-              </button>
-            </div>
-
-            <div className="mx-5 mt-4 px-4 py-3 rounded-lg text-xs" style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)', color: '#9aa8be' }}>
-              <span style={{ color: '#3b82f6', fontWeight: 600 }}>Crypto assets only. </span>
-              Macro data (Gold, Oil, Forex, Indices, ETFs) is available on the live ticker at the top of every page.
-            </div>
-
-            <div className="px-5 py-3">
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: '#111318', border: '1px solid #1e2330' }}>
-                <Search size={14} style={{ color: '#6b7a96' }} />
-                <input
-                  autoFocus
-                  type="text"
-                  placeholder="Search crypto symbol or name..."
-                  value={search}
-                  onChange={function(e) { setSearch(e.target.value) }}
-                  className="flex-1 bg-transparent text-sm outline-none"
-                  style={{ color: '#eceef5' }}
-                />
-              </div>
-            </div>
-
-            <div className="px-5 pb-4 space-y-1 overflow-y-auto" style={{ maxHeight: '300px' }}>
-              {availableSymbols.length === 0 ? (
-                <p className="text-sm py-4 text-center" style={{ color: '#6b7a96' }}>
-                  {search ? 'No matching assets found.' : 'All available assets are already in your watchlist.'}
-                </p>
-              ) : (
-                availableSymbols.map(function(symbol) {
-                  return (
-                    <button
-                      key={symbol}
-                      onClick={function() { addAsset(symbol) }}
-                      disabled={adding}
-                      className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors hover:bg-white/5"
-                      style={{ border: '1px solid transparent' }}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold"
-                          style={{ background: 'rgba(59,130,246,0.15)', color: '#3b82f6' }}>
-                          {symbol.slice(0, 2)}
-                        </div>
-                        <div className="text-left">
-                          <p className="text-sm font-semibold" style={{ color: '#eceef5' }}>{symbol}</p>
-                          <p className="text-xs" style={{ color: '#6b7a96' }}>{SYMBOL_NAMES[symbol] || symbol}</p>
-                        </div>
-                      </div>
-                      <Plus size={14} style={{ color: '#3b82f6' }} />
-                    </button>
-                  )
-                })
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </AppLayout>
   )
 }
