@@ -32,7 +32,7 @@ export function XRPPriceCard() {
   const change24hColor = xrp ? (xrp.usd_24h_change >= 0 ? '#10b981' : '#ef4444') : '#8892a4'
   const volume = xrp && xrp.usd_24h_vol ? '$' + (xrp.usd_24h_vol / 1e9).toFixed(1) + 'B' : '—'
   return (
-    <DashCard title="XRP Price Snapshot" route="/xrp-intelligence">
+    <DashCard title="XRP Intelligence" route="/xrp-intelligence">
       <Row label="Current Price" value={price} color="#eceef5" />
       <Row label="24h Change" value={change24h} color={change24hColor} />
       <Row label="24h Volume" value={volume} color="#8892a4" />
