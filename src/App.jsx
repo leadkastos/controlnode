@@ -55,6 +55,7 @@ export default function App() {
         <Route path="/domino-theory" element={<ProtectedRoute><DominoTheory /></ProtectedRoute>} />
         <Route path="/geopolitical-watch" element={<ProtectedRoute><GeopoliticalWatch /></ProtectedRoute>} />
         <Route path="/oil-vs-yen" element={<ProtectedRoute><OilVsYen /></ProtectedRoute>} />
+        <Route path="/media-intelligence" element={<ProtectedRoute><MediaNarratives /></ProtectedRoute>} />
         <Route path="/media-narratives" element={<ProtectedRoute><MediaNarratives /></ProtectedRoute>} />
         <Route path="/etf-flows" element={<ProtectedRoute><ETFFlows /></ProtectedRoute>} />
         <Route path="/watchlist" element={<ProtectedRoute><Watchlist /></ProtectedRoute>} />
