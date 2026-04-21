@@ -718,8 +718,9 @@ export function AdminHeadlines() {
 export function AdminWatchlist() {
   var symbolsState = useState([]); var symbols = symbolsState[0]; var setSymbols = symbolsState[1]
   var loadingState = useState(true); var loading = loadingState[0]; var setLoading = loadingState[1]
-  var formState = useState({ symbol: '', name: '', category: '' }); var form = formState[0]; var setForm = formState[1]
+  var symbolInputState = useState(''); var symbolInput = symbolInputState[0]; var setSymbolInput = symbolInputState[1]
   var savingState = useState(false); var saving = savingState[0]; var setSaving = savingState[1]
+  var deletingState = useState(null); var deleting = deletingState[0]; var setDeleting = deletingState[1]
   var toastState = useState({ message: '', type: '' }); var toast = toastState[0]; var setToast = toastState[1]
 
   function showToast(m, t) { setToast({ message: m, type: t || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
@@ -733,34 +734,71 @@ export function AdminWatchlist() {
   useEffect(function() { load() }, [])
 
   async function add() {
-    if (!form.symbol) { showToast('Symbol is required.', 'error'); return }
+    var symbol = symbolInput.trim().toUpperCase()
+    if (!symbol) { showToast('Symbol is required.', 'error'); return }
+    if (symbols.find(function(s) { return s.symbol === symbol })) { showToast('Symbol already exists.', 'error'); return }
+    
     setSaving(true)
-    var result = await supabase.from('master_watchlist').insert(Object.assign({}, form, { symbol: form.symbol.toUpperCase() }))
+    var result = await supabase.from('master_watchlist').insert({ symbol: symbol })
     setSaving(false)
     if (result.error) { showToast('Error: ' + result.error.message, 'error'); return }
     showToast('Symbol added!')
-    setForm({ symbol: '', name: '', category: '' })
+    setSymbolInput('')
     load()
   }
 
-  async function remove(id) { await supabase.from('master_watchlist').delete().eq('id', id); showToast('Removed.'); load() }
+  async function remove(id, symbol) { 
+    setDeleting(id)
+    try {
+      var result = await supabase.from('master_watchlist').delete().eq('id', id)
+      if (result.error) { 
+        showToast('Error: ' + result.error.message, 'error') 
+      } else {
+        showToast(symbol + ' removed!')
+        load()
+      }
+    } catch(error) {
+      showToast('Error removing symbol: ' + error.message, 'error')
+    }
+    setDeleting(null)
+  }
 
   return (
     <AdminLayout title="Master Watchlist">
       <AdminCard title="Add Symbol">
-        <Field label="Symbol"><TextInput value={form.symbol} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { symbol: v }) }) }} placeholder="XRP" /></Field>
-        <Field label="Name"><TextInput value={form.name} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { name: v }) }) }} placeholder="XRP / USD" /></Field>
-        <Field label="Category"><TextInput value={form.category} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { category: v }) }) }} placeholder="Crypto, Forex, Commodity..." /></Field>
+        <Field label="Symbol">
+          <TextInput 
+            value={symbolInput} 
+            onChange={setSymbolInput}
+            placeholder="XRP, BTC, ETH, AVAX, etc." 
+            onKeyPress={function(e) { if (e.key === 'Enter') add() }}
+          />
+        </Field>
         <SaveButton onClick={add} loading={saving} label="Add Symbol" />
       </AdminCard>
       <AdminCard title="Current Symbols">
-        {loading ? <p style={{ color: '#6b7a96' }}>Loading...</p> : symbols.length === 0 ? <p style={{ color: '#6b7a96' }}>No symbols yet.</p> : (
-          <div className="space-y-2">
+        {loading ? <p style={{ color: '#6b7a96' }}>Loading symbols...</p> : symbols.length === 0 ? <p style={{ color: '#6b7a96' }}>No symbols in master watchlist yet.</p> : (
+          <div className="space-y-3">
             {symbols.map(function(s) {
               return (
-                <div key={s.id} className="flex items-center justify-between py-2" style={{ borderBottom: '1px solid #1e2330' }}>
-                  <div><span className="text-sm font-bold mr-2" style={{ color: '#3b82f6' }}>{s.symbol}</span><span className="text-sm" style={{ color: '#eceef5' }}>{s.name}</span><span className="text-xs ml-2" style={{ color: '#6b7a96' }}>{s.category}</span></div>
-                  <button onClick={function() { remove(s.id) }} className="text-xs px-3 py-1 rounded" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>Remove</button>
+                <div key={s.id} className="flex items-center justify-between py-3 px-4 rounded-lg" style={{ background: '#111318', border: '1px solid #1e2330' }}>
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg font-bold px-3 py-2 rounded" style={{ background: 'rgba(59,130,246,0.15)', color: '#3b82f6' }}>{s.symbol}</span>
+                  </div>
+                  <button 
+                    onClick={function() { remove(s.id, s.symbol) }} 
+                    disabled={deleting === s.id}
+                    className="text-xs px-3 py-1.5 rounded font-medium transition-all hover:opacity-80" 
+                    style={{ 
+                      background: deleting === s.id ? 'rgba(107,122,150,0.1)' : 'rgba(239,68,68,0.1)', 
+                      color: deleting === s.id ? '#6b7a96' : '#ef4444',
+                      border: '1px solid ' + (deleting === s.id ? 'rgba(107,122,150,0.2)' : 'rgba(239,68,68,0.2)'),
+                      cursor: deleting === s.id ? 'not-allowed' : 'pointer',
+                      opacity: deleting === s.id ? 0.6 : 1
+                    }}
+                  >
+                    {deleting === s.id ? 'Removing...' : 'Remove'}
+                  </button>
                 </div>
               )
             })}
