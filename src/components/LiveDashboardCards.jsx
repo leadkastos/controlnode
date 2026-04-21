@@ -80,7 +80,7 @@ export function XRPNewsCard() {
   var title = article ? (article.title.length > 55 ? article.title.slice(0, 55) + '...' : article.title) : 'Loading...'
   var time = article ? timeAgo(article.published_on) : '—'
   return (
-    <DashCard title="XRP & Ripple News" route="/media-narratives">
+    <DashCard title="XRP & Ripple News" route="/media-intelligence">
       <Row label="Posted" value={time} color="#6b7a96" />
       <div className="text-xs leading-snug" style={{ color: '#9aa8be' }}>{title}</div>
       <Row label="Source" value={source} color="#3b82f6" />
@@ -161,7 +161,7 @@ export function MediaIntelCard() {
   })
   var topCat = Object.keys(categories).sort(function(a, b) { return categories[b] - categories[a] })[0] || '—'
   return (
-    <DashCard title="Media Intelligence" route="/media-narratives">
+    <DashCard title="Media Intelligence" route="/media-intelligence">
       <Row label="Articles Tracked" value={articles.length > 0 ? articles.length + ' recent' : '—'} color="#eceef5" />
       <Row label="Top Category" value={topCat} color="#8b5cf6" />
       <Row label="Feed Status" value={articles.length > 0 ? 'Live' : 'Loading...'} color={articles.length > 0 ? '#10b981' : '#6b7a96'} />
