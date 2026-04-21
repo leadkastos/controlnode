@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import AppLayout from '../components/AppLayout'
 import { TrendingUp, TrendingDown } from 'lucide-react'
+import { supabase } from '../lib/supabase'
 
 const COINGECKO_IDS = {
   XRP: 'ripple', BTC: 'bitcoin', ETH: 'ethereum', SOL: 'solana',
