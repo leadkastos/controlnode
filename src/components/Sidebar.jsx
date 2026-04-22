@@ -72,10 +72,10 @@ function SidebarContent({ onClose }) {
             src="/controlnode-logo.png"
             alt="ControlNode"
             style={{
-              height: '52px',
+              height: '72px',
               width: 'auto',
               objectFit: 'contain',
-              maxWidth: '180px',
+              maxWidth: '200px',
             }}
           />
         </div>
