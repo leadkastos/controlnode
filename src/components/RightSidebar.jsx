@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { TrendingUp, TrendingDown, ExternalLink } from 'lucide-react'
+import { TrendingUp, TrendingDown, ExternalLink, Zap } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { usePrices, COINGECKO_IDS } from '../contexts/PriceContext'
 
@@ -59,7 +59,6 @@ export default function RightSidebar() {
   const [news, setNews] = useState([])
   const [marketSignals, setMarketSignals] = useState([])
 
-  // Load admin master watchlist symbols
   useEffect(function() {
     async function loadMasterSymbols() {
       try {
@@ -67,7 +66,6 @@ export default function RightSidebar() {
           .from('master_watchlist')
           .select('symbol')
           .order('symbol')
-        
         if (result.data) {
           setSymbols(result.data.map(function(row) { return row.symbol }))
         }
@@ -75,10 +73,7 @@ export default function RightSidebar() {
         console.error('Error loading master symbols:', e)
       }
     }
-
     loadMasterSymbols()
-
-    // Refresh every 30 seconds when admin updates
     var interval = setInterval(loadMasterSymbols, 30 * 1000)
     return function() { clearInterval(interval) }
   }, [])
@@ -98,7 +93,6 @@ export default function RightSidebar() {
       }
     }
     loadMarketSignals()
-    // Refresh signals every 30 seconds
     var interval = setInterval(loadMarketSignals, 30 * 1000)
     return function() { clearInterval(interval) }
   }, [])
@@ -128,10 +122,25 @@ export default function RightSidebar() {
       className="hidden lg:flex fixed right-0 top-0 h-screen w-64 flex-col z-30"
       style={{ background: '#0d0f14', borderLeft: '1px solid #1e2330' }}
     >
+      {/* Top spacer to align with TopBar */}
       <div style={{ height: '56px', flexShrink: 0, borderBottom: '1px solid #1e2330' }} />
 
       <div className="flex-1 overflow-y-auto py-4 px-4 space-y-5">
 
+        {/* XRP Intelligence Platform Badge */}
+        <div
+          className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-sm font-bold"
+          style={{
+            background: 'rgba(139,92,246,0.15)',
+            border: '1px solid rgba(139,92,246,0.4)',
+            color: '#8b5cf6',
+          }}
+        >
+          <Zap size={14} />
+          XRP Intelligence Platform
+        </div>
+
+        {/* Watchlist */}
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#6b7a96' }}>
             Watchlist
@@ -174,6 +183,7 @@ export default function RightSidebar() {
           </div>
         </div>
 
+        {/* Market Signals */}
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#6b7a96' }}>
             Market Signals
@@ -212,6 +222,7 @@ export default function RightSidebar() {
           </div>
         </div>
 
+        {/* News Feed */}
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#6b7a96' }}>
             News Feed
@@ -235,7 +246,14 @@ export default function RightSidebar() {
                 var catLabel = getCategoryLabel(item.categories)
                 var sourceName = item.source_info ? item.source_info.name : item.source
                 return (
-                  <a key={String(item.id)} href={item.url} target="_blank" rel="noopener noreferrer" className="block px-3 py-3 rounded-lg transition-colors hover:bg-white/5" style={{ background: '#161a22', border: '1px solid #1e2330', textDecoration: 'none' }}>
+                  <a
+                    key={String(item.id)}
+                    href={item.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block px-3 py-3 rounded-lg transition-colors hover:bg-white/5"
+                    style={{ background: '#161a22', border: '1px solid #1e2330', textDecoration: 'none' }}
+                  >
                     <div className="flex items-center justify-between gap-1 mb-1.5">
                       <span className="text-xs font-semibold px-1.5 py-0.5 rounded" style={{ background: cat.bg, color: cat.text }}>
                         {catLabel}
