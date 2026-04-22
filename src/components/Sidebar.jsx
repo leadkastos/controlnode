@@ -66,16 +66,16 @@ function SidebarContent({ onClose }) {
   return (
     <>
       {/* Logo area */}
-      <div className="px-4 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #1e2330' }}>
+      <div className="px-3 py-5 flex items-center justify-between" style={{ borderBottom: '1px solid #1e2330' }}>
         <div className="flex items-center justify-center w-full">
           <img
             src="/controlnode-logo.png"
             alt="ControlNode"
             style={{
-              height: '72px',
+              height: '90px',
               width: 'auto',
               objectFit: 'contain',
-              maxWidth: '200px',
+              maxWidth: '210px',
             }}
           />
         </div>
