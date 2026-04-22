@@ -86,19 +86,9 @@ function SidebarContent({ onClose }) {
         )}
       </div>
 
-      <div className="px-3 pt-4 pb-2">
-        <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#6b7a96' }}>Intelligence Hub</p>
-        <div className="flex items-center justify-center py-2 rounded-lg text-sm font-bold" style={{
-          background: 'rgba(139,92,246,0.15)',
-          border: '1px solid rgba(139,92,246,0.4)',
-          color: '#8b5cf6'
-        }}>
-          <Zap size={14} className="mr-2" />
-          XRP Intelligence Platform
-        </div>
-      </div>
 
-      <nav className="flex-1 px-2 py-3 overflow-y-auto space-y-0.5">
+
+      <nav className="flex-1 px-2 pt-4 pb-3 overflow-y-auto space-y-0.5">
         <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-widest" style={{ color: '#6b7a96' }}>
           Intelligence
         </p>
