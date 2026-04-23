@@ -19,7 +19,7 @@ const xrpNav = [
   { label: 'Watchlist', icon: Star, path: '/watchlist', color: '#eab308' },
   { label: 'YouTube Intel', icon: Youtube, path: '/youtube-intel', color: '#ef4444' },
   { label: 'Smart Money Flow', icon: Activity, path: '/smart-money-flow', color: '#10b981' },
-  { label: 'Market Chatter', icon: MessageCircleWarning, path: '/market-chatter', color: '#8b5cf6' },
+  { label: 'Market News', icon: MessageCircleWarning, path: '/market-news', color: '#8b5cf6' },
 ]
 
 const bottomNav = [
