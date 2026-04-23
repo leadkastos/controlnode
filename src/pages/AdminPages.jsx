@@ -832,13 +832,12 @@ export function AdminChatter() {
   async function post() {
     if (!form.content) { showToast('Content is required.', 'error'); return }
     setSaving(true)
-    var result = await supabase.from('market_chatter').insert({
+    var result = await supabase.from('market_news').insert({
       content: form.content,
-      category: form.category,
-      source: form.source,
-      source_url: form.source_url,
-      flagged: false,
-      fire_count: 0,
+category: form.category,
+source: form.source,
+source_url: form.source_url,
+type: form.type
       thinking_count: 0,
       bullish_count: 0,
       warning_count: 0
