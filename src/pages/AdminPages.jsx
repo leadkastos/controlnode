@@ -816,7 +816,7 @@ export function AdminChatter() {
   var savingState = useState(false); var saving = savingState[0]; var setSaving = savingState[1]
   var notifyState = useState(false); var notify = notifyState[0]; var setNotify = notifyState[1]
   var toastState = useState({ message: '', type: '' }); var toast = toastState[0]; var setToast = toastState[1]
-  var formState = useState({ content: '', category: 'General', source: '', source_url: '' })
+  var formState = useState({ content: '', category: 'General', source: '', source_url: '', type: 'chatter' })
   var form = formState[0]; var setForm = formState[1]
 
   function showToast(m, t) { setToast({ message: m, type: t || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
