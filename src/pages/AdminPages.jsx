@@ -859,6 +859,12 @@ type: form.type
   return (
     <AdminLayout title="Market Chatter">
       <AdminCard title="Post New Chatter">
+        <Field label="Post Type">
+          <select value={form.type} onChange={function(e) { setForm(function(f) { return Object.assign({}, f, { type: e.target.value }) }) }} className="w-full px-3 py-2.5 rounded-lg text-sm outline-none" style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}>
+            <option value="chatter">Market Chatter (Unconfirmed)</option>
+            <option value="confirmed">Market News (Confirmed)</option>
+          </select>
+        </Field>
         <Field label="Content">
           <TextArea value={form.content} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { content: v }) }) }} placeholder="BlackRock internal memo allegedly references XRP ETF timeline — circulating on X, unverified..." rows={4} />
         </Field>
