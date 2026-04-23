@@ -225,7 +225,7 @@ export function Admin() {
           { href: '/admin/oil-yen', title: 'Oil vs Yen', desc: 'Update macro scenarios to monitor' },
           { href: '/admin/headlines', title: 'Breaking News', desc: 'Post breaking news and headlines' },
           { href: '/admin/watchlist', title: 'Master Watchlist', desc: 'Manage suggested symbols' },
-          { href: '/admin/chatter', title: 'Market Chatter', desc: 'Post and manage market chatter' },
+          { href: '/admin/chatter', title: 'Market News', desc: 'Post confirmed news and manage market chatter' }
           { href: '/admin/etf-flows', title: 'XRP ETF Flows', desc: 'Update ETF data and flow numbers' },
           { href: '/admin/youtube', title: 'YouTube Intel', desc: 'Manage YouTube channels for all members' },
           { href: '/admin/smart-money', title: 'Smart Money Flow', desc: 'Post whale alerts and update escrow data' },
