@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { TrendingUp, TrendingDown, ExternalLink } from 'lucide-react'
+import { TrendingUp, TrendingDown, ExternalLink, Zap } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { usePrices, COINGECKO_IDS } from '../contexts/PriceContext'
