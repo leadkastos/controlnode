@@ -822,7 +822,7 @@ export function AdminChatter() {
   function showToast(m, t) { setToast({ message: m, type: t || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
 
   async function load() {
-    var res = await supabase.from('market_chatter').select('*').order('created_at', { ascending: false }).limit(50)
+    var res = await supabase.from('market_news').select('*').order('created_at', { ascending: false }).limit(50)
     if (res.data) setPosts(res.data)
     setLoading(false)
   }
