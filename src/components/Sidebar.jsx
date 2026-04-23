@@ -65,30 +65,46 @@ function SidebarContent({ onClose }) {
 
   return (
     <>
-      {/* Logo area */}
-      <div className="px-3 py-5 flex items-center justify-between" style={{ borderBottom: '1px solid #1e2330' }}>
-        <div className="flex items-center justify-center w-full">
-          <img
-            src="/controlnode-logo.png"
-            alt="ControlNode"
-            style={{
-              height: '90px',
-              width: 'auto',
-              objectFit: 'contain',
-              maxWidth: '210px',
-            }}
-          />
+      <div className="px-4 py-5 flex items-center justify-between" style={{ borderBottom: '1px solid #1e2330' }}>
+        <div className="flex items-center gap-2.5">
+          <svg width="28" height="28" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="64" height="64" rx="12" fill="#6d28d9"/>
+            <circle cx="32" cy="32" r="4" fill="white"/>
+            <circle cx="16" cy="20" r="3" fill="white" opacity="0.9"/>
+            <circle cx="48" cy="18" r="3" fill="white" opacity="0.9"/>
+            <circle cx="50" cy="44" r="3" fill="white" opacity="0.9"/>
+            <circle cx="18" cy="48" r="3" fill="white" opacity="0.9"/>
+            <line x1="32" y1="32" x2="16" y2="20" stroke="white" strokeWidth="1.5" opacity="0.5"/>
+            <line x1="32" y1="32" x2="48" y2="18" stroke="white" strokeWidth="1.5" opacity="0.5"/>
+            <line x1="32" y1="32" x2="50" y2="44" stroke="white" strokeWidth="1.5" opacity="0.5"/>
+            <line x1="32" y1="32" x2="18" y2="48" stroke="white" strokeWidth="1.5" opacity="0.5"/>
+            <line x1="16" y1="20" x2="48" y2="18" stroke="white" strokeWidth="1" opacity="0.25"/>
+            <line x1="50" y1="44" x2="18" y2="48" stroke="white" strokeWidth="1" opacity="0.25"/>
+          </svg>
+          <span className="font-semibold text-sm tracking-wide" style={{ fontFamily: 'Syne, sans-serif', color: '#eceef5' }}>
+            ControlNode
+          </span>
         </div>
         {onClose && (
-          <button onClick={onClose} className="p-1 rounded-lg lg:hidden ml-2 flex-shrink-0" style={{ color: '#9aa8be' }}>
+          <button onClick={onClose} className="p-1 rounded-lg lg:hidden" style={{ color: '#9aa8be' }}>
             <X size={18} />
           </button>
         )}
       </div>
 
+      <div className="px-3 pt-4 pb-2">
+        <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#6b7a96' }}>Intelligence Hub</p>
+        <div className="flex items-center justify-center py-2 rounded-lg text-sm font-bold" style={{
+          background: 'rgba(139,92,246,0.15)',
+          border: '1px solid rgba(139,92,246,0.4)',
+          color: '#8b5cf6'
+        }}>
+          <Zap size={14} className="mr-2" />
+          XRP Intelligence Platform
+        </div>
+      </div>
 
-
-      <nav className="flex-1 px-2 pt-4 pb-3 overflow-y-auto space-y-0.5">
+      <nav className="flex-1 px-2 py-3 overflow-y-auto space-y-0.5">
         <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-widest" style={{ color: '#6b7a96' }}>
           Intelligence
         </p>
