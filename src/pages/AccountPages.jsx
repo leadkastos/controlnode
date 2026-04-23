@@ -225,7 +225,7 @@ export function Admin() {
           { href: '/admin/oil-yen', title: 'Oil vs Yen', desc: 'Update macro scenarios to monitor' },
           { href: '/admin/headlines', title: 'Breaking News', desc: 'Post breaking news and headlines' },
           { href: '/admin/watchlist', title: 'Master Watchlist', desc: 'Manage suggested symbols' },
-          { href: '/admin/chatter', title: 'Market Chatter', desc: 'Post and manage market chatter' },
+          { href: '/admin/chatter', title: 'Market News', desc: 'Post confirmed news and manage market chatter' },
           { href: '/admin/etf-flows', title: 'XRP ETF Flows', desc: 'Update ETF data and flow numbers' },
           { href: '/admin/youtube', title: 'YouTube Intel', desc: 'Manage YouTube channels for all members' },
           { href: '/admin/smart-money', title: 'Smart Money Flow', desc: 'Post whale alerts and update escrow data' },
@@ -778,13 +778,13 @@ export function AdminChatter() {
   var savingState = useState(false); var saving = savingState[0]; var setSaving = savingState[1]
   var notifyState = useState(false); var notify = notifyState[0]; var setNotify = notifyState[1]
   var toastState = useState({ message: '', type: '' }); var toast = toastState[0]; var setToast = toastState[1]
-  var formState = useState({ content: '', category: 'General', source: '', source_url: '' })
+  var formState = useState({ content: '', category: 'General', source: '', source_url: '', type: 'chatter' })
   var form = formState[0]; var setForm = formState[1]
 
   function showToast(m, t) { setToast({ message: m, type: t || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
 
   async function load() {
-    var res = await supabase.from('market_chatter').select('*').order('created_at', { ascending: false }).limit(50)
+    var res = await supabase.from('market_news').select('*').order('created_at', { ascending: false }).limit(50)
     if (res.data) setPosts(res.data)
     setLoading(false)
   }
@@ -794,34 +794,39 @@ export function AdminChatter() {
   async function post() {
     if (!form.content) { showToast('Content is required.', 'error'); return }
     setSaving(true)
-    var result = await supabase.from('market_chatter').insert({
+    var result = await supabase.from('market_news').insert({
       content: form.content,
       category: form.category,
       source: form.source,
       source_url: form.source_url,
-      flagged: false,
-      fire_count: 0,
-      thinking_count: 0,
-      bullish_count: 0,
-      warning_count: 0
+      type: form.type
     })
     if (result.error) { setSaving(false); showToast('Error: ' + result.error.message, 'error'); return }
-    if (notify) { await sendNotificationToAllMembers('Market Chatter', form.content.slice(0, 80) + (form.content.length > 80 ? '...' : ''), 'market_chatter') }
+    if (notify) { 
+      var title = form.type === 'confirmed' ? 'Market News Update' : 'Market Chatter Update'
+      await sendNotificationToAllMembers(title, form.content.slice(0, 80) + (form.content.length > 80 ? '...' : ''), 'market_news') 
+    }
     setSaving(false)
-    showToast('Posted!')
-    setForm({ content: '', category: 'General', source: '', source_url: '' })
+    showToast('Posted to ' + (form.type === 'confirmed' ? 'Market News' : 'Market Chatter') + '!')
+    setForm({ content: '', category: 'General', source: '', source_url: '', type: 'chatter' })
     load()
   }
 
   async function remove(id) {
-    await supabase.from('market_chatter').delete().eq('id', id)
+    await supabase.from('market_news').delete().eq('id', id)
     showToast('Post removed.')
     load()
   }
 
   return (
-    <AdminLayout title="Market Chatter">
-      <AdminCard title="Post New Chatter">
+    <AdminLayout title="Market News">
+      <AdminCard title="Post Market News">
+        <Field label="Post Type">
+          <select value={form.type} onChange={function(e) { setForm(function(f) { return Object.assign({}, f, { type: e.target.value }) }) }} className="w-full px-3 py-2.5 rounded-lg text-sm outline-none" style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}>
+            <option value="chatter">Market Chatter (Unconfirmed)</option>
+            <option value="confirmed">Market News (Confirmed)</option>
+          </select>
+        </Field>
         <Field label="Content">
           <TextArea value={form.content} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { content: v }) }) }} placeholder="BlackRock internal memo allegedly references XRP ETF timeline — circulating on X, unverified..." rows={4} />
         </Field>
@@ -853,13 +858,23 @@ export function AdminChatter() {
               return (
                 <div key={p.id} className="rounded-lg p-4" style={{ background: '#111318', border: '1px solid #1e2330' }}>
                   <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs px-2 py-0.5 rounded font-semibold" style={{ 
+                      background: p.type === 'confirmed' ? 'rgba(16,185,129,0.12)' : 'rgba(245,158,11,0.12)', 
+                      color: p.type === 'confirmed' ? '#10b981' : '#f59e0b' 
+                    }}>
+                      {p.type === 'confirmed' ? 'Confirmed' : 'Chatter'}
+                    </span>
                     {p.category && <span className="text-xs px-2 py-0.5 rounded font-semibold" style={{ background: 'rgba(139,92,246,0.12)', color: '#8b5cf6' }}>{p.category}</span>}
                     {p.source && <span className="text-xs" style={{ color: '#3b82f6' }}>{p.source}</span>}
                     <span className="text-xs ml-auto" style={{ color: '#6b7a96' }}>{new Date(p.created_at).toLocaleString()}</span>
                   </div>
                   <p className="text-sm mb-3" style={{ color: '#eceef5' }}>{p.content}</p>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs" style={{ color: '#6b7a96' }}>🔥 {p.fire_count || 0} · 🤔 {p.thinking_count || 0} · 📈 {p.bullish_count || 0} · ⚠️ {p.warning_count || 0}</span>
+                  <div className="flex items-center justify-between">
+                    {p.source_url && (
+                      <a href={p.source_url} target="_blank" rel="noopener noreferrer" className="text-xs hover:underline" style={{ color: '#3b82f6' }}>
+                        View Source
+                      </a>
+                    )}
                     <button onClick={function() { remove(p.id) }} className="text-xs px-3 py-1 rounded ml-auto" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>Remove</button>
                   </div>
                 </div>
