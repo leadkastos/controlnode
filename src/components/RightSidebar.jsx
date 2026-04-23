@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react'
-import { TrendingUp, TrendingDown, ExternalLink, Zap } from 'lucide-react'
+import { TrendingUp, TrendingDown, ExternalLink } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../contexts/AuthContext'
 import { usePrices, COINGECKO_IDS } from '../contexts/PriceContext'
+
+const DEFAULT_SYMBOLS = ['XRP', 'BTC', 'SOL', 'ETH', 'HBAR', 'XLM']
 
 const categoryColors = {
   Regulatory: { bg: 'rgba(139,92,246,0.12)', text: '#8b5cf6' },
@@ -54,29 +57,26 @@ function getCategoryLabel(categories) {
 }
 
 export default function RightSidebar() {
+  const { user } = useAuth()
   const prices = usePrices()
-  const [symbols, setSymbols] = useState([])
+  const [symbols, setSymbols] = useState(DEFAULT_SYMBOLS)
   const [news, setNews] = useState([])
   const [marketSignals, setMarketSignals] = useState([])
 
   useEffect(function() {
-    async function loadMasterSymbols() {
-      try {
-        var result = await supabase
-          .from('master_watchlist')
-          .select('symbol')
-          .order('symbol')
-        if (result.data) {
-          setSymbols(result.data.map(function(row) { return row.symbol }))
-        }
-      } catch(e) {
-        console.error('Error loading master symbols:', e)
+    if (!user) return
+    async function loadWatchlist() {
+      var result = await supabase
+        .from('user_watchlist')
+        .select('symbol')
+        .eq('user_id', user.id)
+        .order('added_at', { ascending: true })
+      if (result.data && result.data.length > 0) {
+        setSymbols(result.data.map(function(d) { return d.symbol }))
       }
     }
-    loadMasterSymbols()
-    var interval = setInterval(loadMasterSymbols, 30 * 1000)
-    return function() { clearInterval(interval) }
-  }, [])
+    loadWatchlist()
+  }, [user])
 
   useEffect(function() {
     async function loadMarketSignals() {
@@ -93,6 +93,7 @@ export default function RightSidebar() {
       }
     }
     loadMarketSignals()
+    // Refresh signals every 30 seconds
     var interval = setInterval(loadMarketSignals, 30 * 1000)
     return function() { clearInterval(interval) }
   }, [])
@@ -100,20 +101,63 @@ export default function RightSidebar() {
   useEffect(function() {
     async function fetchNews() {
       try {
-        var key = import.meta.env.VITE_CRYPTOCOMPARE_API_KEY
-        var res = await fetch(
-          'https://min-api.cryptocompare.com/data/v2/news/?categories=XRP,Ripple,Regulation&excludeCategories=Sponsored&lang=EN&api_key=' + key
-        )
-        var data = await res.json()
-        if (data && data.Data) {
-          setNews(data.Data.slice(0, 6))
+        var allNews = []
+
+        // Fetch manual posts from market_news table
+        try {
+          var manualRes = await supabase
+            .from('market_news')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(10)
+          
+          if (manualRes.data) {
+            var manualPosts = manualRes.data.map(function(post) {
+              return {
+                id: 'manual_' + post.id,
+                title: post.content,
+                url: post.source_url || '#',
+                source: post.source || 'Admin Post',
+                source_info: { name: post.source || 'Admin Post' },
+                categories: post.type === 'confirmed' ? 'Confirmed|News' : 'Chatter|Unconfirmed',
+                published_on: Math.floor(new Date(post.created_at).getTime() / 1000),
+                isManual: true,
+                postType: post.type
+              }
+            })
+            allNews = allNews.concat(manualPosts)
+          }
+        } catch(e) {
+          console.error('Manual news fetch error:', e)
         }
+
+        // Fetch automated crypto news
+        try {
+          var key = import.meta.env.VITE_CRYPTOCOMPARE_API_KEY
+          var res = await fetch(
+            'https://min-api.cryptocompare.com/data/v2/news/?categories=XRP,Ripple,Regulation&excludeCategories=Sponsored&lang=EN&api_key=' + key
+          )
+          var data = await res.json()
+          if (data && data.Data) {
+            var autoNews = data.Data.slice(0, 8).map(function(item) {
+              return Object.assign({}, item, { isManual: false })
+            })
+            allNews = allNews.concat(autoNews)
+          }
+        } catch(e) {
+          console.error('Auto news fetch error:', e)
+        }
+
+        // Sort all news by timestamp (newest first) and take top 8
+        allNews.sort(function(a, b) { return b.published_on - a.published_on })
+        setNews(allNews.slice(0, 8))
+
       } catch(e) {
         console.error('News fetch error:', e)
       }
     }
     fetchNews()
-    var interval = setInterval(fetchNews, 5 * 60 * 1000)
+    var interval = setInterval(fetchNews, 3 * 60 * 1000) // Refresh every 3 minutes
     return function() { clearInterval(interval) }
   }, [])
 
@@ -122,7 +166,6 @@ export default function RightSidebar() {
       className="hidden lg:flex fixed right-0 top-0 h-screen w-64 flex-col z-30"
       style={{ background: '#0d0f14', borderLeft: '1px solid #1e2330' }}
     >
-      {/* Top spacer to align with TopBar */}
       <div style={{ height: '56px', flexShrink: 0, borderBottom: '1px solid #1e2330' }} />
 
       <div className="flex-1 overflow-y-auto py-4 px-4 space-y-5">
@@ -183,7 +226,6 @@ export default function RightSidebar() {
           </div>
         </div>
 
-        {/* Market Signals */}
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#6b7a96' }}>
             Market Signals
@@ -222,7 +264,6 @@ export default function RightSidebar() {
           </div>
         </div>
 
-        {/* News Feed */}
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#6b7a96' }}>
             News Feed
@@ -242,23 +283,44 @@ export default function RightSidebar() {
               </div>
             ) : (
               news.map(function(item) {
-                var cat = getCategoryColor(item.categories)
-                var catLabel = getCategoryLabel(item.categories)
-                var sourceName = item.source_info ? item.source_info.name : item.source
+                var cat, catLabel, sourceName
+                
+                if (item.isManual) {
+                  // Manual posts from admin
+                  if (item.postType === 'confirmed') {
+                    cat = { bg: 'rgba(16,185,129,0.12)', text: '#10b981' }
+                    catLabel = 'CONFIRMED'
+                  } else {
+                    cat = { bg: 'rgba(245,158,11,0.12)', text: '#f59e0b' }
+                    catLabel = 'CHATTER'
+                  }
+                  sourceName = item.source
+                } else {
+                  // Automated posts
+                  cat = getCategoryColor(item.categories)
+                  catLabel = getCategoryLabel(item.categories)
+                  sourceName = item.source_info ? item.source_info.name : item.source
+                }
+                
                 return (
-                  <a
-                    key={String(item.id)}
-                    href={item.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block px-3 py-3 rounded-lg transition-colors hover:bg-white/5"
-                    style={{ background: '#161a22', border: '1px solid #1e2330', textDecoration: 'none' }}
+                  <a 
+                    key={String(item.id)} 
+                    href={item.url !== '#' ? item.url : undefined} 
+                    target={item.url !== '#' ? "_blank" : undefined} 
+                    rel={item.url !== '#' ? "noopener noreferrer" : undefined} 
+                    className={item.url !== '#' ? "block px-3 py-3 rounded-lg transition-colors hover:bg-white/5" : "block px-3 py-3 rounded-lg"} 
+                    style={{ 
+                      background: '#161a22', 
+                      border: '1px solid #1e2330', 
+                      textDecoration: 'none',
+                      cursor: item.url !== '#' ? 'pointer' : 'default'
+                    }}
                   >
                     <div className="flex items-center justify-between gap-1 mb-1.5">
                       <span className="text-xs font-semibold px-1.5 py-0.5 rounded" style={{ background: cat.bg, color: cat.text }}>
                         {catLabel}
                       </span>
-                      <ExternalLink size={10} style={{ color: '#6b7a96', flexShrink: 0 }} />
+                      {item.url !== '#' && <ExternalLink size={10} style={{ color: '#6b7a96', flexShrink: 0 }} />}
                     </div>
                     <p className="text-xs leading-snug mb-1" style={{ color: '#eceef5' }}>{item.title}</p>
                     <div className="flex items-center justify-between">
