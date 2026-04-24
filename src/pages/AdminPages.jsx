@@ -1,1423 +1,577 @@
 import React, { useState, useEffect } from 'react'
 import AppLayout from '../components/AppLayout'
-import DetailPageLayout, { DetailSection, DataRow } from '../components/DetailPageLayout'
-import { Badge } from '../components/UI'
-import { Trash2, ExternalLink, Bell } from 'lucide-react'
+import { Plus, Trash2, Bell, MessageCircle, PlaySquare, FileText, BarChart3, Zap, TrendingUp, Calendar } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 
-function AdminLayout({ title, children }) {
-  return (
-    <AppLayout hideRightSidebar>
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold" style={{ fontFamily: 'Syne, sans-serif', color: '#eceef5' }}>{title}</h1>
-          <p className="text-sm mt-1" style={{ color: '#6b7a96' }}>Admin Panel</p>
-        </div>
-        {children}
-      </div>
-    </AppLayout>
-  )
-}
+export default function AdminPages() {
+  const { profile } = useAuth()
+  const [activeSection, setActiveSection] = useState('market-news')
+  const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState('')
 
-function AdminCard({ title, children }) {
-  return (
-    <div className="rounded-xl p-6 mb-6" style={{ background: '#0d1117', border: '1px solid #1e2330' }}>
-      <h2 className="text-sm font-semibold uppercase tracking-widest mb-4" style={{ color: '#6b7a96' }}>{title}</h2>
-      {children}
-    </div>
-  )
-}
+  const [marketNewsForm, setMarketNewsForm] = useState({ type: 'chatter', content: '', category: 'General', source: '', source_url: '' })
+  const [youtubeForm, setYoutubeForm] = useState({ title: '', description: '', youtube_url: '', video_id: '', thumbnail_url: '' })
+  const [youtubeVideos, setYoutubeVideos] = useState([])
+  const [symbols, setSymbols] = useState([])
+  const [newSymbol, setNewSymbol] = useState('')
+  const [notificationForm, setNotificationForm] = useState({ title: '', message: '' })
+  const [morningBriefForm, setMorningBriefForm] = useState({ title: '', content: '', key_points: '', market_outlook: '' })
+  const [dailyWrapForm, setDailyWrapForm] = useState({ title: '', content: '', key_events: '', tomorrow_outlook: '' })
+  const [marketSignals, setMarketSignals] = useState([])
+  const [newSignal, setNewSignal] = useState({ signal_name: '', signal_value: '', color: 'blue' })
+  const [breakingNewsForm, setBreakingNewsForm] = useState({ headline: '', content: '', urgency: 'medium', show_ticker: true })
 
-function Field({ label, children }) {
-  return (
-    <div className="mb-4">
-      <label className="block text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: '#6b7a96' }}>{label}</label>
-      {children}
-    </div>
-  )
-}
+  // ETF FLOWS state
+  const [etfSummary, setEtfSummary] = useState(null)
+  const [etfSummarySaving, setEtfSummarySaving] = useState(false)
+  const [etfAumList, setEtfAumList] = useState([])
+  const [etfAumSaving, setEtfAumSaving] = useState(null)
+  const [newEtf, setNewEtf] = useState({ etf_name: '', ticker: '', etf_type: 'Spot', aum: 0, color: '#3b82f6' })
+  const [addingEtf, setAddingEtf] = useState(false)
+  const [etfPipeline, setEtfPipeline] = useState([])
+  const [newPipeline, setNewPipeline] = useState({ issuer_name: '', priority: 'Medium', notes: '', status: 'Not Filed' })
+  const [addingPipeline, setAddingPipeline] = useState(false)
 
-function TextInput({ value, onChange, placeholder, type }) {
-  return (
-    <input type={type || 'text'} value={value} onChange={function(e) { onChange(e.target.value) }} placeholder={placeholder} className="w-full px-3 py-2.5 rounded-lg text-sm outline-none" style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }} onFocus={function(e) { e.target.style.borderColor = '#3b82f6' }} onBlur={function(e) { e.target.style.borderColor = '#1e2330' }} />
-  )
-}
-
-function DatePicker({ value, onChange }) {
-  return (
-    <input type="date" value={value} onChange={function(e) { onChange(e.target.value) }} className="w-full px-3 py-2.5 rounded-lg text-sm outline-none" style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }} onFocus={function(e) { e.target.style.borderColor = '#3b82f6' }} onBlur={function(e) { e.target.style.borderColor = '#1e2330' }} />
-  )
-}
-
-function TextArea({ value, onChange, placeholder, rows }) {
-  return (
-    <textarea value={value} onChange={function(e) { onChange(e.target.value) }} placeholder={placeholder} rows={rows || 5} className="w-full px-3 py-2.5 rounded-lg text-sm outline-none resize-none" style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }} onFocus={function(e) { e.target.style.borderColor = '#3b82f6' }} onBlur={function(e) { e.target.style.borderColor = '#1e2330' }} />
-  )
-}
-
-function SaveButton({ onClick, loading, label }) {
-  return (
-    <button onClick={onClick} disabled={loading} className="px-6 py-2.5 rounded-lg text-sm font-semibold" style={{ background: loading ? '#1e2330' : '#3b82f6', color: loading ? '#6b7a96' : '#fff' }}>
-      {loading ? 'Saving...' : label}
-    </button>
-  )
-}
-
-function NotifyToggle({ enabled, onToggle }) {
-  return (
-    <div className="flex items-center gap-3 p-3 rounded-lg mb-4" style={{ background: enabled ? 'rgba(59,130,246,0.07)' : '#111318', border: '1px solid ' + (enabled ? 'rgba(59,130,246,0.2)' : '#1e2330') }}>
-      <Bell size={14} style={{ color: enabled ? '#3b82f6' : '#6b7a96' }} />
-      <div className="flex-1">
-        <p className="text-xs font-semibold" style={{ color: enabled ? '#3b82f6' : '#6b7a96' }}>Send bell notification to all active members</p>
-      </div>
-      <div onClick={onToggle} className="w-10 h-5 rounded-full flex items-center px-0.5 cursor-pointer transition-all" style={{ background: enabled ? '#3b82f6' : '#1e2330' }}>
-        <div className="w-4 h-4 rounded-full" style={{ background: '#fff', transform: enabled ? 'translateX(20px)' : 'translateX(0)', transition: 'transform 0.15s' }} />
-      </div>
-    </div>
-  )
-}
-
-function Toast({ message, type }) {
-  if (!message) return null
-  return <div className="fixed bottom-6 right-6 px-5 py-3 rounded-lg text-sm font-medium z-50" style={{ background: type === 'error' ? '#ef4444' : '#10b981', color: '#fff' }}>{message}</div>
-}
-
-function Toggle({ enabled, onToggle }) {
-  return (
-    <div onClick={onToggle} className="w-10 h-5 rounded-full flex items-center px-0.5 cursor-pointer transition-all" style={{ background: enabled ? '#3b82f6' : '#1e2330' }}>
-      <div className="w-4 h-4 rounded-full" style={{ background: '#fff', transform: enabled ? 'translateX(20px)' : 'translateX(0)', transition: 'transform 0.15s' }} />
-    </div>
-  )
-}
-
-async function sendNotificationToAllMembers(title, message, type) {
-  var res = await supabase.from('profiles').select('id').eq('subscription_status', 'active')
-  if (!res.data || res.data.length === 0) return
-  var notifications = res.data.map(function(p) {
-    return { user_id: p.id, type: type, title: title, message: message, read: false }
-  })
-  await supabase.from('notifications').insert(notifications)
-}
-
-function EmailNotificationsSection() {
-  const { user } = useAuth()
-  const [morningBrief, setMorningBrief] = useState(false)
-  const [dailyWrap, setDailyWrap] = useState(false)
-  const [toast, setToast] = useState('')
-
-  useEffect(function() {
-    if (!user) return
-    supabase.from('profiles').select('email_morning_brief, email_daily_wrap').eq('id', user.id).single().then(function(res) {
-      if (res.data) { setMorningBrief(res.data.email_morning_brief || false); setDailyWrap(res.data.email_daily_wrap || false) }
-    })
-  }, [user])
-
-  async function save(field, value) {
-    if (!user) return
-    var update = {}; update[field] = value
-    await supabase.from('profiles').update(update).eq('id', user.id)
-    setToast('Saved!'); setTimeout(function() { setToast('') }, 2000)
+  function extractVideoId(url) {
+    if (!url) return ''
+    const patterns = [/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/, /youtube\.com\/v\/([^&\n?#]+)/]
+    for (const p of patterns) { const m = url.match(p); if (m) return m[1] }
+    return ''
   }
 
-  return (
-    <DetailSection title="Email Notifications">
-      <div className="space-y-3">
-        <div className="flex items-center justify-between py-2" style={{ borderBottom: '1px solid #1e2330' }}>
-          <div><p className="text-sm font-medium" style={{ color: '#eceef5' }}>Morning Brief</p><p className="text-xs" style={{ color: '#9aa8be' }}>Delivered to your email each morning when published</p></div>
-          <Toggle enabled={morningBrief} onToggle={function() { var n = !morningBrief; setMorningBrief(n); save('email_morning_brief', n) }} />
-        </div>
-        <div className="flex items-center justify-between py-2" style={{ borderBottom: '1px solid #1e2330' }}>
-          <div><p className="text-sm font-medium" style={{ color: '#eceef5' }}>Daily Wrap</p><p className="text-xs" style={{ color: '#9aa8be' }}>Delivered to your email each evening when published</p></div>
-          <Toggle enabled={dailyWrap} onToggle={function() { var n = !dailyWrap; setDailyWrap(n); save('email_daily_wrap', n) }} />
-        </div>
-      </div>
-      {toast && <p className="text-xs mt-3" style={{ color: '#10b981' }}>{toast}</p>}
-    </DetailSection>
-  )
-}
+  useEffect(() => {
+    const id = extractVideoId(youtubeForm.youtube_url)
+    if (id) setYoutubeForm(prev => ({ ...prev, video_id: id, thumbnail_url: 'https://img.youtube.com/vi/' + id + '/maxresdefault.jpg' }))
+    else setYoutubeForm(prev => ({ ...prev, video_id: '', thumbnail_url: '' }))
+  }, [youtubeForm.youtube_url])
 
-// Full IANA timezone list grouped by region
-const TIMEZONES = [
-  { region: 'Africa', zones: ['Africa/Abidjan','Africa/Accra','Africa/Addis_Ababa','Africa/Algiers','Africa/Asmara','Africa/Bamako','Africa/Bangui','Africa/Banjul','Africa/Bissau','Africa/Blantyre','Africa/Brazzaville','Africa/Bujumbura','Africa/Cairo','Africa/Casablanca','Africa/Ceuta','Africa/Conakry','Africa/Dakar','Africa/Dar_es_Salaam','Africa/Djibouti','Africa/Douala','Africa/El_Aaiun','Africa/Freetown','Africa/Gaborone','Africa/Harare','Africa/Johannesburg','Africa/Juba','Africa/Kampala','Africa/Khartoum','Africa/Kigali','Africa/Kinshasa','Africa/Lagos','Africa/Libreville','Africa/Lome','Africa/Luanda','Africa/Lubumbashi','Africa/Lusaka','Africa/Malabo','Africa/Maputo','Africa/Maseru','Africa/Mbabane','Africa/Mogadishu','Africa/Monrovia','Africa/Nairobi','Africa/Ndjamena','Africa/Niamey','Africa/Nouakchott','Africa/Ouagadougou','Africa/Porto-Novo','Africa/Sao_Tome','Africa/Tripoli','Africa/Tunis','Africa/Windhoek'] },
-  { region: 'Americas', zones: ['America/Adak','America/Anchorage','America/Anguilla','America/Antigua','America/Araguaina','America/Argentina/Buenos_Aires','America/Argentina/Catamarca','America/Argentina/Cordoba','America/Argentina/Jujuy','America/Argentina/La_Rioja','America/Argentina/Mendoza','America/Argentina/Rio_Gallegos','America/Argentina/Salta','America/Argentina/San_Juan','America/Argentina/San_Luis','America/Argentina/Tucuman','America/Argentina/Ushuaia','America/Aruba','America/Asuncion','America/Atikokan','America/Bahia','America/Bahia_Banderas','America/Barbados','America/Belem','America/Belize','America/Blanc-Sablon','America/Boa_Vista','America/Bogota','America/Boise','America/Cambridge_Bay','America/Campo_Grande','America/Cancun','America/Caracas','America/Cayenne','America/Cayman','America/Chicago','America/Chihuahua','America/Costa_Rica','America/Creston','America/Cuiaba','America/Curacao','America/Danmarkshavn','America/Dawson','America/Dawson_Creek','America/Denver','America/Detroit','America/Dominica','America/Edmonton','America/Eirunepe','America/El_Salvador','America/Fort_Nelson','America/Fortaleza','America/Glace_Bay','America/Goose_Bay','America/Grand_Turk','America/Grenada','America/Guadeloupe','America/Guatemala','America/Guayaquil','America/Guyana','America/Halifax','America/Havana','America/Hermosillo','America/Indiana/Indianapolis','America/Indiana/Knox','America/Indiana/Marengo','America/Indiana/Petersburg','America/Indiana/Tell_City','America/Indiana/Vevay','America/Indiana/Vincennes','America/Indiana/Winamac','America/Inuvik','America/Iqaluit','America/Jamaica','America/Juneau','America/Kentucky/Louisville','America/Kentucky/Monticello','America/Kralendijk','America/La_Paz','America/Lima','America/Los_Angeles','America/Lower_Princes','America/Maceio','America/Managua','America/Manaus','America/Marigot','America/Martinique','America/Matamoros','America/Mazatlan','America/Menominee','America/Merida','America/Metlakatla','America/Mexico_City','America/Miquelon','America/Moncton','America/Monterrey','America/Montevideo','America/Montserrat','America/Nassau','America/New_York','America/Nome','America/Noronha','America/North_Dakota/Beulah','America/North_Dakota/Center','America/North_Dakota/New_Salem','America/Nuuk','America/Ojinaga','America/Panama','America/Paramaribo','America/Phoenix','America/Port-au-Prince','America/Port_of_Spain','America/Porto_Velho','America/Puerto_Rico','America/Punta_Arenas','America/Rankin_Inlet','America/Recife','America/Regina','America/Resolute','America/Rio_Branco','America/Santarem','America/Santiago','America/Santo_Domingo','America/Sao_Paulo','America/Scoresbysund','America/Sitka','America/St_Barthelemy','America/St_Johns','America/St_Kitts','America/St_Lucia','America/St_Thomas','America/St_Vincent','America/Swift_Current','America/Tegucigalpa','America/Thule','America/Tijuana','America/Toronto','America/Tortola','America/Vancouver','America/Whitehorse','America/Winnipeg','America/Yakutat'] },
-  { region: 'Antarctica', zones: ['Antarctica/Casey','Antarctica/Davis','Antarctica/DumontDUrville','Antarctica/Macquarie','Antarctica/Mawson','Antarctica/McMurdo','Antarctica/Palmer','Antarctica/Rothera','Antarctica/Syowa','Antarctica/Troll','Antarctica/Vostok'] },
-  { region: 'Asia', zones: ['Asia/Aden','Asia/Almaty','Asia/Amman','Asia/Anadyr','Asia/Aqtau','Asia/Aqtobe','Asia/Ashgabat','Asia/Atyrau','Asia/Baghdad','Asia/Bahrain','Asia/Baku','Asia/Bangkok','Asia/Barnaul','Asia/Beirut','Asia/Bishkek','Asia/Brunei','Asia/Chita','Asia/Choibalsan','Asia/Colombo','Asia/Damascus','Asia/Dhaka','Asia/Dili','Asia/Dubai','Asia/Dushanbe','Asia/Famagusta','Asia/Gaza','Asia/Hebron','Asia/Ho_Chi_Minh','Asia/Hong_Kong','Asia/Hovd','Asia/Irkutsk','Asia/Jakarta','Asia/Jayapura','Asia/Jerusalem','Asia/Kabul','Asia/Kamchatka','Asia/Karachi','Asia/Kathmandu','Asia/Khandyga','Asia/Kolkata','Asia/Krasnoyarsk','Asia/Kuala_Lumpur','Asia/Kuching','Asia/Kuwait','Asia/Macau','Asia/Magadan','Asia/Makassar','Asia/Manila','Asia/Muscat','Asia/Nicosia','Asia/Novokuznetsk','Asia/Novosibirsk','Asia/Omsk','Asia/Oral','Asia/Phnom_Penh','Asia/Pontianak','Asia/Pyongyang','Asia/Qatar','Asia/Qostanay','Asia/Qyzylorda','Asia/Riyadh','Asia/Sakhalin','Asia/Samarkand','Asia/Seoul','Asia/Shanghai','Asia/Singapore','Asia/Srednekolymsk','Asia/Taipei','Asia/Tashkent','Asia/Tbilisi','Asia/Tehran','Asia/Thimphu','Asia/Tokyo','Asia/Tomsk','Asia/Ulaanbaatar','Asia/Urumqi','Asia/Ust-Nera','Asia/Vientiane','Asia/Vladivostok','Asia/Yakutsk','Asia/Yangon','Asia/Yekaterinburg','Asia/Yerevan'] },
-  { region: 'Atlantic', zones: ['Atlantic/Azores','Atlantic/Bermuda','Atlantic/Canary','Atlantic/Cape_Verde','Atlantic/Faroe','Atlantic/Madeira','Atlantic/Reykjavik','Atlantic/South_Georgia','Atlantic/St_Helena','Atlantic/Stanley'] },
-  { region: 'Australia', zones: ['Australia/Adelaide','Australia/Brisbane','Australia/Broken_Hill','Australia/Darwin','Australia/Eucla','Australia/Hobart','Australia/Lindeman','Australia/Lord_Howe','Australia/Melbourne','Australia/Perth','Australia/Sydney'] },
-  { region: 'Europe', zones: ['Europe/Amsterdam','Europe/Andorra','Europe/Astrakhan','Europe/Athens','Europe/Belgrade','Europe/Berlin','Europe/Bratislava','Europe/Brussels','Europe/Bucharest','Europe/Budapest','Europe/Busingen','Europe/Chisinau','Europe/Copenhagen','Europe/Dublin','Europe/Gibraltar','Europe/Guernsey','Europe/Helsinki','Europe/Isle_of_Man','Europe/Istanbul','Europe/Jersey','Europe/Kaliningrad','Europe/Kirov','Europe/Kyiv','Europe/Lisbon','Europe/Ljubljana','Europe/London','Europe/Luxembourg','Europe/Madrid','Europe/Malta','Europe/Mariehamn','Europe/Minsk','Europe/Monaco','Europe/Moscow','Europe/Oslo','Europe/Paris','Europe/Podgorica','Europe/Prague','Europe/Riga','Europe/Rome','Europe/Samara','Europe/San_Marino','Europe/Sarajevo','Europe/Saratov','Europe/Simferopol','Europe/Skopje','Europe/Sofia','Europe/Stockholm','Europe/Tallinn','Europe/Tirane','Europe/Ulyanovsk','Europe/Vaduz','Europe/Vatican','Europe/Vienna','Europe/Vilnius','Europe/Volgograd','Europe/Warsaw','Europe/Zagreb','Europe/Zurich'] },
-  { region: 'Indian Ocean', zones: ['Indian/Antananarivo','Indian/Chagos','Indian/Christmas','Indian/Cocos','Indian/Comoro','Indian/Kerguelen','Indian/Mahe','Indian/Maldives','Indian/Mauritius','Indian/Mayotte','Indian/Reunion'] },
-  { region: 'Pacific', zones: ['Pacific/Apia','Pacific/Auckland','Pacific/Bougainville','Pacific/Chatham','Pacific/Chuuk','Pacific/Easter','Pacific/Efate','Pacific/Fakaofo','Pacific/Fiji','Pacific/Funafuti','Pacific/Galapagos','Pacific/Gambier','Pacific/Guadalcanal','Pacific/Guam','Pacific/Honolulu','Pacific/Kanton','Pacific/Kiritimati','Pacific/Kosrae','Pacific/Kwajalein','Pacific/Majuro','Pacific/Marquesas','Pacific/Midway','Pacific/Nauru','Pacific/Niue','Pacific/Norfolk','Pacific/Noumea','Pacific/Pago_Pago','Pacific/Palau','Pacific/Pitcairn','Pacific/Pohnpei','Pacific/Port_Moresby','Pacific/Rarotonga','Pacific/Saipan','Pacific/Tahiti','Pacific/Tarawa','Pacific/Tongatapu','Pacific/Wake','Pacific/Wallis'] },
-  { region: 'UTC', zones: ['UTC'] }
-]
+  useEffect(() => { loadMasterSymbols(); loadMarketSignals(); loadYouTubeVideos(); loadEtfData() }, [])
 
-function formatTimezoneLabel(tz) {
-  if (!tz) return ''
-  var parts = tz.split('/')
-  var city = parts[parts.length - 1].replace(/_/g, ' ')
-  return city
-}
-
-function FeedbackBox({ feedback }) {
-  if (!feedback || !feedback.message) return null
-  var isError = feedback.type === 'error'
-  return (
-    <div className="mt-3 px-3 py-2 rounded-lg text-xs" style={{ background: isError ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)', border: '1px solid ' + (isError ? 'rgba(239,68,68,0.3)' : 'rgba(16,185,129,0.3)'), color: isError ? '#ef4444' : '#10b981' }}>
-      {feedback.message}
-    </div>
-  )
-}
-
-function EditableRow(props) {
-  var label = props.label; var value = props.value; var editing = props.editing
-  var onEdit = props.onEdit; var onCancel = props.onCancel; var onSave = props.onSave
-  var saving = props.saving; var saveLabel = props.saveLabel; var children = props.children
-  return (
-    <div className="py-2" style={{ borderBottom: '1px solid #1e2330' }}>
-      <div className="flex items-center justify-between">
-        <div className="flex-1 min-w-0 mr-3">
-          <p className="text-sm" style={{ color: '#9aa8be' }}>{label}</p>
-          {!editing && value && <p className="text-sm mt-0.5 truncate" style={{ color: '#eceef5' }}>{value}</p>}
-        </div>
-        {!editing ? (
-          <button onClick={onEdit} className="text-xs px-3 py-1.5 rounded-lg border flex-shrink-0" style={{ color: '#3b82f6', borderColor: '#1e2330', cursor: 'pointer' }}>Edit</button>
-        ) : (
-          <div className="flex gap-2 flex-shrink-0">
-            <button onClick={onCancel} disabled={saving} className="text-xs px-3 py-1.5 rounded-lg border" style={{ color: '#9aa8be', borderColor: '#1e2330', cursor: saving ? 'not-allowed' : 'pointer' }}>Cancel</button>
-            <button onClick={onSave} disabled={saving} className="text-xs px-3 py-1.5 rounded-lg" style={{ background: saving ? '#1e2330' : '#3b82f6', color: saving ? '#6b7a96' : '#fff', cursor: saving ? 'not-allowed' : 'pointer' }}>{saving ? 'Saving...' : (saveLabel || 'Save')}</button>
-          </div>
-        )}
-      </div>
-      {editing && <div className="mt-3">{children}</div>}
-    </div>
-  )
-}
-
-export function Account() {
-  const { user, profile } = useAuth()
-  const [resetLoading, setResetLoading] = useState(false)
-  const [resetMessage, setResetMessage] = useState('')
-  const [resetError, setResetError] = useState('')
-  const [editingEmail, setEditingEmail] = useState(false)
-  const [newEmail, setNewEmail] = useState('')
-  const [emailSaving, setEmailSaving] = useState(false)
-  const [emailFeedback, setEmailFeedback] = useState({ type: '', message: '' })
-  const [editingName, setEditingName] = useState(false)
-  const [newName, setNewName] = useState('')
-  const [nameSaving, setNameSaving] = useState(false)
-  const [nameFeedback, setNameFeedback] = useState({ type: '', message: '' })
-  const [editingTz, setEditingTz] = useState(false)
-  const [newTz, setNewTz] = useState('')
-  const [tzSaving, setTzSaving] = useState(false)
-  const [tzFeedback, setTzFeedback] = useState({ type: '', message: '' })
-  const [localFullName, setLocalFullName] = useState(profile?.full_name || '')
-  const [localTimezone, setLocalTimezone] = useState(profile?.timezone || 'America/Chicago')
-
-  useEffect(function() {
-    setLocalFullName(profile?.full_name || '')
-    setLocalTimezone(profile?.timezone || 'America/Chicago')
-  }, [profile])
-
-  var initials = localFullName ? localFullName.split(' ').map(function(n) { return n[0] }).join('').toUpperCase() : 'CN'
-
-  async function handlePasswordReset() {
-    if (!user || !user.email) { setResetError('No email address found on your account.'); setTimeout(function() { setResetError('') }, 4000); return }
-    setResetLoading(true); setResetMessage(''); setResetError('')
-    const { error } = await supabase.auth.resetPasswordForEmail(user.email, { redirectTo: 'https://app.controlnode.io/reset-password' })
-    setResetLoading(false)
-    if (error) { setResetError('Error: ' + error.message); setTimeout(function() { setResetError('') }, 5000) }
-    else { setResetMessage('Password reset email sent! Check your inbox.'); setTimeout(function() { setResetMessage('') }, 5000) }
+  async function loadYouTubeVideos() {
+    const r = await supabase.from('youtube_videos').select('*').order('published_at', { ascending: false, nullsFirst: false })
+    if (r.data) setYoutubeVideos(r.data)
+  }
+  async function loadMasterSymbols() {
+    const r = await supabase.from('master_watchlist').select('*').order('symbol')
+    if (r.data) setSymbols(r.data)
+  }
+  async function loadMarketSignals() {
+    const r = await supabase.from('market_signals').select('*').order('signal_name')
+    if (r.data) setMarketSignals(r.data)
+  }
+  async function loadEtfData() {
+    const s = await supabase.from('etf_summary').select('*').limit(1).single()
+    if (s.data) setEtfSummary(s.data)
+    const a = await supabase.from('etf_aum').select('*').order('sort_order', { ascending: true })
+    if (a.data) setEtfAumList(a.data)
+    const p = await supabase.from('etf_pipeline').select('*').order('sort_order', { ascending: true })
+    if (p.data) setEtfPipeline(p.data)
   }
 
-  function startEditEmail() { setNewEmail((user && user.email) || ''); setEmailFeedback({ type: '', message: '' }); setEditingEmail(true) }
-  function cancelEditEmail() { setEditingEmail(false); setNewEmail(''); setEmailFeedback({ type: '', message: '' }) }
-  async function saveEmail() {
-    var email = (newEmail || '').trim().toLowerCase()
-    var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) { setEmailFeedback({ type: 'error', message: 'Please enter a valid email address.' }); return }
-    if (email === ((user && user.email) || '').toLowerCase()) { setEmailFeedback({ type: 'error', message: 'This is already your current email.' }); return }
-    setEmailSaving(true); setEmailFeedback({ type: '', message: '' })
-    const { error } = await supabase.auth.updateUser({ email: email })
-    setEmailSaving(false)
-    if (error) { setEmailFeedback({ type: 'error', message: 'Error: ' + error.message }); return }
-    setEmailFeedback({ type: 'success', message: 'Confirmation sent to ' + email + '. Click the link in that email to finalize the change. Your current email keeps working until you confirm.' })
-  }
-
-  function startEditName() { setNewName(localFullName || ''); setNameFeedback({ type: '', message: '' }); setEditingName(true) }
-  function cancelEditName() { setEditingName(false); setNewName(''); setNameFeedback({ type: '', message: '' }) }
-  async function saveName() {
-    var name = (newName || '').trim()
-    if (name.length < 1) { setNameFeedback({ type: 'error', message: 'Display name cannot be empty.' }); return }
-    if (name.length > 80) { setNameFeedback({ type: 'error', message: 'Display name must be 80 characters or less.' }); return }
-    setNameSaving(true); setNameFeedback({ type: '', message: '' })
-    const { error } = await supabase.from('profiles').update({ full_name: name }).eq('id', user.id)
-    setNameSaving(false)
-    if (error) { setNameFeedback({ type: 'error', message: 'Error: ' + error.message }); return }
-    setLocalFullName(name)
-    setNameFeedback({ type: 'success', message: 'Display name updated!' })
-    setTimeout(function() { setEditingName(false); setNameFeedback({ type: '', message: '' }) }, 1500)
-  }
-
-  function startEditTz() { setNewTz(localTimezone || 'America/Chicago'); setTzFeedback({ type: '', message: '' }); setEditingTz(true) }
-  function cancelEditTz() { setEditingTz(false); setNewTz(''); setTzFeedback({ type: '', message: '' }) }
-  async function saveTz() {
-    if (!newTz) { setTzFeedback({ type: 'error', message: 'Please select a timezone.' }); return }
-    setTzSaving(true); setTzFeedback({ type: '', message: '' })
-    const { error } = await supabase.from('profiles').update({ timezone: newTz }).eq('id', user.id)
-    setTzSaving(false)
-    if (error) { setTzFeedback({ type: 'error', message: 'Error: ' + error.message }); return }
-    setLocalTimezone(newTz)
-    setTzFeedback({ type: 'success', message: 'Timezone updated!' })
-    setTimeout(function() { setEditingTz(false); setTzFeedback({ type: '', message: '' }) }, 1500)
-  }
-
-  return (
-    <AppLayout hideRightSidebar>
-      <DetailPageLayout title="My Profile" subtitle="Manage your ControlNode account and notification preferences.">
-        <DetailSection title="Profile Information">
-          <div className="flex items-center gap-4 mb-5">
-            <div className="w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold flex-shrink-0" style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', color: '#fff' }}>{initials}</div>
-            <div>
-              <p className="font-semibold" style={{ color: '#eceef5' }}>{localFullName || 'Member'}</p>
-              <p className="text-sm" style={{ color: '#9aa8be' }}>{(user && user.email) || ''}</p>
-              <div className="mt-1"><Badge color="blue">{profile && profile.subscription_status === 'active' ? 'Active' : 'Trial'}</Badge></div>
-            </div>
-          </div>
-          <DataRow label="Plan" value="ControlNode Pro" />
-          <DataRow label="Status" value={profile && profile.subscription_status === 'active' ? 'Active' : 'Trial'} valueColor="#10b981" />
-        </DetailSection>
-
-        <DetailSection title="Account Settings">
-          <div className="space-y-1">
-            <EditableRow label="Email Address" value={(user && user.email) || ''} editing={editingEmail} onEdit={startEditEmail} onCancel={cancelEditEmail} onSave={saveEmail} saving={emailSaving} saveLabel="Send Confirmation">
-              <input type="email" value={newEmail} onChange={function(e) { setNewEmail(e.target.value) }} placeholder="your@email.com" className="w-full px-3 py-2.5 rounded-lg text-sm outline-none mb-2" style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }} onFocus={function(e) { e.target.style.borderColor = '#3b82f6' }} onBlur={function(e) { e.target.style.borderColor = '#1e2330' }} />
-              <p className="text-xs" style={{ color: '#6b7a96' }}>A confirmation link will be sent to the new address. Your current email keeps working until you click the link to confirm.</p>
-              <FeedbackBox feedback={emailFeedback} />
-            </EditableRow>
-
-            <EditableRow label="Display Name" value={localFullName || '(not set)'} editing={editingName} onEdit={startEditName} onCancel={cancelEditName} onSave={saveName} saving={nameSaving}>
-              <input type="text" value={newName} onChange={function(e) { setNewName(e.target.value) }} placeholder="Your full name" maxLength={80} className="w-full px-3 py-2.5 rounded-lg text-sm outline-none" style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }} onFocus={function(e) { e.target.style.borderColor = '#3b82f6' }} onBlur={function(e) { e.target.style.borderColor = '#1e2330' }} />
-              <FeedbackBox feedback={nameFeedback} />
-            </EditableRow>
-
-            <div className="py-2" style={{ borderBottom: '1px solid #1e2330' }}>
-              <div className="flex items-center justify-between">
-                <span className="text-sm" style={{ color: '#9aa8be' }}>Reset Password</span>
-                <button onClick={handlePasswordReset} disabled={resetLoading} className="text-xs px-3 py-1.5 rounded-lg border" style={{ color: resetLoading ? '#6b7a96' : '#3b82f6', borderColor: '#1e2330', cursor: resetLoading ? 'not-allowed' : 'pointer' }}>{resetLoading ? 'Sending...' : 'Send Reset Email'}</button>
-              </div>
-              {resetMessage && <div className="mt-3 px-3 py-2 rounded-lg text-xs" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', color: '#10b981' }}>{resetMessage}</div>}
-              {resetError && <div className="mt-3 px-3 py-2 rounded-lg text-xs" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444' }}>{resetError}</div>}
-            </div>
-
-            <EditableRow label="Timezone" value={localTimezone ? formatTimezoneLabel(localTimezone) + ' (' + localTimezone + ')' : ''} editing={editingTz} onEdit={startEditTz} onCancel={cancelEditTz} onSave={saveTz} saving={tzSaving}>
-              <select value={newTz} onChange={function(e) { setNewTz(e.target.value) }} className="w-full px-3 py-2.5 rounded-lg text-sm outline-none" style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }} onFocus={function(e) { e.target.style.borderColor = '#3b82f6' }} onBlur={function(e) { e.target.style.borderColor = '#1e2330' }}>
-                {TIMEZONES.map(function(group) {
-                  return (
-                    <optgroup key={group.region} label={group.region}>
-                      {group.zones.map(function(tz) { return <option key={tz} value={tz}>{formatTimezoneLabel(tz)} ({tz})</option> })}
-                    </optgroup>
-                  )
-                })}
-              </select>
-              <p className="text-xs mt-2" style={{ color: '#6b7a96' }}>Used for displaying times in Morning Brief, Daily Wrap, and market data.</p>
-              <FeedbackBox feedback={tzFeedback} />
-            </EditableRow>
-          </div>
-        </DetailSection>
-
-        <EmailNotificationsSection />
-      </DetailPageLayout>
-    </AppLayout>
-  )
-}
-
-export function Billing() {
-  return (
-    <AppLayout hideRightSidebar>
-      <DetailPageLayout title="Billing" subtitle="Manage your subscription, payment methods, and invoices.">
-        <DetailSection title="Current Plan">
-          <div className="rounded-lg p-4 mb-4" style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)' }}>
-            <div className="flex items-center justify-between">
-              <div><p className="font-semibold" style={{ color: '#eceef5' }}>ControlNode Pro</p><p className="text-sm" style={{ color: '#9aa8be' }}>$29.99/month</p></div>
-              <Badge color="blue">Active</Badge>
-            </div>
-          </div>
-          <DataRow label="Payment Method" value="Managed via GoHighLevel" />
-        </DetailSection>
-      </DetailPageLayout>
-    </AppLayout>
-  )
-}
-
-export function Settings() {
-  return (
-    <AppLayout hideRightSidebar>
-      <DetailPageLayout title="Settings" subtitle="Configure your ControlNode experience.">
-        <DetailSection title="Display">
-          <DataRow label="Theme" value="Dark (Default)" />
-          <DataRow label="Currency" value="USD" />
-          <DataRow label="Timezone" value="Set on the Account page" />
-        </DetailSection>
-        <DetailSection title="Data & Privacy">
-          <div className="space-y-2">
-            {['Export My Data', 'Delete Account'].map(function(action) {
-              return <button key={action} className="text-sm px-4 py-2 rounded-lg border w-full text-left" style={{ color: action === 'Delete Account' ? '#ef4444' : '#8892a4', borderColor: '#1e2330' }}>{action}</button>
-            })}
-          </div>
-        </DetailSection>
-      </DetailPageLayout>
-    </AppLayout>
-  )
-}
-
-export function Admin() {
-  return (
-    <AdminLayout title="Admin Panel">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {[
-          { href: '/admin/morning-brief', title: 'Morning Brief', desc: 'Publish the morning brief' },
-          { href: '/admin/daily-wrap', title: 'Daily Wrap', desc: 'Publish the daily wrap' },
-          { href: '/admin/market-signals', title: 'Market Signals', desc: 'Update market intelligence signals' },
-          { href: '/admin/domino-theory', title: 'Domino Theory', desc: 'Update domino statuses and notes' },
-          { href: '/admin/geopolitical-watch', title: 'Geopolitical Watch', desc: 'Update flash points and weekly watch' },
-          { href: '/admin/oil-yen', title: 'Oil vs Yen', desc: 'Update macro scenarios to monitor' },
-          { href: '/admin/headlines', title: 'Breaking News', desc: 'Post breaking news and headlines' },
-          { href: '/admin/watchlist', title: 'Master Watchlist', desc: 'Manage suggested symbols' },
-          { href: '/admin/chatter', title: 'Market News', desc: 'Post confirmed news and manage market chatter' },
-          { href: '/admin/etf-flows', title: 'XRP ETF Flows', desc: 'Update ETF data and flow numbers' },
-          { href: '/admin/youtube', title: 'YouTube Intel', desc: 'Manage YouTube channels for all members' },
-          { href: '/admin/smart-money', title: 'Smart Money Flow', desc: 'Post whale alerts and update escrow data' },
-        ].map(function(item) {
-          return (
-            <a key={item.href} href={item.href} className="rounded-xl p-5 block" style={{ background: '#0d1117', border: '1px solid #1e2330' }}>
-              <p className="font-semibold mb-1" style={{ color: '#eceef5' }}>{item.title}</p>
-              <p className="text-sm" style={{ color: '#6b7a96' }}>{item.desc}</p>
-            </a>
-          )
-        })}
-      </div>
-    </AdminLayout>
-  )
-}
-
-export function AdminMarketSignals() {
-  var signalsState = useState([]); var signals = signalsState[0]; var setSignals = signalsState[1]
-  var loadingState = useState(true); var loading = loadingState[0]; var setLoading = loadingState[1]
-  var savingState = useState(null); var saving = savingState[0]; var setSaving = savingState[1]
-  var notifyState = useState(false); var notify = notifyState[0]; var setNotify = notifyState[1]
-  var toastState = useState({ message: '', type: '' }); var toast = toastState[0]; var setToast = toastState[1]
-
-  function showToast(m, t) { setToast({ message: m, type: t || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
-
-  useEffect(function() {
-    supabase.from('market_signals').select('*').order('signal_name').then(function(res) {
-      if (res.data) setSignals(res.data)
-      setLoading(false)
-    })
-  }, [])
-
-  function updateField(id, field, value) {
-    setSignals(function(prev) { return prev.map(function(s) { if (s.id === id) { var u = Object.assign({}, s); u[field] = value; return u } return s }) })
-  }
-
-  function getColorForValue(value) {
-    if (value === 'Bullish') return 'green'
-    if (value === 'Bearish') return 'red'
-    if (value === 'Cautious') return 'yellow'
-    return 'blue'
-  }
-
-  async function save(signal) {
-    setSaving(signal.id)
-    var color = getColorForValue(signal.signal_value)
-    var result = await supabase.from('market_signals').update({ signal_value: signal.signal_value, color: color, updated_at: new Date().toISOString() }).eq('id', signal.id)
-    if (result.error) { setSaving(null); showToast('Error: ' + result.error.message, 'error'); return }
-    if (notify) { await sendNotificationToAllMembers('Market Signal Update', signal.signal_name + ' changed to ' + signal.signal_value, 'market_signals') }
-    setSaving(null); showToast(signal.signal_name + ' saved!'); updateField(signal.id, 'color', color)
-  }
-
-  return (
-    <AdminLayout title="Market Signals">
-      <div className="rounded-lg px-4 py-3 mb-6 text-sm" style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.2)', color: '#9aa8be' }}>
-        Update market intelligence signals shown in the right sidebar. These are your editorial intelligence calls based on your analysis of market conditions.
-      </div>
-      <NotifyToggle enabled={notify} onToggle={function() { setNotify(!notify) }} />
-      {loading ? <p style={{ color: '#6b7a96' }}>Loading...</p> : signals.length === 0 ? <p style={{ color: '#6b7a96' }}>No signals found.</p> : signals.map(function(s) {
-        return (
-          <AdminCard key={s.id} title={s.signal_name}>
-            <Field label="Signal Value">
-              <select value={s.signal_value || 'Neutral'} onChange={function(e) { updateField(s.id, 'signal_value', e.target.value) }} className="w-full px-3 py-2.5 rounded-lg text-sm outline-none" style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}>
-                <option value="Bullish">Bullish</option>
-                <option value="Neutral">Neutral</option>
-                <option value="Cautious">Cautious</option>
-                <option value="Bearish">Bearish</option>
-              </select>
-            </Field>
-            <div className="flex items-center gap-3 mb-4">
-              <span className="text-xs" style={{ color: '#6b7a96' }}>Preview:</span>
-              <span className="text-xs font-semibold px-2 py-0.5 rounded" style={{ background: s.signal_value === 'Bullish' ? 'rgba(16,185,129,0.12)' : s.signal_value === 'Bearish' ? 'rgba(239,68,68,0.12)' : s.signal_value === 'Cautious' ? 'rgba(245,158,11,0.12)' : 'rgba(59,130,246,0.12)', color: s.signal_value === 'Bullish' ? '#10b981' : s.signal_value === 'Bearish' ? '#ef4444' : s.signal_value === 'Cautious' ? '#f59e0b' : '#3b82f6' }}>{s.signal_value || 'Neutral'}</span>
-            </div>
-            <SaveButton onClick={function() { save(s) }} loading={saving === s.id} label="Save" />
-          </AdminCard>
-        )
-      })}
-      <Toast message={toast.message} type={toast.type} />
-    </AdminLayout>
-  )
-}
-
-export function AdminMorningBrief() {
-  var dateState = useState(''); var date = dateState[0]; var setDate = dateState[1]
-  var headlineState = useState(''); var headline = headlineState[0]; var setHeadline = headlineState[1]
-  var summaryState = useState(''); var summary = summaryState[0]; var setSummary = summaryState[1]
-  var catalystsState = useState(''); var catalysts = catalystsState[0]; var setCatalysts = catalystsState[1]
-  var loadingState = useState(false); var loading = loadingState[0]; var setLoading = loadingState[1]
-  var notifyState = useState(true); var notify = notifyState[0]; var setNotify = notifyState[1]
-  var toastState = useState({ message: '', type: '' }); var toast = toastState[0]; var setToast = toastState[1]
-
-  function showToast(m, t) { setToast({ message: m, type: t || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
-
-  async function publish() {
-    if (!date || !headline || !summary) { showToast('Date, headline, and summary are required.', 'error'); return }
+  async function handleMarketNewsSubmit(e) {
+    e.preventDefault()
+    if (!marketNewsForm.content.trim()) { setMessage('Content is required'); return }
     setLoading(true)
-    var formattedDate = new Date(date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
-    var result = await supabase.from('morning_briefs').insert({ date: formattedDate, headline: headline, summary: summary, catalysts: catalysts.split('\n').map(function(c) { return c.trim() }).filter(Boolean), published: true })
-    if (result.error) { setLoading(false); showToast('Error: ' + result.error.message, 'error'); return }
-    if (notify) { await sendNotificationToAllMembers('New Morning Brief', headline, 'morning_brief') }
-    setLoading(false); showToast('Morning Brief published!'); setDate(''); setHeadline(''); setSummary(''); setCatalysts('')
+    const { error } = await supabase.from('market_news').insert([{ type: marketNewsForm.type, content: marketNewsForm.content, category: marketNewsForm.category, source: marketNewsForm.source || null, source_url: marketNewsForm.source_url || null, created_by: profile.id }])
+    setLoading(false)
+    if (error) { setMessage('Error posting market news'); return }
+    setMessage('Market news posted successfully!')
+    setMarketNewsForm({ type: 'chatter', content: '', category: 'General', source: '', source_url: '' })
   }
 
-  return (
-    <AdminLayout title="Morning Brief">
-      <AdminCard title="Publish New Morning Brief">
-        <Field label="Date"><DatePicker value={date} onChange={setDate} /></Field>
-        <Field label="Headline"><TextInput value={headline} onChange={setHeadline} placeholder="Brief headline..." /></Field>
-        <Field label="Summary"><TextArea value={summary} onChange={setSummary} placeholder="Summary paragraph..." rows={5} /></Field>
-        <Field label="Catalysts (one per line)"><TextArea value={catalysts} onChange={setCatalysts} placeholder="Catalyst one" rows={4} /></Field>
-        <NotifyToggle enabled={notify} onToggle={function() { setNotify(!notify) }} />
-        <SaveButton onClick={publish} loading={loading} label="Publish" />
-      </AdminCard>
-      <Toast message={toast.message} type={toast.type} />
-    </AdminLayout>
-  )
-}
-
-export function AdminDailyWrap() {
-  var dateState = useState(''); var date = dateState[0]; var setDate = dateState[1]
-  var headlineState = useState(''); var headline = headlineState[0]; var setHeadline = headlineState[1]
-  var summaryState = useState(''); var summary = summaryState[0]; var setSummary = summaryState[1]
-  var catalystsState = useState(''); var catalysts = catalystsState[0]; var setCatalysts = catalystsState[1]
-  var loadingState = useState(false); var loading = loadingState[0]; var setLoading = loadingState[1]
-  var notifyState = useState(true); var notify = notifyState[0]; var setNotify = notifyState[1]
-  var toastState = useState({ message: '', type: '' }); var toast = toastState[0]; var setToast = toastState[1]
-
-  function showToast(m, t) { setToast({ message: m, type: t || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
-
-  async function publish() {
-    if (!date || !headline || !summary) { showToast('Date, headline, and summary are required.', 'error'); return }
+  async function handleYouTubeSubmit(e) {
+    e.preventDefault()
+    if (!youtubeForm.title.trim() || !youtubeForm.youtube_url.trim()) { setMessage('Title and YouTube URL are required'); return }
+    if (!youtubeForm.video_id) { setMessage('Please enter a valid YouTube URL'); return }
     setLoading(true)
-    var formattedDate = new Date(date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
-    var result = await supabase.from('daily_wraps').insert({ date: formattedDate, headline: headline, summary: summary, catalysts: catalysts.split('\n').map(function(c) { return c.trim() }).filter(Boolean), published: true })
-    if (result.error) { setLoading(false); showToast('Error: ' + result.error.message, 'error'); return }
-    if (notify) { await sendNotificationToAllMembers('New Daily Wrap', headline, 'daily_wrap') }
-    setLoading(false); showToast('Daily Wrap published!'); setDate(''); setHeadline(''); setSummary(''); setCatalysts('')
-  }
-
-  return (
-    <AdminLayout title="Daily Wrap">
-      <AdminCard title="Publish New Daily Wrap">
-        <Field label="Date"><DatePicker value={date} onChange={setDate} /></Field>
-        <Field label="Headline"><TextInput value={headline} onChange={setHeadline} placeholder="Wrap headline..." /></Field>
-        <Field label="Summary"><TextArea value={summary} onChange={setSummary} placeholder="Summary paragraph..." rows={5} /></Field>
-        <Field label="Catalysts (one per line)"><TextArea value={catalysts} onChange={setCatalysts} placeholder="Catalyst one" rows={4} /></Field>
-        <NotifyToggle enabled={notify} onToggle={function() { setNotify(!notify) }} />
-        <SaveButton onClick={publish} loading={loading} label="Publish" />
-      </AdminCard>
-      <Toast message={toast.message} type={toast.type} />
-    </AdminLayout>
-  )
-}
-
-export function AdminDominoTheory() {
-  var dominoesState = useState([]); var dominoes = dominoesState[0]; var setDominoes = dominoesState[1]
-  var loadingState = useState(true); var loading = loadingState[0]; var setLoading = loadingState[1]
-  var savingState = useState(null); var saving = savingState[0]; var setSaving = savingState[1]
-  var notifyState = useState(false); var notify = notifyState[0]; var setNotify = notifyState[1]
-  var toastState = useState({ message: '', type: '' }); var toast = toastState[0]; var setToast = toastState[1]
-
-  function showToast(m, t) { setToast({ message: m, type: t || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
-
-  useEffect(function() {
-    supabase.from('domino_theory').select('*').order('domino_number').then(function(res) {
-      if (res.data) setDominoes(res.data)
-      setLoading(false)
-    })
-  }, [])
-
-  function updateField(id, field, value) {
-    setDominoes(function(prev) { return prev.map(function(d) { if (d.id === id) { var u = Object.assign({}, d); u[field] = value; return u } return d }) })
-  }
-
-  async function save(domino) {
-    setSaving(domino.id)
-    var result = await supabase.from('domino_theory').update({ status: domino.status, notes: domino.notes }).eq('id', domino.id)
-    if (result.error) { setSaving(null); showToast('Error: ' + result.error.message, 'error'); return }
-    if (notify) { await sendNotificationToAllMembers('Domino Theory Update', 'Domino ' + domino.domino_number + ' — ' + domino.domino_name + ' status changed to ' + domino.status, 'domino_theory') }
-    setSaving(null); showToast(domino.domino_name + ' saved!')
-  }
-
-  return (
-    <AdminLayout title="Domino Theory">
-      <NotifyToggle enabled={notify} onToggle={function() { setNotify(!notify) }} />
-      {loading ? <p style={{ color: '#6b7a96' }}>Loading...</p> : dominoes.length === 0 ? <p style={{ color: '#6b7a96' }}>No dominoes found.</p> : dominoes.map(function(d) {
-        return (
-          <AdminCard key={d.id} title={'Domino ' + d.domino_number + ' — ' + d.domino_name}>
-            <Field label="Status">
-              <select value={d.status || 'Standing'} onChange={function(e) { updateField(d.id, 'status', e.target.value) }} className="w-full px-3 py-2.5 rounded-lg text-sm outline-none" style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}>
-                <option value="Standing">Standing</option>
-                <option value="Tipping">Tipping</option>
-                <option value="Fallen">Fallen</option>
-              </select>
-            </Field>
-            <Field label="Assessment Notes"><TextArea value={d.notes || ''} onChange={function(v) { updateField(d.id, 'notes', v) }} placeholder="Assessment notes..." rows={3} /></Field>
-            <SaveButton onClick={function() { save(d) }} loading={saving === d.id} label="Save" />
-          </AdminCard>
-        )
-      })}
-      <Toast message={toast.message} type={toast.type} />
-    </AdminLayout>
-  )
-}
-
-export function AdminGeopoliticalWatch() {
-  var itemsState = useState([]); var items = itemsState[0]; var setItems = itemsState[1]
-  var loadingState = useState(true); var loading = loadingState[0]; var setLoading = loadingState[1]
-  var savingState = useState(false); var saving = savingState[0]; var setSaving = savingState[1]
-  var notifyState = useState(false); var notify = notifyState[0]; var setNotify = notifyState[1]
-  var toastState = useState({ message: '', type: '' }); var toast = toastState[0]; var setToast = toastState[1]
-  var formState = useState({ section: 'flashpoint', title: '', subtitle: '', level: 'Elevated', confirmed: true, sort_order: 0 })
-  var form = formState[0]; var setForm = formState[1]
-
-  function showToast(m, t) { setToast({ message: m, type: t || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
-
-  async function load() {
-    var res = await supabase.from('geopolitical_watch').select('*').order('sort_order', { ascending: true })
-    if (res.data) setItems(res.data)
+    const { error } = await supabase.from('youtube_videos').insert([{ title: youtubeForm.title, description: youtubeForm.description || null, youtube_url: youtubeForm.youtube_url, video_id: youtubeForm.video_id, thumbnail_url: youtubeForm.thumbnail_url, channel_handle: 'unknown', channel_name: 'Unknown Channel', published_at: new Date().toISOString(), created_by: profile.id }])
     setLoading(false)
-  }
-  useEffect(function() { load() }, [])
-
-  async function add() {
-    if (!form.title) { showToast('Title is required.', 'error'); return }
-    setSaving(true)
-    var result = await supabase.from('geopolitical_watch').insert(form)
-    if (result.error) { setSaving(false); showToast('Error: ' + result.error.message, 'error'); return }
-    if (notify) { await sendNotificationToAllMembers('Geopolitical Alert', form.title + (form.subtitle ? ' — ' + form.subtitle : ''), 'geopolitical_watch') }
-    setSaving(false); showToast('Item added!')
-    setForm({ section: 'flashpoint', title: '', subtitle: '', level: 'Elevated', confirmed: true, sort_order: 0 }); load()
+    if (error) { setMessage('Error adding YouTube video'); return }
+    setMessage('YouTube video added successfully!')
+    setYoutubeForm({ title: '', description: '', youtube_url: '', video_id: '', thumbnail_url: '' })
+    loadYouTubeVideos()
   }
 
-  async function remove(id) { await supabase.from('geopolitical_watch').delete().eq('id', id); showToast('Removed.'); load() }
+  async function handleDeleteYouTubeVideo(id) {
+    if (!confirm('Delete this video?')) return
+    const { error } = await supabase.from('youtube_videos').delete().eq('id', id)
+    if (error) { setMessage('Error deleting video'); return }
+    setMessage('Video deleted'); loadYouTubeVideos()
+  }
 
-  var flashPoints = items.filter(function(i) { return i.section === 'flashpoint' })
-  var weeklyWatch = items.filter(function(i) { return i.section === 'weekly_watch' })
-
-  return (
-    <AdminLayout title="Geopolitical Watch">
-      <AdminCard title="Add Item">
-        <Field label="Section">
-          <select value={form.section} onChange={function(e) { setForm(function(f) { return Object.assign({}, f, { section: e.target.value }) }) }} className="w-full px-3 py-2.5 rounded-lg text-sm outline-none" style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}>
-            <option value="flashpoint">Active Flash Point</option>
-            <option value="weekly_watch">What to Watch This Week</option>
-          </select>
-        </Field>
-        <Field label="Title"><TextInput value={form.title} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { title: v }) }) }} placeholder="Region or event name..." /></Field>
-        <Field label="Note / Impact"><TextInput value={form.subtitle} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { subtitle: v }) }) }} placeholder="Brief note or impact description..." /></Field>
-        {form.section === 'flashpoint' && (
-          <Field label="Risk Level">
-            <select value={form.level} onChange={function(e) { setForm(function(f) { return Object.assign({}, f, { level: e.target.value }) }) }} className="w-full px-3 py-2.5 rounded-lg text-sm outline-none" style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}>
-              <option value="High">High</option>
-              <option value="Elevated">Elevated</option>
-              <option value="Moderate">Moderate</option>
-              <option value="Low">Low</option>
-              <option value="Monitor">Monitor</option>
-            </select>
-          </Field>
-        )}
-        {form.section === 'weekly_watch' && (
-          <Field label="Confirmed?">
-            <select value={form.confirmed ? 'true' : 'false'} onChange={function(e) { setForm(function(f) { return Object.assign({}, f, { confirmed: e.target.value === 'true' }) }) }} className="w-full px-3 py-2.5 rounded-lg text-sm outline-none" style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}>
-              <option value="true">Confirmed</option>
-              <option value="false">Unconfirmed</option>
-            </select>
-          </Field>
-        )}
-        <Field label="Sort Order"><TextInput value={String(form.sort_order)} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { sort_order: parseInt(v) || 0 }) }) }} placeholder="0" /></Field>
-        <NotifyToggle enabled={notify} onToggle={function() { setNotify(!notify) }} />
-        <SaveButton onClick={add} loading={saving} label="Add Item" />
-      </AdminCard>
-      <AdminCard title="Active Flash Points">
-        {loading ? <p style={{ color: '#6b7a96' }}>Loading...</p> : flashPoints.length === 0 ? <p style={{ color: '#6b7a96' }}>No flash points yet.</p> : (
-          <div className="space-y-2">
-            {flashPoints.map(function(item) {
-              return (
-                <div key={item.id} className="flex items-start justify-between gap-3 py-2" style={{ borderBottom: '1px solid #1e2330' }}>
-                  <div><p className="text-sm font-medium" style={{ color: '#eceef5' }}>{item.title}</p><p className="text-xs" style={{ color: '#6b7a96' }}>{item.subtitle} · <span style={{ color: '#f59e0b' }}>{item.level}</span></p></div>
-                  <button onClick={function() { remove(item.id) }} className="text-xs px-3 py-1 rounded flex-shrink-0" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>Remove</button>
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </AdminCard>
-      <AdminCard title="What to Watch This Week">
-        {loading ? <p style={{ color: '#6b7a96' }}>Loading...</p> : weeklyWatch.length === 0 ? <p style={{ color: '#6b7a96' }}>No items yet.</p> : (
-          <div className="space-y-2">
-            {weeklyWatch.map(function(item) {
-              return (
-                <div key={item.id} className="flex items-start justify-between gap-3 py-2" style={{ borderBottom: '1px solid #1e2330' }}>
-                  <div><p className="text-sm font-medium" style={{ color: '#eceef5' }}>{item.title}</p><p className="text-xs" style={{ color: '#6b7a96' }}>{item.subtitle} · <span style={{ color: item.confirmed ? '#10b981' : '#ef4444' }}>{item.confirmed ? 'Confirmed' : 'Unconfirmed'}</span></p></div>
-                  <button onClick={function() { remove(item.id) }} className="text-xs px-3 py-1 rounded flex-shrink-0" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>Remove</button>
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </AdminCard>
-      <Toast message={toast.message} type={toast.type} />
-    </AdminLayout>
-  )
-}
-
-export function AdminOilYen() {
-  var itemsState = useState([]); var items = itemsState[0]; var setItems = itemsState[1]
-  var loadingState = useState(true); var loading = loadingState[0]; var setLoading = loadingState[1]
-  var savingState = useState(false); var saving = savingState[0]; var setSaving = savingState[1]
-  var notifyState = useState(false); var notify = notifyState[0]; var setNotify = notifyState[1]
-  var toastState = useState({ message: '', type: '' }); var toast = toastState[0]; var setToast = toastState[1]
-  var formState = useState({ scenario: '', context: '', color: '#f59e0b', sort_order: 0 })
-  var form = formState[0]; var setForm = formState[1]
-
-  function showToast(m, t) { setToast({ message: m, type: t || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
-
-  async function load() {
-    var res = await supabase.from('oil_yen_scenarios').select('*').order('sort_order', { ascending: true })
-    if (res.data) setItems(res.data)
+  async function handleAddSymbol(e) {
+    e.preventDefault()
+    if (!newSymbol.trim()) return
+    const symbol = newSymbol.toUpperCase().trim()
+    if (symbols.some(s => s.symbol === symbol)) { setMessage('Symbol already exists'); return }
+    setLoading(true)
+    const { error } = await supabase.from('master_watchlist').insert([{ symbol }])
     setLoading(false)
-  }
-  useEffect(function() { load() }, [])
-
-  async function add() {
-    if (!form.scenario || !form.context) { showToast('Scenario and context are required.', 'error'); return }
-    setSaving(true)
-    var result = await supabase.from('oil_yen_scenarios').insert(form)
-    if (result.error) { setSaving(false); showToast('Error: ' + result.error.message, 'error'); return }
-    if (notify) { await sendNotificationToAllMembers('Oil vs Yen Update', form.scenario, 'oil_yen') }
-    setSaving(false); showToast('Scenario added!')
-    setForm({ scenario: '', context: '', color: '#f59e0b', sort_order: 0 }); load()
+    if (error) { setMessage('Error adding symbol'); return }
+    setMessage('Symbol added!'); setNewSymbol(''); loadMasterSymbols()
   }
 
-  async function remove(id) { await supabase.from('oil_yen_scenarios').delete().eq('id', id); showToast('Removed.'); load() }
+  async function handleDeleteSymbol(id) {
+    if (!confirm('Delete this symbol?')) return
+    const { error } = await supabase.from('master_watchlist').delete().eq('id', id)
+    if (error) { setMessage('Error'); return }
+    setMessage('Deleted'); loadMasterSymbols()
+  }
 
-  return (
-    <AdminLayout title="Oil vs Yen — Macro Scenarios">
-      <AdminCard title="Add Scenario">
-        <Field label="Scenario"><TextInput value={form.scenario} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { scenario: v }) }) }} placeholder="Oil spikes to $95+ (supply shock)" /></Field>
-        <Field label="Context / Impact"><TextInput value={form.context} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { context: v }) }) }} placeholder="Short-term risk-off potential..." /></Field>
-        <Field label="Color">
-          <select value={form.color} onChange={function(e) { setForm(function(f) { return Object.assign({}, f, { color: e.target.value }) }) }} className="w-full px-3 py-2.5 rounded-lg text-sm outline-none" style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}>
-            <option value="#f59e0b">Yellow (Caution)</option>
-            <option value="#10b981">Green (Positive)</option>
-            <option value="#ef4444">Red (Risk)</option>
-            <option value="#3b82f6">Blue (Neutral)</option>
-          </select>
-        </Field>
-        <Field label="Sort Order"><TextInput value={String(form.sort_order)} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { sort_order: parseInt(v) || 0 }) }) }} placeholder="0" /></Field>
-        <NotifyToggle enabled={notify} onToggle={function() { setNotify(!notify) }} />
-        <SaveButton onClick={add} loading={saving} label="Add Scenario" />
-      </AdminCard>
-      <AdminCard title="Current Scenarios">
-        {loading ? <p style={{ color: '#6b7a96' }}>Loading...</p> : items.length === 0 ? <p style={{ color: '#6b7a96' }}>No scenarios yet.</p> : (
-          <div className="space-y-2">
-            {items.map(function(item) {
-              return (
-                <div key={item.id} className="flex items-start justify-between gap-3 py-2" style={{ borderBottom: '1px solid #1e2330' }}>
-                  <div>
-                    <p className="text-sm font-medium" style={{ color: '#eceef5' }}>{item.scenario}</p>
-                    <p className="text-xs" style={{ color: item.color }}>{item.context}</p>
-                  </div>
-                  <button onClick={function() { remove(item.id) }} className="text-xs px-3 py-1 rounded flex-shrink-0" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>Remove</button>
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </AdminCard>
-      <Toast message={toast.message} type={toast.type} />
-    </AdminLayout>
-  )
-}
-
-export function AdminETFFlows() {
-  var summaryState = useState(null); var summary = summaryState[0]; var setSummary = summaryState[1]
-  var summarySavingState = useState(false); var summarySaving = summarySavingState[0]; var setSummarySaving = summarySavingState[1]
-
-  var aumListState = useState([]); var aumList = aumListState[0]; var setAumList = aumListState[1]
-  var aumSavingState = useState(null); var aumSaving = aumSavingState[0]; var setAumSaving = aumSavingState[1]
-  var newEtfState = useState({ etf_name: '', ticker: '', etf_type: 'Spot', aum: 0, color: '#3b82f6' })
-  var newEtf = newEtfState[0]; var setNewEtf = newEtfState[1]
-  var addingEtfState = useState(false); var addingEtf = addingEtfState[0]; var setAddingEtf = addingEtfState[1]
-
-  var pipelineState = useState([]); var pipeline = pipelineState[0]; var setPipeline = pipelineState[1]
-  var newPipelineState = useState({ issuer_name: '', priority: 'Medium', notes: '', status: 'Not Filed' })
-  var newPipeline = newPipelineState[0]; var setNewPipeline = newPipelineState[1]
-  var addingPipelineState = useState(false); var addingPipeline = addingPipelineState[0]; var setAddingPipeline = addingPipelineState[1]
-
-  var loadingState = useState(true); var loading = loadingState[0]; var setLoading = loadingState[1]
-  var notifyState = useState(false); var notify = notifyState[0]; var setNotify = notifyState[1]
-  var toastState = useState({ message: '', type: '' }); var toast = toastState[0]; var setToast = toastState[1]
-
-  function showToast(m, t) { setToast({ message: m, type: t || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
-
-  async function load() {
-    var sum = await supabase.from('etf_summary').select('*').limit(1).single()
-    if (sum.data) setSummary(sum.data)
-    var aum = await supabase.from('etf_aum').select('*').order('sort_order', { ascending: true })
-    if (aum.data) setAumList(aum.data)
-    var pipe = await supabase.from('etf_pipeline').select('*').order('sort_order', { ascending: true })
-    if (pipe.data) setPipeline(pipe.data)
+  async function handleMorningBriefSubmit(e) {
+    e.preventDefault()
+    if (!morningBriefForm.title.trim() || !morningBriefForm.content.trim()) { setMessage('Title and content required'); return }
+    setLoading(true)
+    const { error } = await supabase.from('morning_briefs').insert([{ title: morningBriefForm.title, content: morningBriefForm.content, key_points: morningBriefForm.key_points || null, market_outlook: morningBriefForm.market_outlook || null, created_by: profile.id }])
     setLoading(false)
-  }
-  useEffect(function() { load() }, [])
-
-  function updateSummaryField(field, value) {
-    setSummary(function(prev) { if (!prev) return prev; var next = Object.assign({}, prev); next[field] = value; return next })
+    if (error) { setMessage('Error publishing'); return }
+    setMessage('Morning Brief published!'); setMorningBriefForm({ title: '', content: '', key_points: '', market_outlook: '' })
   }
 
-  async function saveSummary() {
-    if (!summary) return
-    setSummarySaving(true)
-    var payload = {
-      total_aum: parseFloat(summary.total_aum) || 0,
-      xrp_in_etfs: parseFloat(summary.xrp_in_etfs) || 0,
-      net_flow_24h: parseFloat(summary.net_flow_24h) || 0,
-      net_flow_7d: parseFloat(summary.net_flow_7d) || 0,
-      net_flow_30d: parseFloat(summary.net_flow_30d) || 0,
+  async function handleDailyWrapSubmit(e) {
+    e.preventDefault()
+    if (!dailyWrapForm.title.trim() || !dailyWrapForm.content.trim()) { setMessage('Title and content required'); return }
+    setLoading(true)
+    const { error } = await supabase.from('daily_wraps').insert([{ title: dailyWrapForm.title, content: dailyWrapForm.content, key_events: dailyWrapForm.key_events || null, tomorrow_outlook: dailyWrapForm.tomorrow_outlook || null, created_by: profile.id }])
+    setLoading(false)
+    if (error) { setMessage('Error publishing'); return }
+    setMessage('Daily Wrap published!'); setDailyWrapForm({ title: '', content: '', key_events: '', tomorrow_outlook: '' })
+  }
+
+  async function handleAddMarketSignal(e) {
+    e.preventDefault()
+    if (!newSignal.signal_name.trim() || !newSignal.signal_value.trim()) { setMessage('Name and value required'); return }
+    setLoading(true)
+    const { error } = await supabase.from('market_signals').upsert([{ signal_name: newSignal.signal_name, signal_value: newSignal.signal_value, color: newSignal.color }], { onConflict: 'signal_name' })
+    setLoading(false)
+    if (error) { setMessage('Error updating'); return }
+    setMessage('Signal updated!'); setNewSignal({ signal_name: '', signal_value: '', color: 'blue' }); loadMarketSignals()
+  }
+
+  async function handleBreakingNewsSubmit(e) {
+    e.preventDefault()
+    if (!breakingNewsForm.headline.trim()) { setMessage('Headline required'); return }
+    setLoading(true)
+    const { error } = await supabase.from('top_headlines').insert([{ headline: breakingNewsForm.headline, content: breakingNewsForm.content || null, urgency: breakingNewsForm.urgency, show_ticker: breakingNewsForm.show_ticker, created_by: profile.id }])
+    setLoading(false)
+    if (error) { setMessage('Error posting'); return }
+    setMessage('Breaking news posted!'); setBreakingNewsForm({ headline: '', content: '', urgency: 'medium', show_ticker: true })
+  }
+
+  // ETF FLOWS handlers
+  function updateEtfSummaryField(field, value) {
+    setEtfSummary(prev => prev ? { ...prev, [field]: value } : prev)
+  }
+
+  async function saveEtfSummary() {
+    if (!etfSummary) return
+    setEtfSummarySaving(true)
+    const payload = {
+      total_aum: parseFloat(etfSummary.total_aum) || 0,
+      xrp_in_etfs: parseFloat(etfSummary.xrp_in_etfs) || 0,
+      net_flow_24h: parseFloat(etfSummary.net_flow_24h) || 0,
+      net_flow_7d: parseFloat(etfSummary.net_flow_7d) || 0,
+      net_flow_30d: parseFloat(etfSummary.net_flow_30d) || 0,
       updated_at: new Date().toISOString()
     }
-    var result = await supabase.from('etf_summary').update(payload).eq('id', summary.id)
-    setSummarySaving(false)
-    if (result.error) { showToast('Error: ' + result.error.message, 'error'); return }
-    if (notify) { await sendNotificationToAllMembers('ETF Summary Updated', 'ETF flow totals have been updated.', 'etf_flows') }
-    showToast('Summary saved!'); load()
+    const { error } = await supabase.from('etf_summary').update(payload).eq('id', etfSummary.id)
+    setEtfSummarySaving(false)
+    if (error) { setMessage('Error saving ETF summary'); return }
+    setMessage('ETF summary saved!'); loadEtfData()
   }
 
-  function updateAumField(id, field, value) {
-    setAumList(function(prev) { return prev.map(function(a) { if (a.id === id) { var u = Object.assign({}, a); u[field] = value; return u } return a }) })
+  function updateEtfAumField(id, field, value) {
+    setEtfAumList(prev => prev.map(a => a.id === id ? { ...a, [field]: value } : a))
   }
 
-  async function saveAumRow(etf) {
-    setAumSaving(etf.id)
-    var result = await supabase.from('etf_aum').update({ aum: parseFloat(etf.aum) || 0, active: etf.active !== false, updated_at: new Date().toISOString() }).eq('id', etf.id)
-    setAumSaving(null)
-    if (result.error) { showToast('Error: ' + result.error.message, 'error'); return }
-    showToast(etf.etf_name + ' saved!'); load()
+  async function saveEtfAumRow(etf) {
+    setEtfAumSaving(etf.id)
+    const { error } = await supabase.from('etf_aum').update({ aum: parseFloat(etf.aum) || 0, updated_at: new Date().toISOString() }).eq('id', etf.id)
+    setEtfAumSaving(null)
+    if (error) { setMessage('Error saving ' + etf.etf_name); return }
+    setMessage(etf.etf_name + ' saved!'); loadEtfData()
   }
 
-  async function toggleAumActive(etf) {
-    setAumSaving(etf.id)
-    var result = await supabase.from('etf_aum').update({ active: !etf.active }).eq('id', etf.id)
-    setAumSaving(null)
-    if (result.error) { showToast('Error: ' + result.error.message, 'error'); return }
-    showToast(etf.etf_name + (!etf.active ? ' activated' : ' hidden') + '!'); load()
+  async function toggleEtfAumActive(etf) {
+    setEtfAumSaving(etf.id)
+    const { error } = await supabase.from('etf_aum').update({ active: !etf.active }).eq('id', etf.id)
+    setEtfAumSaving(null)
+    if (error) { setMessage('Error'); return }
+    setMessage(etf.etf_name + (!etf.active ? ' shown' : ' hidden')); loadEtfData()
   }
 
-  async function addEtf() {
-    if (!newEtf.etf_name || !newEtf.ticker) { showToast('ETF name and ticker are required.', 'error'); return }
+  async function handleAddEtf(e) {
+    e.preventDefault()
+    if (!newEtf.etf_name || !newEtf.ticker) { setMessage('Name and ticker required'); return }
     setAddingEtf(true)
-    var nextOrder = aumList.length > 0 ? Math.max.apply(null, aumList.map(function(a) { return a.sort_order || 0 })) + 1 : 1
-    var result = await supabase.from('etf_aum').insert({ etf_name: newEtf.etf_name, ticker: newEtf.ticker.toUpperCase(), etf_type: newEtf.etf_type, aum: parseFloat(newEtf.aum) || 0, color: newEtf.color, sort_order: nextOrder, active: true })
+    const nextOrder = etfAumList.length > 0 ? Math.max(...etfAumList.map(a => a.sort_order || 0)) + 1 : 1
+    const { error } = await supabase.from('etf_aum').insert([{ etf_name: newEtf.etf_name, ticker: newEtf.ticker.toUpperCase(), etf_type: newEtf.etf_type, aum: parseFloat(newEtf.aum) || 0, color: newEtf.color, sort_order: nextOrder, active: true }])
     setAddingEtf(false)
-    if (result.error) { showToast('Error: ' + result.error.message, 'error'); return }
-    showToast('ETF added!'); setNewEtf({ etf_name: '', ticker: '', etf_type: 'Spot', aum: 0, color: '#3b82f6' }); load()
+    if (error) { setMessage('Error adding ETF'); return }
+    setMessage('ETF added!'); setNewEtf({ etf_name: '', ticker: '', etf_type: 'Spot', aum: 0, color: '#3b82f6' }); loadEtfData()
   }
 
-  async function removeEtf(id) {
-    if (!confirm('Permanently delete this ETF from the AUM chart?')) return
-    var result = await supabase.from('etf_aum').delete().eq('id', id)
-    if (result.error) { showToast('Error: ' + result.error.message, 'error'); return }
-    showToast('ETF removed.'); load()
+  async function handleRemoveEtf(id) {
+    if (!confirm('Permanently delete this ETF?')) return
+    const { error } = await supabase.from('etf_aum').delete().eq('id', id)
+    if (error) { setMessage('Error removing'); return }
+    setMessage('ETF removed'); loadEtfData()
   }
 
-  function updatePipelineField(id, field, value) {
-    setPipeline(function(prev) { return prev.map(function(p) { if (p.id === id) { var u = Object.assign({}, p); u[field] = value; return u } return p }) })
+  function updateEtfPipelineField(id, field, value) {
+    setEtfPipeline(prev => prev.map(p => p.id === id ? { ...p, [field]: value } : p))
   }
 
-  async function savePipelineRow(p) {
-    var result = await supabase.from('etf_pipeline').update({ issuer_name: p.issuer_name, priority: p.priority, notes: p.notes, status: p.status, updated_at: new Date().toISOString() }).eq('id', p.id)
-    if (result.error) { showToast('Error: ' + result.error.message, 'error'); return }
-    if (notify) { await sendNotificationToAllMembers('ETF Pipeline Update', p.issuer_name + ' status: ' + p.status, 'etf_pipeline') }
-    showToast(p.issuer_name + ' saved!'); load()
+  async function saveEtfPipelineRow(p) {
+    const { error } = await supabase.from('etf_pipeline').update({ issuer_name: p.issuer_name, priority: p.priority, notes: p.notes, status: p.status, updated_at: new Date().toISOString() }).eq('id', p.id)
+    if (error) { setMessage('Error saving'); return }
+    setMessage(p.issuer_name + ' saved!'); loadEtfData()
   }
 
-  async function addPipeline() {
-    if (!newPipeline.issuer_name) { showToast('Issuer name is required.', 'error'); return }
+  async function handleAddPipeline(e) {
+    e.preventDefault()
+    if (!newPipeline.issuer_name) { setMessage('Issuer name required'); return }
     setAddingPipeline(true)
-    var nextOrder = pipeline.length > 0 ? Math.max.apply(null, pipeline.map(function(p) { return p.sort_order || 0 })) + 1 : 1
-    var result = await supabase.from('etf_pipeline').insert({ issuer_name: newPipeline.issuer_name, priority: newPipeline.priority, notes: newPipeline.notes, status: newPipeline.status, sort_order: nextOrder })
+    const nextOrder = etfPipeline.length > 0 ? Math.max(...etfPipeline.map(p => p.sort_order || 0)) + 1 : 1
+    const { error } = await supabase.from('etf_pipeline').insert([{ issuer_name: newPipeline.issuer_name, priority: newPipeline.priority, notes: newPipeline.notes, status: newPipeline.status, sort_order: nextOrder }])
     setAddingPipeline(false)
-    if (result.error) { showToast('Error: ' + result.error.message, 'error'); return }
-    showToast('Pipeline entry added!'); setNewPipeline({ issuer_name: '', priority: 'Medium', notes: '', status: 'Not Filed' }); load()
+    if (error) { setMessage('Error adding'); return }
+    setMessage('Pipeline entry added!'); setNewPipeline({ issuer_name: '', priority: 'Medium', notes: '', status: 'Not Filed' }); loadEtfData()
   }
 
-  async function removePipeline(id) {
-    if (!confirm('Remove this pipeline entry?')) return
-    var result = await supabase.from('etf_pipeline').delete().eq('id', id)
-    if (result.error) { showToast('Error: ' + result.error.message, 'error'); return }
-    showToast('Entry removed.'); load()
+  async function handleRemovePipeline(id) {
+    if (!confirm('Remove this entry?')) return
+    const { error } = await supabase.from('etf_pipeline').delete().eq('id', id)
+    if (error) { setMessage('Error'); return }
+    setMessage('Entry removed'); loadEtfData()
   }
+
+  async function handleNotificationSubmit(e) {
+    e.preventDefault()
+    if (!notificationForm.title.trim() || !notificationForm.message.trim()) { setMessage('Title and message required'); return }
+    setLoading(true)
+    const { error } = await supabase.from('notifications').insert([{ title: notificationForm.title, message: notificationForm.message, type: 'admin_broadcast', created_by: profile.id }])
+    setLoading(false)
+    if (error) { setMessage('Error sending'); return }
+    setMessage('Notification sent!'); setNotificationForm({ title: '', message: '' })
+  }
+
+  const sections = [
+    { id: 'market-news', label: 'Market News', icon: MessageCircle },
+    { id: 'morning-brief', label: 'Morning Brief', icon: FileText },
+    { id: 'daily-wrap', label: 'Daily Wrap', icon: Calendar },
+    { id: 'market-signals', label: 'Market Signals', icon: BarChart3 },
+    { id: 'breaking-news', label: 'Breaking News', icon: Zap },
+    { id: 'youtube-intel', label: 'YouTube Intel', icon: PlaySquare },
+    { id: 'etf-flows', label: 'ETF Flows', icon: TrendingUp },
+    { id: 'master-watchlist', label: 'Master Watchlist', icon: Plus },
+    { id: 'notifications', label: 'Send Notification', icon: Bell },
+  ]
+
+  const inputStyle = { background: '#1e293b', border: '1px solid #475569', color: '#eceef5' }
+  const innerInputStyle = { background: '#0f172a', border: '1px solid #475569', color: '#eceef5' }
+  const btnPrimary = { background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', color: '#fff' }
 
   return (
-    <AdminLayout title="XRP ETF Flows">
-      <div className="rounded-lg px-4 py-3 mb-4 text-sm" style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.2)', color: '#9aa8be' }}>
-        Update ETF summary numbers, individual ETF AUM, and pipeline watch list. All dollar amounts in $ millions (e.g. 980 for $980M, 3290 for $3.29B).
-      </div>
-      <NotifyToggle enabled={notify} onToggle={function() { setNotify(!notify) }} />
+    <AppLayout>
+      <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' }}>
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold mb-2" style={{ fontFamily: 'Syne, sans-serif', color: '#eceef5' }}>Admin Panel</h1>
+            <p style={{ color: '#9aa8be' }}>Manage your ControlNode platform content and settings.</p>
+          </div>
 
-      {loading ? <p style={{ color: '#6b7a96' }}>Loading...</p> : (
-        <>
-          <AdminCard title="1. Summary Numbers (Five Cards on Member Page)">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Field label="Total ETF AUM ($M)">
-                <TextInput value={String(summary && summary.total_aum != null ? summary.total_aum : '')} onChange={function(v) { updateSummaryField('total_aum', v) }} placeholder="3290" />
-              </Field>
-              <Field label="XRP in ETFs (Millions of XRP)">
-                <TextInput value={String(summary && summary.xrp_in_etfs != null ? summary.xrp_in_etfs : '')} onChange={function(v) { updateSummaryField('xrp_in_etfs', v) }} placeholder="1350" />
-              </Field>
-              <Field label="Net Flow 24h ($M, positive or negative)">
-                <TextInput value={String(summary && summary.net_flow_24h != null ? summary.net_flow_24h : '')} onChange={function(v) { updateSummaryField('net_flow_24h', v) }} placeholder="101 or -25" />
-              </Field>
-              <Field label="Net Flow 7d ($M, positive or negative)">
-                <TextInput value={String(summary && summary.net_flow_7d != null ? summary.net_flow_7d : '')} onChange={function(v) { updateSummaryField('net_flow_7d', v) }} placeholder="544" />
-              </Field>
-              <Field label="Net Flow 30d ($M, positive or negative)">
-                <TextInput value={String(summary && summary.net_flow_30d != null ? summary.net_flow_30d : '')} onChange={function(v) { updateSummaryField('net_flow_30d', v) }} placeholder="1230" />
-              </Field>
+          {message && (
+            <div className="mb-6 px-4 py-3 rounded-lg" style={{ background: message.includes('Error') ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)', border: '1px solid ' + (message.includes('Error') ? '#ef4444' : '#10b981'), color: message.includes('Error') ? '#ef4444' : '#10b981' }}>
+              {message}
             </div>
-            <SaveButton onClick={saveSummary} loading={summarySaving} label="Save Summary" />
-          </AdminCard>
+          )}
 
-          <AdminCard title="2. ETF AUM (Percentages auto-calculated for pie chart)">
-            <div className="space-y-3 mb-5">
-              {aumList.map(function(etf) {
-                return (
-                  <div key={etf.id} className="p-3 rounded-lg" style={{ background: '#111318', border: '1px solid #1e2330', opacity: etf.active ? 1 : 0.5 }}>
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-2 h-8 rounded-full flex-shrink-0" style={{ background: etf.color || '#3b82f6' }} />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold" style={{ color: '#eceef5' }}>{etf.etf_name}</p>
-                        <p className="text-xs" style={{ color: '#6b7a96' }}>{etf.ticker} · {etf.etf_type}</p>
+          <div className="flex flex-col lg:flex-row gap-8">
+            <div className="lg:w-64 flex-shrink-0">
+              <nav className="space-y-2">
+                {sections.map(section => (
+                  <button
+                    key={section.id}
+                    onClick={() => { setActiveSection(section.id); setMessage('') }}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all"
+                    style={{ background: activeSection === section.id ? 'rgba(59,130,246,0.15)' : 'rgba(30,41,59,0.5)', border: '1px solid ' + (activeSection === section.id ? '#3b82f6' : '#475569') }}
+                  >
+                    <section.icon size={18} style={{ color: activeSection === section.id ? '#3b82f6' : '#94a3b8' }} />
+                    <span style={{ color: activeSection === section.id ? '#eceef5' : '#cbd5e1' }}>{section.label}</span>
+                  </button>
+                ))}
+              </nav>
+            </div>
+
+            <div className="flex-1">
+              {activeSection === 'market-news' && (
+                <div className="rounded-xl p-6" style={{ background: 'rgba(30,41,59,0.3)', border: '1px solid #334155' }}>
+                  <h2 className="text-xl font-semibold mb-6" style={{ color: '#eceef5' }}>Post Market News</h2>
+                  <form onSubmit={handleMarketNewsSubmit} className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Post Type</label>
+                      <select value={marketNewsForm.type} onChange={(e) => setMarketNewsForm(prev => ({ ...prev, type: e.target.value }))} className="w-full px-4 py-3 rounded-lg" style={inputStyle}>
+                        <option value="chatter">Market Chatter (Unconfirmed)</option>
+                        <option value="confirmed">Market News (Confirmed)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Content</label>
+                      <textarea value={marketNewsForm.content} onChange={(e) => setMarketNewsForm(prev => ({ ...prev, content: e.target.value }))} placeholder="Enter news content..." rows={4} className="w-full px-4 py-3 rounded-lg resize-none" style={inputStyle} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Category</label>
+                      <select value={marketNewsForm.category} onChange={(e) => setMarketNewsForm(prev => ({ ...prev, category: e.target.value }))} className="w-full px-4 py-3 rounded-lg" style={inputStyle}>
+                        <option value="General">General</option>
+                        <option value="Regulatory">Regulatory</option>
+                        <option value="XRP">XRP</option>
+                        <option value="ETF">ETF</option>
+                        <option value="Government">Government</option>
+                      </select>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Source (e.g. Reuters, Bloomberg, X/Twitter)</label>
+                        <input type="text" value={marketNewsForm.source} onChange={(e) => setMarketNewsForm(prev => ({ ...prev, source: e.target.value }))} placeholder="Reuters" className="w-full px-4 py-3 rounded-lg" style={inputStyle} />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Source URL (Optional)</label>
+                        <input type="url" value={marketNewsForm.source_url} onChange={(e) => setMarketNewsForm(prev => ({ ...prev, source_url: e.target.value }))} placeholder="https://..." className="w-full px-4 py-3 rounded-lg" style={inputStyle} />
                       </div>
                     </div>
-                    <div className="flex items-end gap-2">
-                      <div className="flex-1">
-                        <label className="block text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: '#6b7a96' }}>AUM ($M)</label>
-                        <TextInput value={String(etf.aum != null ? etf.aum : '')} onChange={function(v) { updateAumField(etf.id, 'aum', v) }} placeholder="980" />
+                    <button type="submit" disabled={loading} className="px-6 py-3 rounded-lg font-medium disabled:opacity-50" style={btnPrimary}>{loading ? 'Posting...' : 'Post'}</button>
+                  </form>
+                </div>
+              )}
+
+              {activeSection === 'morning-brief' && (
+                <div className="rounded-xl p-6" style={{ background: 'rgba(30,41,59,0.3)', border: '1px solid #334155' }}>
+                  <h2 className="text-xl font-semibold mb-6" style={{ color: '#eceef5' }}>Publish Morning Brief</h2>
+                  <form onSubmit={handleMorningBriefSubmit} className="space-y-6">
+                    <div><label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Title</label><input type="text" value={morningBriefForm.title} onChange={(e) => setMorningBriefForm(prev => ({ ...prev, title: e.target.value }))} placeholder="Enter title..." className="w-full px-4 py-3 rounded-lg" style={inputStyle} /></div>
+                    <div><label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Content</label><textarea value={morningBriefForm.content} onChange={(e) => setMorningBriefForm(prev => ({ ...prev, content: e.target.value }))} placeholder="Enter content..." rows={6} className="w-full px-4 py-3 rounded-lg resize-none" style={inputStyle} /></div>
+                    <div><label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Key Points (Optional)</label><textarea value={morningBriefForm.key_points} onChange={(e) => setMorningBriefForm(prev => ({ ...prev, key_points: e.target.value }))} placeholder="• Key point 1" rows={3} className="w-full px-4 py-3 rounded-lg resize-none" style={inputStyle} /></div>
+                    <div><label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Market Outlook (Optional)</label><textarea value={morningBriefForm.market_outlook} onChange={(e) => setMorningBriefForm(prev => ({ ...prev, market_outlook: e.target.value }))} placeholder="Today's outlook..." rows={3} className="w-full px-4 py-3 rounded-lg resize-none" style={inputStyle} /></div>
+                    <button type="submit" disabled={loading} className="px-6 py-3 rounded-lg font-medium disabled:opacity-50" style={btnPrimary}>{loading ? 'Publishing...' : 'Publish Morning Brief'}</button>
+                  </form>
+                </div>
+              )}
+
+              {activeSection === 'daily-wrap' && (
+                <div className="rounded-xl p-6" style={{ background: 'rgba(30,41,59,0.3)', border: '1px solid #334155' }}>
+                  <h2 className="text-xl font-semibold mb-6" style={{ color: '#eceef5' }}>Publish Daily Wrap</h2>
+                  <form onSubmit={handleDailyWrapSubmit} className="space-y-6">
+                    <div><label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Title</label><input type="text" value={dailyWrapForm.title} onChange={(e) => setDailyWrapForm(prev => ({ ...prev, title: e.target.value }))} placeholder="Enter title..." className="w-full px-4 py-3 rounded-lg" style={inputStyle} /></div>
+                    <div><label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Content</label><textarea value={dailyWrapForm.content} onChange={(e) => setDailyWrapForm(prev => ({ ...prev, content: e.target.value }))} placeholder="Enter content..." rows={6} className="w-full px-4 py-3 rounded-lg resize-none" style={inputStyle} /></div>
+                    <div><label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Key Events (Optional)</label><textarea value={dailyWrapForm.key_events} onChange={(e) => setDailyWrapForm(prev => ({ ...prev, key_events: e.target.value }))} placeholder="• Event 1" rows={3} className="w-full px-4 py-3 rounded-lg resize-none" style={inputStyle} /></div>
+                    <div><label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Tomorrow's Outlook (Optional)</label><textarea value={dailyWrapForm.tomorrow_outlook} onChange={(e) => setDailyWrapForm(prev => ({ ...prev, tomorrow_outlook: e.target.value }))} placeholder="What to watch..." rows={3} className="w-full px-4 py-3 rounded-lg resize-none" style={inputStyle} /></div>
+                    <button type="submit" disabled={loading} className="px-6 py-3 rounded-lg font-medium disabled:opacity-50" style={btnPrimary}>{loading ? 'Publishing...' : 'Publish Daily Wrap'}</button>
+                  </form>
+                </div>
+              )}
+
+              {activeSection === 'market-signals' && (
+                <div className="rounded-xl p-6" style={{ background: 'rgba(30,41,59,0.3)', border: '1px solid #334155' }}>
+                  <h2 className="text-xl font-semibold mb-6" style={{ color: '#eceef5' }}>Update Market Signals</h2>
+                  <form onSubmit={handleAddMarketSignal} className="space-y-6 mb-8">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div><label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Signal Name</label><input type="text" value={newSignal.signal_name} onChange={(e) => setNewSignal(prev => ({ ...prev, signal_name: e.target.value }))} placeholder="Market Sentiment" className="w-full px-4 py-3 rounded-lg" style={inputStyle} /></div>
+                      <div><label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Signal Value</label><input type="text" value={newSignal.signal_value} onChange={(e) => setNewSignal(prev => ({ ...prev, signal_value: e.target.value }))} placeholder="Bullish" className="w-full px-4 py-3 rounded-lg" style={inputStyle} /></div>
+                      <div><label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Color</label><select value={newSignal.color} onChange={(e) => setNewSignal(prev => ({ ...prev, color: e.target.value }))} className="w-full px-4 py-3 rounded-lg" style={inputStyle}><option value="green">Green</option><option value="yellow">Yellow</option><option value="red">Red</option><option value="blue">Blue</option></select></div>
+                    </div>
+                    <button type="submit" disabled={loading} className="px-6 py-3 rounded-lg font-medium disabled:opacity-50" style={btnPrimary}>{loading ? 'Updating...' : 'Update Signal'}</button>
+                  </form>
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-medium mb-4" style={{ color: '#eceef5' }}>Current Signals</h3>
+                    {marketSignals.map(s => (
+                      <div key={s.signal_name} className="flex items-center justify-between p-3 rounded-lg" style={{ background: '#1e293b', border: '1px solid #475569' }}>
+                        <span className="font-medium" style={{ color: '#eceef5' }}>{s.signal_name}</span>
+                        <span className="px-3 py-1 rounded text-sm font-semibold" style={{ background: s.color === 'green' ? 'rgba(16,185,129,0.2)' : s.color === 'red' ? 'rgba(239,68,68,0.2)' : s.color === 'yellow' ? 'rgba(245,158,11,0.2)' : 'rgba(59,130,246,0.2)', color: s.color === 'green' ? '#10b981' : s.color === 'red' ? '#ef4444' : s.color === 'yellow' ? '#f59e0b' : '#3b82f6' }}>{s.signal_value}</span>
                       </div>
-                      <button onClick={function() { saveAumRow(etf) }} disabled={aumSaving === etf.id} className="px-4 py-2.5 rounded-lg text-sm font-semibold" style={{ background: aumSaving === etf.id ? '#1e2330' : '#3b82f6', color: aumSaving === etf.id ? '#6b7a96' : '#fff' }}>{aumSaving === etf.id ? '...' : 'Save'}</button>
-                      <button onClick={function() { toggleAumActive(etf) }} className="px-3 py-2.5 rounded-lg text-xs font-semibold" style={{ background: etf.active ? 'rgba(245,158,11,0.12)' : 'rgba(16,185,129,0.12)', color: etf.active ? '#f59e0b' : '#10b981' }}>{etf.active ? 'Hide' : 'Show'}</button>
-                      <button onClick={function() { removeEtf(etf.id) }} className="px-3 py-2.5 rounded-lg text-xs font-semibold" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}><Trash2 size={13} /></button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {activeSection === 'breaking-news' && (
+                <div className="rounded-xl p-6" style={{ background: 'rgba(30,41,59,0.3)', border: '1px solid #334155' }}>
+                  <h2 className="text-xl font-semibold mb-6" style={{ color: '#eceef5' }}>Post Breaking News</h2>
+                  <form onSubmit={handleBreakingNewsSubmit} className="space-y-6">
+                    <div><label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Headline</label><input type="text" value={breakingNewsForm.headline} onChange={(e) => setBreakingNewsForm(prev => ({ ...prev, headline: e.target.value }))} placeholder="Enter headline..." className="w-full px-4 py-3 rounded-lg" style={inputStyle} /></div>
+                    <div><label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Content (Optional)</label><textarea value={breakingNewsForm.content} onChange={(e) => setBreakingNewsForm(prev => ({ ...prev, content: e.target.value }))} placeholder="Details..." rows={4} className="w-full px-4 py-3 rounded-lg resize-none" style={inputStyle} /></div>
+                    <div><label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Urgency Level</label><select value={breakingNewsForm.urgency} onChange={(e) => setBreakingNewsForm(prev => ({ ...prev, urgency: e.target.value }))} className="w-full px-4 py-3 rounded-lg" style={inputStyle}><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option></select></div>
+                    <div className="flex items-center gap-2"><input type="checkbox" id="st" checked={breakingNewsForm.show_ticker} onChange={(e) => setBreakingNewsForm(prev => ({ ...prev, show_ticker: e.target.checked }))} /><label htmlFor="st" className="text-sm" style={{ color: '#cbd5e1' }}>Show in top ticker banner</label></div>
+                    <button type="submit" disabled={loading} className="px-6 py-3 rounded-lg font-medium disabled:opacity-50" style={btnPrimary}>{loading ? 'Posting...' : 'Post Breaking News'}</button>
+                  </form>
+                </div>
+              )}
+
+              {activeSection === 'etf-flows' && (
+                <div className="space-y-6">
+                  <div className="rounded-xl p-6" style={{ background: 'rgba(30,41,59,0.3)', border: '1px solid #334155' }}>
+                    <h2 className="text-xl font-semibold mb-2" style={{ color: '#eceef5' }}>1. Summary Numbers (Five Cards on Member Page)</h2>
+                    <p className="text-sm mb-6" style={{ color: '#9aa8be' }}>All dollar amounts in $ millions (e.g. 980 = $980M, 3290 = $3.29B)</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div><label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Total ETF AUM ($M)</label><input type="text" value={etfSummary && etfSummary.total_aum != null ? etfSummary.total_aum : ''} onChange={(e) => updateEtfSummaryField('total_aum', e.target.value)} placeholder="3290" className="w-full px-4 py-3 rounded-lg" style={inputStyle} /></div>
+                      <div><label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>XRP in ETFs (Millions of XRP)</label><input type="text" value={etfSummary && etfSummary.xrp_in_etfs != null ? etfSummary.xrp_in_etfs : ''} onChange={(e) => updateEtfSummaryField('xrp_in_etfs', e.target.value)} placeholder="1350" className="w-full px-4 py-3 rounded-lg" style={inputStyle} /></div>
+                      <div><label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Net Flow 24h ($M)</label><input type="text" value={etfSummary && etfSummary.net_flow_24h != null ? etfSummary.net_flow_24h : ''} onChange={(e) => updateEtfSummaryField('net_flow_24h', e.target.value)} placeholder="101 or -25" className="w-full px-4 py-3 rounded-lg" style={inputStyle} /></div>
+                      <div><label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Net Flow 7d ($M)</label><input type="text" value={etfSummary && etfSummary.net_flow_7d != null ? etfSummary.net_flow_7d : ''} onChange={(e) => updateEtfSummaryField('net_flow_7d', e.target.value)} placeholder="544" className="w-full px-4 py-3 rounded-lg" style={inputStyle} /></div>
+                      <div><label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Net Flow 30d ($M)</label><input type="text" value={etfSummary && etfSummary.net_flow_30d != null ? etfSummary.net_flow_30d : ''} onChange={(e) => updateEtfSummaryField('net_flow_30d', e.target.value)} placeholder="1230" className="w-full px-4 py-3 rounded-lg" style={inputStyle} /></div>
+                    </div>
+                    <button onClick={saveEtfSummary} disabled={etfSummarySaving} className="px-6 py-3 rounded-lg font-medium disabled:opacity-50" style={btnPrimary}>{etfSummarySaving ? 'Saving...' : 'Save Summary'}</button>
+                  </div>
+
+                  <div className="rounded-xl p-6" style={{ background: 'rgba(30,41,59,0.3)', border: '1px solid #334155' }}>
+                    <h2 className="text-xl font-semibold mb-2" style={{ color: '#eceef5' }}>2. ETF AUM (Percentages auto-calculated for pie chart)</h2>
+                    <p className="text-sm mb-6" style={{ color: '#9aa8be' }}>Enter each ETF's assets under management in $ millions.</p>
+                    <div className="space-y-3 mb-6">
+                      {etfAumList.map(etf => (
+                        <div key={etf.id} className="p-4 rounded-lg" style={{ background: '#1e293b', border: '1px solid #475569', opacity: etf.active ? 1 : 0.5 }}>
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="w-2 h-8 rounded-full flex-shrink-0" style={{ background: etf.color || '#3b82f6' }} />
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold" style={{ color: '#eceef5' }}>{etf.etf_name}</p>
+                              <p className="text-xs" style={{ color: '#9aa8be' }}>{etf.ticker} · {etf.etf_type}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-end gap-2">
+                            <div className="flex-1">
+                              <label className="block text-xs font-medium mb-1.5" style={{ color: '#cbd5e1' }}>AUM ($M)</label>
+                              <input type="text" value={etf.aum != null ? etf.aum : ''} onChange={(e) => updateEtfAumField(etf.id, 'aum', e.target.value)} placeholder="980" className="w-full px-4 py-2.5 rounded-lg" style={innerInputStyle} />
+                            </div>
+                            <button onClick={() => saveEtfAumRow(etf)} disabled={etfAumSaving === etf.id} className="px-4 py-2.5 rounded-lg font-medium text-sm" style={{ background: '#3b82f6', color: '#fff' }}>{etfAumSaving === etf.id ? '...' : 'Save'}</button>
+                            <button onClick={() => toggleEtfAumActive(etf)} className="px-3 py-2.5 rounded-lg text-xs font-medium" style={{ background: etf.active ? 'rgba(245,158,11,0.12)' : 'rgba(16,185,129,0.12)', color: etf.active ? '#f59e0b' : '#10b981' }}>{etf.active ? 'Hide' : 'Show'}</button>
+                            <button onClick={() => handleRemoveEtf(etf.id)} className="px-3 py-2.5 rounded-lg" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}><Trash2 size={16} /></button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="p-4 rounded-lg" style={{ background: '#0f172a', border: '1px dashed #475569' }}>
+                      <h3 className="text-sm font-semibold mb-4" style={{ color: '#cbd5e1' }}>Add New ETF</h3>
+                      <form onSubmit={handleAddEtf} className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div><label className="block text-xs font-medium mb-1.5" style={{ color: '#cbd5e1' }}>ETF Name</label><input type="text" value={newEtf.etf_name} onChange={(e) => setNewEtf(prev => ({ ...prev, etf_name: e.target.value }))} placeholder="WisdomTree XRP ETF" className="w-full px-4 py-2.5 rounded-lg" style={inputStyle} /></div>
+                          <div><label className="block text-xs font-medium mb-1.5" style={{ color: '#cbd5e1' }}>Ticker</label><input type="text" value={newEtf.ticker} onChange={(e) => setNewEtf(prev => ({ ...prev, ticker: e.target.value }))} placeholder="WXRP" className="w-full px-4 py-2.5 rounded-lg" style={inputStyle} /></div>
+                          <div><label className="block text-xs font-medium mb-1.5" style={{ color: '#cbd5e1' }}>Type</label><select value={newEtf.etf_type} onChange={(e) => setNewEtf(prev => ({ ...prev, etf_type: e.target.value }))} className="w-full px-4 py-2.5 rounded-lg" style={inputStyle}><option value="Spot">Spot</option><option value="Futures">Futures</option></select></div>
+                          <div><label className="block text-xs font-medium mb-1.5" style={{ color: '#cbd5e1' }}>Starting AUM ($M)</label><input type="text" value={newEtf.aum} onChange={(e) => setNewEtf(prev => ({ ...prev, aum: e.target.value }))} placeholder="0" className="w-full px-4 py-2.5 rounded-lg" style={inputStyle} /></div>
+                          <div className="md:col-span-2"><label className="block text-xs font-medium mb-1.5" style={{ color: '#cbd5e1' }}>Pie Chart Color</label><select value={newEtf.color} onChange={(e) => setNewEtf(prev => ({ ...prev, color: e.target.value }))} className="w-full px-4 py-2.5 rounded-lg" style={inputStyle}><option value="#3b82f6">Blue</option><option value="#8b5cf6">Purple</option><option value="#10b981">Green</option><option value="#f59e0b">Orange</option><option value="#ef4444">Red</option><option value="#06b6d4">Cyan</option><option value="#ec4899">Pink</option><option value="#6366f1">Indigo</option><option value="#84cc16">Lime</option></select></div>
+                        </div>
+                        <button type="submit" disabled={addingEtf} className="px-6 py-2.5 rounded-lg font-medium disabled:opacity-50" style={btnPrimary}>{addingEtf ? 'Adding...' : 'Add ETF'}</button>
+                      </form>
                     </div>
                   </div>
-                )
-              })}
-            </div>
-            <div className="rounded-lg p-4" style={{ background: '#0d1117', border: '1px dashed #1e2330' }}>
-              <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: '#6b7a96' }}>Add New ETF</p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                <Field label="ETF Name"><TextInput value={newEtf.etf_name} onChange={function(v) { setNewEtf(function(f) { return Object.assign({}, f, { etf_name: v }) }) }} placeholder="WisdomTree XRP ETF" /></Field>
-                <Field label="Ticker"><TextInput value={newEtf.ticker} onChange={function(v) { setNewEtf(function(f) { return Object.assign({}, f, { ticker: v }) }) }} placeholder="WXRP" /></Field>
-                <Field label="Type">
-                  <select value={newEtf.etf_type} onChange={function(e) { setNewEtf(function(f) { return Object.assign({}, f, { etf_type: e.target.value }) }) }} className="w-full px-3 py-2.5 rounded-lg text-sm outline-none" style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}>
-                    <option value="Spot">Spot</option>
-                    <option value="Futures">Futures</option>
-                  </select>
-                </Field>
-                <Field label="Starting AUM ($M)"><TextInput value={String(newEtf.aum)} onChange={function(v) { setNewEtf(function(f) { return Object.assign({}, f, { aum: v }) }) }} placeholder="0" /></Field>
-                <Field label="Pie Chart Color">
-                  <select value={newEtf.color} onChange={function(e) { setNewEtf(function(f) { return Object.assign({}, f, { color: e.target.value }) }) }} className="w-full px-3 py-2.5 rounded-lg text-sm outline-none" style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}>
-                    <option value="#3b82f6">Blue</option>
-                    <option value="#8b5cf6">Purple</option>
-                    <option value="#10b981">Green</option>
-                    <option value="#f59e0b">Orange</option>
-                    <option value="#ef4444">Red</option>
-                    <option value="#06b6d4">Cyan</option>
-                    <option value="#ec4899">Pink</option>
-                    <option value="#6366f1">Indigo</option>
-                    <option value="#84cc16">Lime</option>
-                  </select>
-                </Field>
-              </div>
-              <SaveButton onClick={addEtf} loading={addingEtf} label="Add ETF" />
-            </div>
-          </AdminCard>
 
-          <AdminCard title="3. ETF Pipeline — High Priority Watch">
-            <div className="space-y-3 mb-5">
-              {pipeline.map(function(p) {
-                return (
-                  <div key={p.id} className="p-4 rounded-lg" style={{ background: '#111318', border: '1px solid #1e2330' }}>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                      <Field label="Issuer Name"><TextInput value={p.issuer_name || ''} onChange={function(v) { updatePipelineField(p.id, 'issuer_name', v) }} placeholder="BlackRock" /></Field>
-                      <Field label="Priority">
-                        <select value={p.priority || 'Medium'} onChange={function(e) { updatePipelineField(p.id, 'priority', e.target.value) }} className="w-full px-3 py-2.5 rounded-lg text-sm outline-none" style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}>
-                          <option value="High">High</option>
-                          <option value="Medium">Medium</option>
-                          <option value="Low">Low</option>
-                        </select>
-                      </Field>
-                      <Field label="Status">
-                        <select value={p.status || 'Not Filed'} onChange={function(e) { updatePipelineField(p.id, 'status', e.target.value) }} className="w-full px-3 py-2.5 rounded-lg text-sm outline-none" style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}>
-                          <option value="Not Filed">Not Filed</option>
-                          <option value="Filed">Filed</option>
-                          <option value="Approved">Approved</option>
-                          <option value="Rejected">Rejected</option>
-                        </select>
-                      </Field>
+                  <div className="rounded-xl p-6" style={{ background: 'rgba(30,41,59,0.3)', border: '1px solid #334155' }}>
+                    <h2 className="text-xl font-semibold mb-2" style={{ color: '#eceef5' }}>3. ETF Pipeline — High Priority Watch</h2>
+                    <p className="text-sm mb-6" style={{ color: '#9aa8be' }}>Add, edit, and remove pipeline entries (BlackRock, Fidelity, Invesco, etc.)</p>
+                    <div className="space-y-3 mb-6">
+                      {etfPipeline.map(p => (
+                        <div key={p.id} className="p-4 rounded-lg" style={{ background: '#1e293b', border: '1px solid #475569' }}>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                            <div><label className="block text-xs font-medium mb-1.5" style={{ color: '#cbd5e1' }}>Issuer Name</label><input type="text" value={p.issuer_name || ''} onChange={(e) => updateEtfPipelineField(p.id, 'issuer_name', e.target.value)} className="w-full px-4 py-2.5 rounded-lg" style={innerInputStyle} /></div>
+                            <div><label className="block text-xs font-medium mb-1.5" style={{ color: '#cbd5e1' }}>Priority</label><select value={p.priority || 'Medium'} onChange={(e) => updateEtfPipelineField(p.id, 'priority', e.target.value)} className="w-full px-4 py-2.5 rounded-lg" style={innerInputStyle}><option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option></select></div>
+                            <div className="md:col-span-2"><label className="block text-xs font-medium mb-1.5" style={{ color: '#cbd5e1' }}>Status</label><select value={p.status || 'Not Filed'} onChange={(e) => updateEtfPipelineField(p.id, 'status', e.target.value)} className="w-full px-4 py-2.5 rounded-lg" style={innerInputStyle}><option value="Not Filed">Not Filed</option><option value="Filed">Filed</option><option value="Approved">Approved</option><option value="Rejected">Rejected</option></select></div>
+                          </div>
+                          <div className="mb-3"><label className="block text-xs font-medium mb-1.5" style={{ color: '#cbd5e1' }}>Notes</label><textarea value={p.notes || ''} onChange={(e) => updateEtfPipelineField(p.id, 'notes', e.target.value)} rows={2} className="w-full px-4 py-2.5 rounded-lg resize-none" style={innerInputStyle} /></div>
+                          <div className="flex gap-2">
+                            <button onClick={() => saveEtfPipelineRow(p)} className="px-4 py-2 rounded-lg text-sm font-medium" style={{ background: '#3b82f6', color: '#fff' }}>Save</button>
+                            <button onClick={() => handleRemovePipeline(p.id)} className="px-4 py-2 rounded-lg text-sm font-medium" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>Remove</button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                    <Field label="Notes"><TextArea value={p.notes || ''} onChange={function(v) { updatePipelineField(p.id, 'notes', v) }} placeholder="Context about this issuer..." rows={2} /></Field>
-                    <div className="flex items-center gap-2">
-                      <button onClick={function() { savePipelineRow(p) }} className="px-4 py-2 rounded-lg text-sm font-semibold" style={{ background: '#3b82f6', color: '#fff' }}>Save</button>
-                      <button onClick={function() { removePipeline(p.id) }} className="px-4 py-2 rounded-lg text-sm font-semibold" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>Remove</button>
+                    <div className="p-4 rounded-lg" style={{ background: '#0f172a', border: '1px dashed #475569' }}>
+                      <h3 className="text-sm font-semibold mb-4" style={{ color: '#cbd5e1' }}>Add Pipeline Entry</h3>
+                      <form onSubmit={handleAddPipeline} className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div><label className="block text-xs font-medium mb-1.5" style={{ color: '#cbd5e1' }}>Issuer Name</label><input type="text" value={newPipeline.issuer_name} onChange={(e) => setNewPipeline(prev => ({ ...prev, issuer_name: e.target.value }))} placeholder="BlackRock" className="w-full px-4 py-2.5 rounded-lg" style={inputStyle} /></div>
+                          <div><label className="block text-xs font-medium mb-1.5" style={{ color: '#cbd5e1' }}>Priority</label><select value={newPipeline.priority} onChange={(e) => setNewPipeline(prev => ({ ...prev, priority: e.target.value }))} className="w-full px-4 py-2.5 rounded-lg" style={inputStyle}><option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option></select></div>
+                          <div className="md:col-span-2"><label className="block text-xs font-medium mb-1.5" style={{ color: '#cbd5e1' }}>Status</label><select value={newPipeline.status} onChange={(e) => setNewPipeline(prev => ({ ...prev, status: e.target.value }))} className="w-full px-4 py-2.5 rounded-lg" style={inputStyle}><option value="Not Filed">Not Filed</option><option value="Filed">Filed</option><option value="Approved">Approved</option><option value="Rejected">Rejected</option></select></div>
+                        </div>
+                        <div><label className="block text-xs font-medium mb-1.5" style={{ color: '#cbd5e1' }}>Notes</label><textarea value={newPipeline.notes} onChange={(e) => setNewPipeline(prev => ({ ...prev, notes: e.target.value }))} placeholder="Why this issuer matters..." rows={2} className="w-full px-4 py-2.5 rounded-lg resize-none" style={inputStyle} /></div>
+                        <button type="submit" disabled={addingPipeline} className="px-6 py-2.5 rounded-lg font-medium disabled:opacity-50" style={btnPrimary}>{addingPipeline ? 'Adding...' : 'Add to Pipeline'}</button>
+                      </form>
                     </div>
                   </div>
-                )
-              })}
+                </div>
+              )}
+
+              {activeSection === 'youtube-intel' && (
+                <div className="rounded-xl p-6" style={{ background: 'rgba(30,41,59,0.3)', border: '1px solid #334155' }}>
+                  <h2 className="text-xl font-semibold mb-6" style={{ color: '#eceef5' }}>Add YouTube Video</h2>
+                  <form onSubmit={handleYouTubeSubmit} className="space-y-6 mb-8">
+                    <div><label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Video Title</label><input type="text" value={youtubeForm.title} onChange={(e) => setYoutubeForm(prev => ({ ...prev, title: e.target.value }))} placeholder="Enter title..." className="w-full px-4 py-3 rounded-lg" style={inputStyle} /></div>
+                    <div><label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Description (Optional)</label><textarea value={youtubeForm.description} onChange={(e) => setYoutubeForm(prev => ({ ...prev, description: e.target.value }))} placeholder="Brief description..." rows={3} className="w-full px-4 py-3 rounded-lg resize-none" style={inputStyle} /></div>
+                    <div><label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>YouTube URL</label><input type="url" value={youtubeForm.youtube_url} onChange={(e) => setYoutubeForm(prev => ({ ...prev, youtube_url: e.target.value }))} placeholder="https://www.youtube.com/watch?v=..." className="w-full px-4 py-3 rounded-lg" style={inputStyle} /></div>
+                    {youtubeForm.thumbnail_url && (
+                      <div>
+                        <label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Preview</label>
+                        <div className="flex items-center gap-4 p-4 rounded-lg" style={{ background: '#1e293b', border: '1px solid #475569' }}>
+                          <img src={youtubeForm.thumbnail_url} alt="thumbnail" className="w-24 h-18 object-cover rounded" onError={(e) => { e.target.src = 'https://img.youtube.com/vi/' + youtubeForm.video_id + '/hqdefault.jpg' }} />
+                          <div>
+                            <p className="font-medium" style={{ color: '#eceef5' }}>{youtubeForm.title || 'Video Title'}</p>
+                            <p className="text-sm" style={{ color: '#9aa8be' }}>{youtubeForm.description || 'No description'}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    <button type="submit" disabled={loading} className="px-6 py-3 rounded-lg font-medium disabled:opacity-50" style={btnPrimary}>{loading ? 'Adding...' : 'Add Video'}</button>
+                  </form>
+                  <div className="border-t pt-6" style={{ borderColor: '#475569' }}>
+                    <h3 className="text-lg font-semibold mb-4" style={{ color: '#eceef5' }}>Manage Videos ({youtubeVideos.length})</h3>
+                    {youtubeVideos.length === 0 ? (
+                      <div className="text-center py-8" style={{ color: '#6b7a96' }}>No videos added yet.</div>
+                    ) : (
+                      <div className="space-y-3 max-h-96 overflow-y-auto">
+                        {youtubeVideos.map(v => (
+                          <div key={v.id} className="flex items-center gap-4 p-4 rounded-lg" style={{ background: '#1e293b', border: '1px solid #475569' }}>
+                            <img src={v.thumbnail_url} alt={v.title} className="w-16 h-12 object-cover rounded" onError={(e) => { e.target.src = 'https://img.youtube.com/vi/' + v.video_id + '/hqdefault.jpg' }} />
+                            <div className="flex-1 min-w-0"><h4 className="font-medium truncate" style={{ color: '#eceef5' }}>{v.title}</h4><p className="text-sm truncate" style={{ color: '#9aa8be' }}>{v.description || 'No description'}</p></div>
+                            <button onClick={() => handleDeleteYouTubeVideo(v.id)} className="p-2 rounded-lg" style={{ color: '#ef4444' }}><Trash2 size={16} /></button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {activeSection === 'master-watchlist' && (
+                <div className="rounded-xl p-6" style={{ background: 'rgba(30,41,59,0.3)', border: '1px solid #334155' }}>
+                  <h2 className="text-xl font-semibold mb-6" style={{ color: '#eceef5' }}>Master Watchlist</h2>
+                  <form onSubmit={handleAddSymbol} className="mb-6">
+                    <div className="flex gap-3">
+                      <input type="text" value={newSymbol} onChange={(e) => setNewSymbol(e.target.value)} placeholder="Enter symbol (e.g. ADA)" className="flex-1 px-4 py-3 rounded-lg" style={inputStyle} />
+                      <button type="submit" disabled={loading} className="px-6 py-3 rounded-lg font-medium disabled:opacity-50" style={btnPrimary}><Plus size={18} /></button>
+                    </div>
+                  </form>
+                  <div className="space-y-2">
+                    {symbols.map(s => (
+                      <div key={s.id} className="flex items-center justify-between p-3 rounded-lg" style={{ background: '#1e293b', border: '1px solid #475569' }}>
+                        <span className="font-medium" style={{ color: '#eceef5' }}>{s.symbol}</span>
+                        <button onClick={() => handleDeleteSymbol(s.id)} className="p-2 rounded-lg" style={{ color: '#ef4444' }}><Trash2 size={16} /></button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {activeSection === 'notifications' && (
+                <div className="rounded-xl p-6" style={{ background: 'rgba(30,41,59,0.3)', border: '1px solid #334155' }}>
+                  <h2 className="text-xl font-semibold mb-6" style={{ color: '#eceef5' }}>Send Notification</h2>
+                  <form onSubmit={handleNotificationSubmit} className="space-y-6">
+                    <div><label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Notification Title</label><input type="text" value={notificationForm.title} onChange={(e) => setNotificationForm(prev => ({ ...prev, title: e.target.value }))} placeholder="Enter title..." className="w-full px-4 py-3 rounded-lg" style={inputStyle} /></div>
+                    <div><label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Message</label><textarea value={notificationForm.message} onChange={(e) => setNotificationForm(prev => ({ ...prev, message: e.target.value }))} placeholder="Enter message..." rows={4} className="w-full px-4 py-3 rounded-lg resize-none" style={inputStyle} /></div>
+                    <button type="submit" disabled={loading} className="px-6 py-3 rounded-lg font-medium disabled:opacity-50" style={btnPrimary}>{loading ? 'Sending...' : 'Send Notification'}</button>
+                  </form>
+                </div>
+              )}
             </div>
-            <div className="rounded-lg p-4" style={{ background: '#0d1117', border: '1px dashed #1e2330' }}>
-              <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: '#6b7a96' }}>Add Pipeline Entry</p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                <Field label="Issuer Name"><TextInput value={newPipeline.issuer_name} onChange={function(v) { setNewPipeline(function(f) { return Object.assign({}, f, { issuer_name: v }) }) }} placeholder="BlackRock" /></Field>
-                <Field label="Priority">
-                  <select value={newPipeline.priority} onChange={function(e) { setNewPipeline(function(f) { return Object.assign({}, f, { priority: e.target.value }) }) }} className="w-full px-3 py-2.5 rounded-lg text-sm outline-none" style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}>
-                    <option value="High">High</option>
-                    <option value="Medium">Medium</option>
-                    <option value="Low">Low</option>
-                  </select>
-                </Field>
-                <Field label="Status">
-                  <select value={newPipeline.status} onChange={function(e) { setNewPipeline(function(f) { return Object.assign({}, f, { status: e.target.value }) }) }} className="w-full px-3 py-2.5 rounded-lg text-sm outline-none" style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}>
-                    <option value="Not Filed">Not Filed</option>
-                    <option value="Filed">Filed</option>
-                    <option value="Approved">Approved</option>
-                    <option value="Rejected">Rejected</option>
-                  </select>
-                </Field>
-              </div>
-              <Field label="Notes"><TextArea value={newPipeline.notes} onChange={function(v) { setNewPipeline(function(f) { return Object.assign({}, f, { notes: v }) }) }} placeholder="Why this issuer matters..." rows={2} /></Field>
-              <SaveButton onClick={addPipeline} loading={addingPipeline} label="Add to Pipeline" />
-            </div>
-          </AdminCard>
-        </>
-      )}
-      <Toast message={toast.message} type={toast.type} />
-    </AdminLayout>
-  )
-}
-
-export function AdminHeadlines() {
-  var headlinesState = useState([]); var headlines = headlinesState[0]; var setHeadlines = headlinesState[1]
-  var loadingState = useState(true); var loading = loadingState[0]; var setLoading = loadingState[1]
-  var formState = useState({ title: '', source: '', category: '', url: '', is_breaking: false })
-  var form = formState[0]; var setForm = formState[1]
-  var savingState = useState(false); var saving = savingState[0]; var setSaving = savingState[1]
-  var notifyState = useState(false); var notify = notifyState[0]; var setNotify = notifyState[1]
-  var toastState = useState({ message: '', type: '' }); var toast = toastState[0]; var setToast = toastState[1]
-
-  function showToast(m, t) { setToast({ message: m, type: t || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
-
-  async function load() {
-    var res = await supabase.from('top_headlines').select('*').order('created_at', { ascending: false }).limit(20)
-    if (res.data) setHeadlines(res.data)
-    setLoading(false)
-  }
-  useEffect(function() { load() }, [])
-
-  async function add() {
-    if (!form.title || !form.source) { showToast('Title and source are required.', 'error'); return }
-    setSaving(true)
-    var result = await supabase.from('top_headlines').insert({ title: form.title, source: form.source, category: form.category || 'General', url: form.url, is_breaking: form.is_breaking, active: true })
-    if (result.error) { setSaving(false); showToast('Error: ' + result.error.message, 'error'); return }
-    if (notify) { var title = form.is_breaking ? 'BREAKING NEWS' : 'News Update'; await sendNotificationToAllMembers(title, form.title, 'headline') }
-    setSaving(false); showToast(form.is_breaking ? 'Breaking news posted!' : 'Headline added!')
-    setForm({ title: '', source: '', category: '', url: '', is_breaking: false }); load()
-  }
-
-  async function remove(id) { await supabase.from('top_headlines').delete().eq('id', id); showToast('Removed.'); load() }
-
-  return (
-    <AdminLayout title="Breaking News">
-      <AdminCard title="Add Breaking News or Headline">
-        <Field label="Title"><TextInput value={form.title} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { title: v }) }) }} placeholder="Breaking: XRP ETF approved by SEC..." /></Field>
-        <Field label="Source"><TextInput value={form.source} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { source: v }) }) }} placeholder="Reuters, Bloomberg, SEC..." /></Field>
-        <Field label="Category"><TextInput value={form.category} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { category: v }) }) }} placeholder="Regulatory, Macro, ETF..." /></Field>
-        <Field label="URL"><TextInput value={form.url} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { url: v }) }) }} placeholder="https://..." /></Field>
-        <div className="flex items-center gap-3 mb-4 p-3 rounded-lg" style={{ background: form.is_breaking ? 'rgba(239,68,68,0.07)' : '#111318', border: '1px solid ' + (form.is_breaking ? 'rgba(239,68,68,0.2)' : '#1e2330') }}>
-          <div className="flex-1">
-            <p className="text-sm font-semibold" style={{ color: form.is_breaking ? '#ef4444' : '#eceef5' }}>🚨 Breaking News</p>
-            <p className="text-xs" style={{ color: form.is_breaking ? '#ef4444' : '#6b7a96' }}>Display prominently on dashboard</p>
-          </div>
-          <div onClick={function() { setForm(function(f) { return Object.assign({}, f, { is_breaking: !f.is_breaking }) }) }} className="w-10 h-5 rounded-full flex items-center px-0.5 cursor-pointer transition-all" style={{ background: form.is_breaking ? '#ef4444' : '#1e2330' }}>
-            <div className="w-4 h-4 rounded-full" style={{ background: '#fff', transform: form.is_breaking ? 'translateX(20px)' : 'translateX(0)', transition: 'transform 0.15s' }} />
           </div>
         </div>
-        <NotifyToggle enabled={notify} onToggle={function() { setNotify(!notify) }} />
-        <SaveButton onClick={add} loading={saving} label={form.is_breaking ? "Post Breaking News" : "Add Headline"} />
-      </AdminCard>
-      <AdminCard title="Current Headlines">
-        {loading ? <p style={{ color: '#6b7a96' }}>Loading...</p> : headlines.length === 0 ? <p style={{ color: '#6b7a96' }}>No headlines yet.</p> : (
-          <div className="space-y-2">
-            {headlines.map(function(h) {
-              return (
-                <div key={h.id} className="flex items-start justify-between gap-3 py-3 px-3 rounded-lg" style={{ background: h.is_breaking ? 'rgba(239,68,68,0.05)' : '#111318', border: '1px solid ' + (h.is_breaking ? 'rgba(239,68,68,0.2)' : '#1e2330') }}>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      {h.is_breaking && <span className="text-xs px-2 py-0.5 rounded font-bold" style={{ background: 'rgba(239,68,68,0.12)', color: '#ef4444' }}>🚨 BREAKING</span>}
-                      <span className="text-xs" style={{ color: '#6b7a96' }}>{h.category}</span>
-                    </div>
-                    <p className="text-sm font-medium mb-1" style={{ color: '#eceef5' }}>{h.title}</p>
-                    <p className="text-xs" style={{ color: '#6b7a96' }}>{h.source} · {new Date(h.created_at).toLocaleDateString()}</p>
-                  </div>
-                  <button onClick={function() { remove(h.id) }} className="text-xs px-3 py-1 rounded" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>Remove</button>
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </AdminCard>
-      <Toast message={toast.message} type={toast.type} />
-    </AdminLayout>
-  )
-}
-
-export function AdminWatchlist() {
-  var symbolsState = useState([]); var symbols = symbolsState[0]; var setSymbols = symbolsState[1]
-  var loadingState = useState(true); var loading = loadingState[0]; var setLoading = loadingState[1]
-  var formState = useState({ symbol: '', name: '', category: '' })
-  var form = formState[0]; var setForm = formState[1]
-  var savingState = useState(false); var saving = savingState[0]; var setSaving = savingState[1]
-  var toastState = useState({ message: '', type: '' }); var toast = toastState[0]; var setToast = toastState[1]
-
-  function showToast(m, t) { setToast({ message: m, type: t || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
-
-  async function load() {
-    var res = await supabase.from('master_watchlist').select('*').order('symbol')
-    if (res.data) setSymbols(res.data)
-    setLoading(false)
-  }
-  useEffect(function() { load() }, [])
-
-  async function add() {
-    if (!form.symbol) { showToast('Symbol is required.', 'error'); return }
-    setSaving(true)
-    var result = await supabase.from('master_watchlist').insert(Object.assign({}, form, { symbol: form.symbol.toUpperCase() }))
-    setSaving(false)
-    if (result.error) { showToast('Error: ' + result.error.message, 'error'); return }
-    showToast('Symbol added!'); setForm({ symbol: '', name: '', category: '' }); load()
-  }
-
-  async function remove(id) { await supabase.from('master_watchlist').delete().eq('id', id); showToast('Removed.'); load() }
-
-  return (
-    <AdminLayout title="Master Watchlist">
-      <AdminCard title="Add Symbol">
-        <Field label="Symbol"><TextInput value={form.symbol} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { symbol: v }) }) }} placeholder="XRP" /></Field>
-        <Field label="Name"><TextInput value={form.name} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { name: v }) }) }} placeholder="XRP / USD" /></Field>
-        <Field label="Category"><TextInput value={form.category} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { category: v }) }) }} placeholder="Crypto, Forex, Commodity..." /></Field>
-        <SaveButton onClick={add} loading={saving} label="Add Symbol" />
-      </AdminCard>
-      <AdminCard title="Current Symbols">
-        {loading ? <p style={{ color: '#6b7a96' }}>Loading...</p> : symbols.length === 0 ? <p style={{ color: '#6b7a96' }}>No symbols yet.</p> : (
-          <div className="space-y-2">
-            {symbols.map(function(s) {
-              return (
-                <div key={s.id} className="flex items-center justify-between py-2" style={{ borderBottom: '1px solid #1e2330' }}>
-                  <div><span className="text-sm font-bold mr-2" style={{ color: '#3b82f6' }}>{s.symbol}</span><span className="text-sm" style={{ color: '#eceef5' }}>{s.name}</span><span className="text-xs ml-2" style={{ color: '#6b7a96' }}>{s.category}</span></div>
-                  <button onClick={function() { remove(s.id) }} className="text-xs px-3 py-1 rounded" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>Remove</button>
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </AdminCard>
-      <Toast message={toast.message} type={toast.type} />
-    </AdminLayout>
-  )
-}
-
-export function AdminChatter() {
-  var postsState = useState([]); var posts = postsState[0]; var setPosts = postsState[1]
-  var loadingState = useState(true); var loading = loadingState[0]; var setLoading = loadingState[1]
-  var savingState = useState(false); var saving = savingState[0]; var setSaving = savingState[1]
-  var notifyState = useState(false); var notify = notifyState[0]; var setNotify = notifyState[1]
-  var toastState = useState({ message: '', type: '' }); var toast = toastState[0]; var setToast = toastState[1]
-  var formState = useState({ content: '', category: 'General', source: '', source_url: '', type: 'chatter' })
-  var form = formState[0]; var setForm = formState[1]
-
-  function showToast(m, t) { setToast({ message: m, type: t || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
-
-  async function load() {
-    var res = await supabase.from('market_news').select('*').order('created_at', { ascending: false }).limit(50)
-    if (res.data) setPosts(res.data)
-    setLoading(false)
-  }
-  useEffect(function() { load() }, [])
-
-  async function post() {
-    if (!form.content) { showToast('Content is required.', 'error'); return }
-    setSaving(true)
-    var result = await supabase.from('market_news').insert({ content: form.content, category: form.category, source: form.source, source_url: form.source_url, type: form.type })
-    if (result.error) { setSaving(false); showToast('Error: ' + result.error.message, 'error'); return }
-    if (notify) { var title = form.type === 'confirmed' ? 'Market News Update' : 'Market Chatter Update'; await sendNotificationToAllMembers(title, form.content.slice(0, 80) + (form.content.length > 80 ? '...' : ''), 'market_news') }
-    setSaving(false); showToast('Posted to ' + (form.type === 'confirmed' ? 'Market News' : 'Market Chatter') + '!')
-    setForm({ content: '', category: 'General', source: '', source_url: '', type: 'chatter' }); load()
-  }
-
-  async function remove(id) { await supabase.from('market_news').delete().eq('id', id); showToast('Post removed.'); load() }
-
-  return (
-    <AdminLayout title="Market News">
-      <AdminCard title="Post Market News">
-        <Field label="Post Type">
-          <select value={form.type} onChange={function(e) { setForm(function(f) { return Object.assign({}, f, { type: e.target.value }) }) }} className="w-full px-3 py-2.5 rounded-lg text-sm outline-none" style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}>
-            <option value="chatter">Market Chatter (Unconfirmed)</option>
-            <option value="confirmed">Market News (Confirmed)</option>
-          </select>
-        </Field>
-        <Field label="Content"><TextArea value={form.content} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { content: v }) }) }} placeholder="BlackRock internal memo allegedly references XRP ETF timeline..." rows={4} /></Field>
-        <Field label="Category">
-          <select value={form.category} onChange={function(e) { setForm(function(f) { return Object.assign({}, f, { category: e.target.value }) }) }} className="w-full px-3 py-2.5 rounded-lg text-sm outline-none" style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}>
-            <option value="ETF Rumor">ETF Rumor</option>
-            <option value="Ripple Rumor">Ripple Rumor</option>
-            <option value="XRP Rumor">XRP Rumor</option>
-            <option value="Regulatory">Regulatory</option>
-            <option value="Exchange">Exchange</option>
-            <option value="Macro">Macro</option>
-            <option value="Social Buzz">Social Buzz</option>
-            <option value="General">General</option>
-          </select>
-        </Field>
-        <Field label="Source (e.g. X / Twitter, Telegram)"><TextInput value={form.source} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { source: v }) }) }} placeholder="X / Twitter" /></Field>
-        <Field label="Source URL (optional)"><TextInput value={form.source_url} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { source_url: v }) }) }} placeholder="https://x.com/..." /></Field>
-        <NotifyToggle enabled={notify} onToggle={function() { setNotify(!notify) }} />
-        <SaveButton onClick={post} loading={saving} label="Post" />
-      </AdminCard>
-      <AdminCard title="Current Posts">
-        {loading ? <p style={{ color: '#6b7a96' }}>Loading...</p> : posts.length === 0 ? <p style={{ color: '#6b7a96' }}>No posts yet.</p> : (
-          <div className="space-y-3">
-            {posts.map(function(p) {
-              return (
-                <div key={p.id} className="rounded-lg p-4" style={{ background: '#111318', border: '1px solid #1e2330' }}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs px-2 py-0.5 rounded font-semibold" style={{ background: p.type === 'confirmed' ? 'rgba(16,185,129,0.12)' : 'rgba(245,158,11,0.12)', color: p.type === 'confirmed' ? '#10b981' : '#f59e0b' }}>{p.type === 'confirmed' ? 'Confirmed' : 'Chatter'}</span>
-                    {p.category && <span className="text-xs px-2 py-0.5 rounded font-semibold" style={{ background: 'rgba(139,92,246,0.12)', color: '#8b5cf6' }}>{p.category}</span>}
-                    {p.source && <span className="text-xs" style={{ color: '#3b82f6' }}>{p.source}</span>}
-                    <span className="text-xs ml-auto" style={{ color: '#6b7a96' }}>{new Date(p.created_at).toLocaleString()}</span>
-                  </div>
-                  <p className="text-sm mb-3" style={{ color: '#eceef5' }}>{p.content}</p>
-                  <div className="flex items-center justify-between">
-                    {p.source_url && <a href={p.source_url} target="_blank" rel="noopener noreferrer" className="text-xs hover:underline" style={{ color: '#3b82f6' }}>View Source</a>}
-                    <button onClick={function() { remove(p.id) }} className="text-xs px-3 py-1 rounded ml-auto" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>Remove</button>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </AdminCard>
-      <Toast message={toast.message} type={toast.type} />
-    </AdminLayout>
-  )
-}
-
-export function AdminYouTube() {
-  var channelsState = useState([]); var channels = channelsState[0]; var setChannels = channelsState[1]
-  var loadingState = useState(true); var loading = loadingState[0]; var setLoading = loadingState[1]
-  var savingState = useState(false); var saving = savingState[0]; var setSaving = savingState[1]
-  var fetchingState = useState(false); var fetching = fetchingState[0]; var setFetching = fetchingState[1]
-  var toastState = useState({ message: '', type: '' }); var toast = toastState[0]; var setToast = toastState[1]
-  var formState = useState({ channel_handle: '', channel_name: '', sort_order: 0 })
-  var form = formState[0]; var setForm = formState[1]
-
-  function showToast(m, t) { setToast({ message: m, type: t || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
-
-  async function load() {
-    var res = await supabase.from('youtube_channels').select('*').order('sort_order', { ascending: true })
-    if (res.data) setChannels(res.data)
-    setLoading(false)
-  }
-  useEffect(function() { load() }, [])
-
-  async function add() {
-    if (!form.channel_handle || !form.channel_name) { showToast('Handle and name are required.', 'error'); return }
-    if (channels.length >= 4) { showToast('Maximum 4 channels allowed.', 'error'); return }
-    var handle = form.channel_handle.startsWith('@') ? form.channel_handle : '@' + form.channel_handle
-    setSaving(true)
-    var result = await supabase.from('youtube_channels').insert({ channel_handle: handle, channel_name: form.channel_name, sort_order: form.sort_order, active: true })
-    setSaving(false)
-    if (result.error) { showToast('Error: ' + result.error.message, 'error'); return }
-    showToast('Channel added!'); setForm({ channel_handle: '', channel_name: '', sort_order: 0 }); load()
-  }
-
-  async function remove(id) { await supabase.from('youtube_channels').delete().eq('id', id); showToast('Channel removed.'); load() }
-
-  async function fetchNow() {
-    setFetching(true)
-    try {
-      var res = await fetch('https://oubwxjhvqjlaxscqbutl.supabase.co/functions/v1/fetch-youtube-videos', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + import.meta.env.VITE_SUPABASE_ANON_KEY },
-        body: JSON.stringify({})
-      })
-      var data = await res.json()
-      if (!res.ok) { showToast('Fetch error: ' + (data.error || 'Unknown error'), 'error') } else { showToast('Videos refreshed! Fetched ' + (data.videos_fetched || 0) + ' videos.') }
-    } catch(e) { showToast('Fetch failed: ' + e.message, 'error') }
-    setFetching(false)
-  }
-
-  return (
-    <AdminLayout title="YouTube Intel">
-      <div className="rounded-lg px-4 py-3 mb-6 text-sm" style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.2)', color: '#9aa8be' }}>
-        Add up to 4 YouTube channels. Videos refresh automatically every hour (7AM–9PM CT) and every 3 hours overnight. All members see the same channels.
       </div>
-      <AdminCard title="Add Channel">
-        <Field label="Channel Handle (e.g. @JakeClaver)"><TextInput value={form.channel_handle} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { channel_handle: v }) }) }} placeholder="@JakeClaver" /></Field>
-        <Field label="Display Name"><TextInput value={form.channel_name} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { channel_name: v }) }) }} placeholder="Jake Claver" /></Field>
-        <Field label="Sort Order"><TextInput value={String(form.sort_order)} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { sort_order: parseInt(v) || 0 }) }) }} placeholder="0" /></Field>
-        <SaveButton onClick={add} loading={saving} label="Add Channel" />
-      </AdminCard>
-      <AdminCard title={'Active Channels (' + channels.length + '/4)'}>
-        {loading ? <p style={{ color: '#6b7a96' }}>Loading...</p> : channels.length === 0 ? <p style={{ color: '#6b7a96' }}>No channels added yet.</p> : (
-          <div className="space-y-2 mb-4">
-            {channels.map(function(ch) {
-              return (
-                <div key={ch.id} className="flex items-center justify-between gap-3 p-3 rounded-lg" style={{ background: '#111318', border: '1px solid #1e2330' }}>
-                  <div>
-                    <p className="text-sm font-semibold" style={{ color: '#eceef5' }}>{ch.channel_name}</p>
-                    <p className="text-xs" style={{ color: '#6b7a96' }}>{ch.channel_handle}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <a href={'https://youtube.com/' + ch.channel_handle} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded" style={{ color: '#6b7a96' }}><ExternalLink size={13} /></a>
-                    <button onClick={function() { remove(ch.id) }} className="p-1.5 rounded" style={{ color: '#ef4444' }}><Trash2 size={13} /></button>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        )}
-        <button onClick={fetchNow} disabled={fetching} className="px-4 py-2 rounded-lg text-sm font-semibold" style={{ background: fetching ? '#1e2330' : 'rgba(16,185,129,0.12)', color: fetching ? '#6b7a96' : '#10b981', border: '1px solid rgba(16,185,129,0.2)' }}>
-          {fetching ? 'Fetching...' : '⟳ Fetch Videos Now'}
-        </button>
-      </AdminCard>
-      <Toast message={toast.message} type={toast.type} />
-    </AdminLayout>
+    </AppLayout>
   )
 }
-
-export function AdminSmartMoney() {
-  var observationsState = useState([]); var observations = observationsState[0]; var setObservations = observationsState[1]
-  var loadingState = useState(true); var loading = loadingState[0]; var setLoading = loadingState[1]
-  var savingState = useState(false); var saving = savingState[0]; var setSaving = savingState[1]
-  var notifyState = useState(false); var notify = notifyState[0]; var setNotify = notifyState[1]
-  var toastState = useState({ message: '', type: '' }); var toast = toastState[0]; var setToast = toastState[1]
-  var formState = useState({ type: 'whale_alert', content: '', source: '' })
-  var form = formState[0]; var setForm = formState[1]
-  var escrowState = useState({ total_locked: '', next_unlock: '', unlock_frequency: '', remaining_period: '' })
-  var escrow = escrowState[0]; var setEscrow = escrowState[1]
-  var escrowIdState = useState(null); var escrowId = escrowIdState[0]; var setEscrowId = escrowIdState[1]
-  var savingEscrowState = useState(false); var savingEscrow = savingEscrowState[0]; var setSavingEscrow = savingEscrowState[1]
-
-  function showToast(m, t) { setToast({ message: m, type: t || 'success' }); setTimeout(function() { setToast({ message: '', type: '' }) }, 3000) }
-
-  async function load() {
-    var o = await supabase.from('smart_money_observations').select('*').order('created_at', { ascending: false }).limit(20)
-    if (o.data) setObservations(o.data)
-    var e = await supabase.from('escrow_data').select('*').single()
-    if (e.data) { setEscrow({ total_locked: e.data.total_locked, next_unlock: e.data.next_unlock, unlock_frequency: e.data.unlock_frequency, remaining_period: e.data.remaining_period }); setEscrowId(e.data.id) }
-    setLoading(false)
-  }
-  useEffect(function() { load() }, [])
-
-  async function addObservation() {
-    if (!form.content) { showToast('Content is required.', 'error'); return }
-    setSaving(true)
-    var result = await supabase.from('smart_money_observations').insert({ type: form.type, content: form.content, source: form.source })
-    if (result.error) { setSaving(false); showToast('Error: ' + result.error.message, 'error'); return }
-    if (notify) { var title = form.type === 'whale_alert' ? 'Whale Alert' : 'Exchange Flow Update'; await sendNotificationToAllMembers(title, form.content, 'smart_money') }
-    setSaving(false); showToast('Posted!'); setForm({ type: 'whale_alert', content: '', source: '' }); load()
-  }
-
-  async function removeObservation(id) { await supabase.from('smart_money_observations').delete().eq('id', id); showToast('Removed.'); load() }
-
-  async function saveEscrow() {
-    setSavingEscrow(true)
-    var result = await supabase.from('escrow_data').update({ total_locked: escrow.total_locked, next_unlock: escrow.next_unlock, unlock_frequency: escrow.unlock_frequency, remaining_period: escrow.remaining_period, updated_at: new Date().toISOString() }).eq('id', escrowId)
-    setSavingEscrow(false)
-    if (result.error) { showToast('Error: ' + result.error.message, 'error'); return }
-    showToast('Escrow data saved!')
-  }
-
-  return (
-    <AdminLayout title="Smart Money Flow">
-      <AdminCard title="Post Whale Alert or Exchange Flow Note">
-        <Field label="Type">
-          <select value={form.type} onChange={function(e) { setForm(function(f) { return Object.assign({}, f, { type: e.target.value }) }) }} className="w-full px-3 py-2.5 rounded-lg text-sm outline-none" style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}>
-            <option value="whale_alert">Whale Alert</option>
-            <option value="exchange_flow">Exchange Flow Note</option>
-          </select>
-        </Field>
-        <Field label="Content"><TextArea value={form.content} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { content: v }) }) }} placeholder="85M XRP moved from unknown wallet to Bitstamp..." rows={3} /></Field>
-        <Field label="Source (optional)"><TextInput value={form.source} onChange={function(v) { setForm(function(f) { return Object.assign({}, f, { source: v }) }) }} placeholder="Whale Alert, XRP Scan, Bithomp..." /></Field>
-        <NotifyToggle enabled={notify} onToggle={function() { setNotify(!notify) }} />
-        <SaveButton onClick={addObservation} loading={saving} label="Post" />
-      </AdminCard>
-      <AdminCard title="Current Observations">
-        {loading ? <p style={{ color: '#6b7a96' }}>Loading...</p> : observations.length === 0 ? <p style={{ color: '#6b7a96' }}>No observations posted yet.</p> : (
-          <div className="space-y-2">
-            {observations.map(function(o) {
-              return (
-                <div key={o.id} className="flex items-start justify-between gap-3 py-2" style={{ borderBottom: '1px solid #1e2330' }}>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs px-2 py-0.5 rounded font-semibold" style={{ background: o.type === 'whale_alert' ? 'rgba(139,92,246,0.12)' : 'rgba(59,130,246,0.12)', color: o.type === 'whale_alert' ? '#8b5cf6' : '#3b82f6' }}>{o.type === 'whale_alert' ? 'Whale Alert' : 'Exchange Flow'}</span>
-                      {o.source && <span className="text-xs" style={{ color: '#3b82f6' }}>{o.source}</span>}
-                    </div>
-                    <p className="text-sm" style={{ color: '#eceef5' }}>{o.content}</p>
-                  </div>
-                  <button onClick={function() { removeObservation(o.id) }} className="text-xs px-3 py-1 rounded flex-shrink-0" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>Remove</button>
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </AdminCard>
-      <AdminCard title="Escrow & Unlock Schedule">
-        <div className="rounded-lg px-4 py-3 mb-4 text-xs" style={{ background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.15)', color: '#9aa8be' }}>
-          Update these numbers monthly when Ripple publishes their quarterly XRP markets report.
-        </div>
-        <Field label="Total Escrow Locked"><TextInput value={escrow.total_locked} onChange={function(v) { setEscrow(function(e) { return Object.assign({}, e, { total_locked: v }) }) }} placeholder="~38B XRP" /></Field>
-        <Field label="Next Monthly Unlock"><TextInput value={escrow.next_unlock} onChange={function(v) { setEscrow(function(e) { return Object.assign({}, e, { next_unlock: v }) }) }} placeholder="1B XRP" /></Field>
-        <Field label="Unlock Frequency"><TextInput value={escrow.unlock_frequency} onChange={function(v) { setEscrow(function(e) { return Object.assign({}, e, { unlock_frequency: v }) }) }} placeholder="Monthly (1st)" /></Field>
-        <Field label="Remaining Escrow Period"><TextInput value={escrow.remaining_period} onChange={function(v) { setEscrow(function(e) { return Object.assign({}, e, { remaining_period: v }) }) }} placeholder="~38 months" /></Field>
-        <SaveButton onClick={saveEscrow} loading={savingEscrow} label="Save Escrow Data" />
-      </AdminCard>
-      <Toast message={toast.message} type={toast.type} />
-    </AdminLayout>
-  )
-}
-
-export function AdminUpdates() { return <AdminDailyWrap /> }
-
-
-// Default export for compatibility with 'import AdminPages from' style imports
-export default Admin
