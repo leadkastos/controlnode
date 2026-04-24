@@ -137,16 +137,135 @@ function EmailNotificationsSection() {
   )
 }
 
+// Full IANA timezone list grouped by region — standardized global list
+const TIMEZONES = [
+  { region: 'Africa', zones: ['Africa/Abidjan','Africa/Accra','Africa/Addis_Ababa','Africa/Algiers','Africa/Asmara','Africa/Bamako','Africa/Bangui','Africa/Banjul','Africa/Bissau','Africa/Blantyre','Africa/Brazzaville','Africa/Bujumbura','Africa/Cairo','Africa/Casablanca','Africa/Ceuta','Africa/Conakry','Africa/Dakar','Africa/Dar_es_Salaam','Africa/Djibouti','Africa/Douala','Africa/El_Aaiun','Africa/Freetown','Africa/Gaborone','Africa/Harare','Africa/Johannesburg','Africa/Juba','Africa/Kampala','Africa/Khartoum','Africa/Kigali','Africa/Kinshasa','Africa/Lagos','Africa/Libreville','Africa/Lome','Africa/Luanda','Africa/Lubumbashi','Africa/Lusaka','Africa/Malabo','Africa/Maputo','Africa/Maseru','Africa/Mbabane','Africa/Mogadishu','Africa/Monrovia','Africa/Nairobi','Africa/Ndjamena','Africa/Niamey','Africa/Nouakchott','Africa/Ouagadougou','Africa/Porto-Novo','Africa/Sao_Tome','Africa/Tripoli','Africa/Tunis','Africa/Windhoek'] },
+  { region: 'Americas', zones: ['America/Adak','America/Anchorage','America/Anguilla','America/Antigua','America/Araguaina','America/Argentina/Buenos_Aires','America/Argentina/Catamarca','America/Argentina/Cordoba','America/Argentina/Jujuy','America/Argentina/La_Rioja','America/Argentina/Mendoza','America/Argentina/Rio_Gallegos','America/Argentina/Salta','America/Argentina/San_Juan','America/Argentina/San_Luis','America/Argentina/Tucuman','America/Argentina/Ushuaia','America/Aruba','America/Asuncion','America/Atikokan','America/Bahia','America/Bahia_Banderas','America/Barbados','America/Belem','America/Belize','America/Blanc-Sablon','America/Boa_Vista','America/Bogota','America/Boise','America/Cambridge_Bay','America/Campo_Grande','America/Cancun','America/Caracas','America/Cayenne','America/Cayman','America/Chicago','America/Chihuahua','America/Costa_Rica','America/Creston','America/Cuiaba','America/Curacao','America/Danmarkshavn','America/Dawson','America/Dawson_Creek','America/Denver','America/Detroit','America/Dominica','America/Edmonton','America/Eirunepe','America/El_Salvador','America/Fort_Nelson','America/Fortaleza','America/Glace_Bay','America/Goose_Bay','America/Grand_Turk','America/Grenada','America/Guadeloupe','America/Guatemala','America/Guayaquil','America/Guyana','America/Halifax','America/Havana','America/Hermosillo','America/Indiana/Indianapolis','America/Indiana/Knox','America/Indiana/Marengo','America/Indiana/Petersburg','America/Indiana/Tell_City','America/Indiana/Vevay','America/Indiana/Vincennes','America/Indiana/Winamac','America/Inuvik','America/Iqaluit','America/Jamaica','America/Juneau','America/Kentucky/Louisville','America/Kentucky/Monticello','America/Kralendijk','America/La_Paz','America/Lima','America/Los_Angeles','America/Lower_Princes','America/Maceio','America/Managua','America/Manaus','America/Marigot','America/Martinique','America/Matamoros','America/Mazatlan','America/Menominee','America/Merida','America/Metlakatla','America/Mexico_City','America/Miquelon','America/Moncton','America/Monterrey','America/Montevideo','America/Montserrat','America/Nassau','America/New_York','America/Nome','America/Noronha','America/North_Dakota/Beulah','America/North_Dakota/Center','America/North_Dakota/New_Salem','America/Nuuk','America/Ojinaga','America/Panama','America/Paramaribo','America/Phoenix','America/Port-au-Prince','America/Port_of_Spain','America/Porto_Velho','America/Puerto_Rico','America/Punta_Arenas','America/Rankin_Inlet','America/Recife','America/Regina','America/Resolute','America/Rio_Branco','America/Santarem','America/Santiago','America/Santo_Domingo','America/Sao_Paulo','America/Scoresbysund','America/Sitka','America/St_Barthelemy','America/St_Johns','America/St_Kitts','America/St_Lucia','America/St_Thomas','America/St_Vincent','America/Swift_Current','America/Tegucigalpa','America/Thule','America/Tijuana','America/Toronto','America/Tortola','America/Vancouver','America/Whitehorse','America/Winnipeg','America/Yakutat'] },
+  { region: 'Antarctica', zones: ['Antarctica/Casey','Antarctica/Davis','Antarctica/DumontDUrville','Antarctica/Macquarie','Antarctica/Mawson','Antarctica/McMurdo','Antarctica/Palmer','Antarctica/Rothera','Antarctica/Syowa','Antarctica/Troll','Antarctica/Vostok'] },
+  { region: 'Asia', zones: ['Asia/Aden','Asia/Almaty','Asia/Amman','Asia/Anadyr','Asia/Aqtau','Asia/Aqtobe','Asia/Ashgabat','Asia/Atyrau','Asia/Baghdad','Asia/Bahrain','Asia/Baku','Asia/Bangkok','Asia/Barnaul','Asia/Beirut','Asia/Bishkek','Asia/Brunei','Asia/Chita','Asia/Choibalsan','Asia/Colombo','Asia/Damascus','Asia/Dhaka','Asia/Dili','Asia/Dubai','Asia/Dushanbe','Asia/Famagusta','Asia/Gaza','Asia/Hebron','Asia/Ho_Chi_Minh','Asia/Hong_Kong','Asia/Hovd','Asia/Irkutsk','Asia/Jakarta','Asia/Jayapura','Asia/Jerusalem','Asia/Kabul','Asia/Kamchatka','Asia/Karachi','Asia/Kathmandu','Asia/Khandyga','Asia/Kolkata','Asia/Krasnoyarsk','Asia/Kuala_Lumpur','Asia/Kuching','Asia/Kuwait','Asia/Macau','Asia/Magadan','Asia/Makassar','Asia/Manila','Asia/Muscat','Asia/Nicosia','Asia/Novokuznetsk','Asia/Novosibirsk','Asia/Omsk','Asia/Oral','Asia/Phnom_Penh','Asia/Pontianak','Asia/Pyongyang','Asia/Qatar','Asia/Qostanay','Asia/Qyzylorda','Asia/Riyadh','Asia/Sakhalin','Asia/Samarkand','Asia/Seoul','Asia/Shanghai','Asia/Singapore','Asia/Srednekolymsk','Asia/Taipei','Asia/Tashkent','Asia/Tbilisi','Asia/Tehran','Asia/Thimphu','Asia/Tokyo','Asia/Tomsk','Asia/Ulaanbaatar','Asia/Urumqi','Asia/Ust-Nera','Asia/Vientiane','Asia/Vladivostok','Asia/Yakutsk','Asia/Yangon','Asia/Yekaterinburg','Asia/Yerevan'] },
+  { region: 'Atlantic', zones: ['Atlantic/Azores','Atlantic/Bermuda','Atlantic/Canary','Atlantic/Cape_Verde','Atlantic/Faroe','Atlantic/Madeira','Atlantic/Reykjavik','Atlantic/South_Georgia','Atlantic/St_Helena','Atlantic/Stanley'] },
+  { region: 'Australia', zones: ['Australia/Adelaide','Australia/Brisbane','Australia/Broken_Hill','Australia/Darwin','Australia/Eucla','Australia/Hobart','Australia/Lindeman','Australia/Lord_Howe','Australia/Melbourne','Australia/Perth','Australia/Sydney'] },
+  { region: 'Europe', zones: ['Europe/Amsterdam','Europe/Andorra','Europe/Astrakhan','Europe/Athens','Europe/Belgrade','Europe/Berlin','Europe/Bratislava','Europe/Brussels','Europe/Bucharest','Europe/Budapest','Europe/Busingen','Europe/Chisinau','Europe/Copenhagen','Europe/Dublin','Europe/Gibraltar','Europe/Guernsey','Europe/Helsinki','Europe/Isle_of_Man','Europe/Istanbul','Europe/Jersey','Europe/Kaliningrad','Europe/Kirov','Europe/Kyiv','Europe/Lisbon','Europe/Ljubljana','Europe/London','Europe/Luxembourg','Europe/Madrid','Europe/Malta','Europe/Mariehamn','Europe/Minsk','Europe/Monaco','Europe/Moscow','Europe/Oslo','Europe/Paris','Europe/Podgorica','Europe/Prague','Europe/Riga','Europe/Rome','Europe/Samara','Europe/San_Marino','Europe/Sarajevo','Europe/Saratov','Europe/Simferopol','Europe/Skopje','Europe/Sofia','Europe/Stockholm','Europe/Tallinn','Europe/Tirane','Europe/Ulyanovsk','Europe/Vaduz','Europe/Vatican','Europe/Vienna','Europe/Vilnius','Europe/Volgograd','Europe/Warsaw','Europe/Zagreb','Europe/Zurich'] },
+  { region: 'Indian Ocean', zones: ['Indian/Antananarivo','Indian/Chagos','Indian/Christmas','Indian/Cocos','Indian/Comoro','Indian/Kerguelen','Indian/Mahe','Indian/Maldives','Indian/Mauritius','Indian/Mayotte','Indian/Reunion'] },
+  { region: 'Pacific', zones: ['Pacific/Apia','Pacific/Auckland','Pacific/Bougainville','Pacific/Chatham','Pacific/Chuuk','Pacific/Easter','Pacific/Efate','Pacific/Fakaofo','Pacific/Fiji','Pacific/Funafuti','Pacific/Galapagos','Pacific/Gambier','Pacific/Guadalcanal','Pacific/Guam','Pacific/Honolulu','Pacific/Kanton','Pacific/Kiritimati','Pacific/Kosrae','Pacific/Kwajalein','Pacific/Majuro','Pacific/Marquesas','Pacific/Midway','Pacific/Nauru','Pacific/Niue','Pacific/Norfolk','Pacific/Noumea','Pacific/Pago_Pago','Pacific/Palau','Pacific/Pitcairn','Pacific/Pohnpei','Pacific/Port_Moresby','Pacific/Rarotonga','Pacific/Saipan','Pacific/Tahiti','Pacific/Tarawa','Pacific/Tongatapu','Pacific/Wake','Pacific/Wallis'] },
+  { region: 'UTC', zones: ['UTC'] }
+]
+
+function formatTimezoneLabel(tz) {
+  if (!tz) return ''
+  var parts = tz.split('/')
+  var city = parts[parts.length - 1].replace(/_/g, ' ')
+  return city
+}
+
+function FeedbackBox({ feedback }) {
+  if (!feedback || !feedback.message) return null
+  var isError = feedback.type === 'error'
+  return (
+    <div
+      className="mt-3 px-3 py-2 rounded-lg text-xs"
+      style={{
+        background: isError ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)',
+        border: '1px solid ' + (isError ? 'rgba(239,68,68,0.3)' : 'rgba(16,185,129,0.3)'),
+        color: isError ? '#ef4444' : '#10b981'
+      }}
+    >
+      {feedback.message}
+    </div>
+  )
+}
+
+function EditableRow(props) {
+  var label = props.label
+  var value = props.value
+  var editing = props.editing
+  var onEdit = props.onEdit
+  var onCancel = props.onCancel
+  var onSave = props.onSave
+  var saving = props.saving
+  var saveLabel = props.saveLabel
+  var children = props.children
+  return (
+    <div className="py-2" style={{ borderBottom: '1px solid #1e2330' }}>
+      <div className="flex items-center justify-between">
+        <div className="flex-1 min-w-0 mr-3">
+          <p className="text-sm" style={{ color: '#9aa8be' }}>{label}</p>
+          {!editing && value && <p className="text-sm mt-0.5 truncate" style={{ color: '#eceef5' }}>{value}</p>}
+        </div>
+        {!editing ? (
+          <button
+            onClick={onEdit}
+            className="text-xs px-3 py-1.5 rounded-lg border flex-shrink-0"
+            style={{ color: '#3b82f6', borderColor: '#1e2330', cursor: 'pointer' }}
+          >
+            Edit
+          </button>
+        ) : (
+          <div className="flex gap-2 flex-shrink-0">
+            <button
+              onClick={onCancel}
+              disabled={saving}
+              className="text-xs px-3 py-1.5 rounded-lg border"
+              style={{ color: '#9aa8be', borderColor: '#1e2330', cursor: saving ? 'not-allowed' : 'pointer' }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={onSave}
+              disabled={saving}
+              className="text-xs px-3 py-1.5 rounded-lg"
+              style={{ background: saving ? '#1e2330' : '#3b82f6', color: saving ? '#6b7a96' : '#fff', cursor: saving ? 'not-allowed' : 'pointer' }}
+            >
+              {saving ? 'Saving...' : (saveLabel || 'Save')}
+            </button>
+          </div>
+        )}
+      </div>
+      {editing && <div className="mt-3">{children}</div>}
+    </div>
+  )
+}
+
 export function Account() {
   const { user, profile } = useAuth()
+
+  // Password reset state
   const [resetLoading, setResetLoading] = useState(false)
   const [resetMessage, setResetMessage] = useState('')
   const [resetError, setResetError] = useState('')
 
-  var initials = profile?.full_name ? profile.full_name.split(' ').map(function(n) { return n[0] }).join('').toUpperCase() : 'CN'
+  // Email edit state
+  const [editingEmail, setEditingEmail] = useState(false)
+  const [newEmail, setNewEmail] = useState('')
+  const [emailSaving, setEmailSaving] = useState(false)
+  const [emailFeedback, setEmailFeedback] = useState({ type: '', message: '' })
 
+  // Display name edit state
+  const [editingName, setEditingName] = useState(false)
+  const [newName, setNewName] = useState('')
+  const [nameSaving, setNameSaving] = useState(false)
+  const [nameFeedback, setNameFeedback] = useState({ type: '', message: '' })
+
+  // Timezone edit state
+  const [editingTz, setEditingTz] = useState(false)
+  const [newTz, setNewTz] = useState('')
+  const [tzSaving, setTzSaving] = useState(false)
+  const [tzFeedback, setTzFeedback] = useState({ type: '', message: '' })
+
+  // Local copies for live updates after save
+  const [localFullName, setLocalFullName] = useState(profile?.full_name || '')
+  const [localTimezone, setLocalTimezone] = useState(profile?.timezone || 'America/Chicago')
+
+  useEffect(function() {
+    setLocalFullName(profile?.full_name || '')
+    setLocalTimezone(profile?.timezone || 'America/Chicago')
+  }, [profile])
+
+  var initials = localFullName ? localFullName.split(' ').map(function(n) { return n[0] }).join('').toUpperCase() : 'CN'
+
+  // ============ PASSWORD RESET ============
   async function handlePasswordReset() {
-    if (!user?.email) {
+    if (!user || !user.email) {
       setResetError('No email address found on your account.')
       setTimeout(function() { setResetError('') }, 4000)
       return
@@ -167,6 +286,117 @@ export function Account() {
     }
   }
 
+  // ============ EMAIL EDIT ============
+  function startEditEmail() {
+    setNewEmail((user && user.email) || '')
+    setEmailFeedback({ type: '', message: '' })
+    setEditingEmail(true)
+  }
+
+  function cancelEditEmail() {
+    setEditingEmail(false)
+    setNewEmail('')
+    setEmailFeedback({ type: '', message: '' })
+  }
+
+  async function saveEmail() {
+    var email = (newEmail || '').trim().toLowerCase()
+    var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      setEmailFeedback({ type: 'error', message: 'Please enter a valid email address.' })
+      return
+    }
+    if (email === ((user && user.email) || '').toLowerCase()) {
+      setEmailFeedback({ type: 'error', message: 'This is already your current email.' })
+      return
+    }
+    setEmailSaving(true)
+    setEmailFeedback({ type: '', message: '' })
+    const { error } = await supabase.auth.updateUser({ email: email })
+    setEmailSaving(false)
+    if (error) {
+      setEmailFeedback({ type: 'error', message: 'Error: ' + error.message })
+      return
+    }
+    setEmailFeedback({
+      type: 'success',
+      message: 'Confirmation sent to ' + email + '. Click the link in that email to finalize the change. Your current email keeps working until you confirm.'
+    })
+  }
+
+  // ============ DISPLAY NAME EDIT ============
+  function startEditName() {
+    setNewName(localFullName || '')
+    setNameFeedback({ type: '', message: '' })
+    setEditingName(true)
+  }
+
+  function cancelEditName() {
+    setEditingName(false)
+    setNewName('')
+    setNameFeedback({ type: '', message: '' })
+  }
+
+  async function saveName() {
+    var name = (newName || '').trim()
+    if (name.length < 1) {
+      setNameFeedback({ type: 'error', message: 'Display name cannot be empty.' })
+      return
+    }
+    if (name.length > 80) {
+      setNameFeedback({ type: 'error', message: 'Display name must be 80 characters or less.' })
+      return
+    }
+    setNameSaving(true)
+    setNameFeedback({ type: '', message: '' })
+    const { error } = await supabase.from('profiles').update({ full_name: name }).eq('id', user.id)
+    setNameSaving(false)
+    if (error) {
+      setNameFeedback({ type: 'error', message: 'Error: ' + error.message })
+      return
+    }
+    setLocalFullName(name)
+    setNameFeedback({ type: 'success', message: 'Display name updated!' })
+    setTimeout(function() {
+      setEditingName(false)
+      setNameFeedback({ type: '', message: '' })
+    }, 1500)
+  }
+
+  // ============ TIMEZONE EDIT ============
+  function startEditTz() {
+    setNewTz(localTimezone || 'America/Chicago')
+    setTzFeedback({ type: '', message: '' })
+    setEditingTz(true)
+  }
+
+  function cancelEditTz() {
+    setEditingTz(false)
+    setNewTz('')
+    setTzFeedback({ type: '', message: '' })
+  }
+
+  async function saveTz() {
+    if (!newTz) {
+      setTzFeedback({ type: 'error', message: 'Please select a timezone.' })
+      return
+    }
+    setTzSaving(true)
+    setTzFeedback({ type: '', message: '' })
+    const { error } = await supabase.from('profiles').update({ timezone: newTz }).eq('id', user.id)
+    setTzSaving(false)
+    if (error) {
+      setTzFeedback({ type: 'error', message: 'Error: ' + error.message })
+      return
+    }
+    setLocalTimezone(newTz)
+    setTzFeedback({ type: 'success', message: 'Timezone updated!' })
+    setTimeout(function() {
+      setEditingTz(false)
+      setTzFeedback({ type: '', message: '' })
+    }, 1500)
+  }
+
   return (
     <AppLayout hideRightSidebar>
       <DetailPageLayout title="My Profile" subtitle="Manage your ControlNode account and notification preferences.">
@@ -174,55 +404,135 @@ export function Account() {
           <div className="flex items-center gap-4 mb-5">
             <div className="w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold flex-shrink-0" style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', color: '#fff' }}>{initials}</div>
             <div>
-              <p className="font-semibold" style={{ color: '#eceef5' }}>{profile?.full_name || 'Member'}</p>
-              <p className="text-sm" style={{ color: '#9aa8be' }}>{user?.email || ''}</p>
-              <div className="mt-1"><Badge color="blue">{profile?.subscription_status === 'active' ? 'Active' : 'Trial'}</Badge></div>
+              <p className="font-semibold" style={{ color: '#eceef5' }}>{localFullName || 'Member'}</p>
+              <p className="text-sm" style={{ color: '#9aa8be' }}>{(user && user.email) || ''}</p>
+              <div className="mt-1"><Badge color="blue">{profile && profile.subscription_status === 'active' ? 'Active' : 'Trial'}</Badge></div>
             </div>
           </div>
           <DataRow label="Plan" value="ControlNode Pro" />
-          <DataRow label="Status" value={profile?.subscription_status === 'active' ? 'Active' : 'Trial'} valueColor="#10b981" />
+          <DataRow label="Status" value={profile && profile.subscription_status === 'active' ? 'Active' : 'Trial'} valueColor="#10b981" />
         </DetailSection>
+
         <DetailSection title="Account Settings">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between py-1">
-              <span className="text-sm" style={{ color: '#9aa8be' }}>Email Address</span>
-              <button className="text-xs px-3 py-1.5 rounded-lg border" style={{ color: '#3b82f6', borderColor: '#1e2330' }}>Edit</button>
+          <div className="space-y-1">
+
+            {/* EMAIL ADDRESS */}
+            <EditableRow
+              label="Email Address"
+              value={(user && user.email) || ''}
+              editing={editingEmail}
+              onEdit={startEditEmail}
+              onCancel={cancelEditEmail}
+              onSave={saveEmail}
+              saving={emailSaving}
+              saveLabel="Send Confirmation"
+            >
+              <input
+                type="email"
+                value={newEmail}
+                onChange={function(e) { setNewEmail(e.target.value) }}
+                placeholder="your@email.com"
+                className="w-full px-3 py-2.5 rounded-lg text-sm outline-none mb-2"
+                style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}
+                onFocus={function(e) { e.target.style.borderColor = '#3b82f6' }}
+                onBlur={function(e) { e.target.style.borderColor = '#1e2330' }}
+              />
+              <p className="text-xs" style={{ color: '#6b7a96' }}>
+                A confirmation link will be sent to the new address. Your current email keeps working until you click the link to confirm.
+              </p>
+              <FeedbackBox feedback={emailFeedback} />
+            </EditableRow>
+
+            {/* DISPLAY NAME */}
+            <EditableRow
+              label="Display Name"
+              value={localFullName || '(not set)'}
+              editing={editingName}
+              onEdit={startEditName}
+              onCancel={cancelEditName}
+              onSave={saveName}
+              saving={nameSaving}
+            >
+              <input
+                type="text"
+                value={newName}
+                onChange={function(e) { setNewName(e.target.value) }}
+                placeholder="Your full name"
+                maxLength={80}
+                className="w-full px-3 py-2.5 rounded-lg text-sm outline-none"
+                style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}
+                onFocus={function(e) { e.target.style.borderColor = '#3b82f6' }}
+                onBlur={function(e) { e.target.style.borderColor = '#1e2330' }}
+              />
+              <FeedbackBox feedback={nameFeedback} />
+            </EditableRow>
+
+            {/* RESET PASSWORD */}
+            <div className="py-2" style={{ borderBottom: '1px solid #1e2330' }}>
+              <div className="flex items-center justify-between">
+                <span className="text-sm" style={{ color: '#9aa8be' }}>Reset Password</span>
+                <button
+                  onClick={handlePasswordReset}
+                  disabled={resetLoading}
+                  className="text-xs px-3 py-1.5 rounded-lg border"
+                  style={{
+                    color: resetLoading ? '#6b7a96' : '#3b82f6',
+                    borderColor: '#1e2330',
+                    cursor: resetLoading ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  {resetLoading ? 'Sending...' : 'Send Reset Email'}
+                </button>
+              </div>
+              {resetMessage && (
+                <div className="mt-3 px-3 py-2 rounded-lg text-xs" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', color: '#10b981' }}>
+                  {resetMessage}
+                </div>
+              )}
+              {resetError && (
+                <div className="mt-3 px-3 py-2 rounded-lg text-xs" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444' }}>
+                  {resetError}
+                </div>
+              )}
             </div>
-            <div className="flex items-center justify-between py-1">
-              <span className="text-sm" style={{ color: '#9aa8be' }}>Display Name</span>
-              <button className="text-xs px-3 py-1.5 rounded-lg border" style={{ color: '#3b82f6', borderColor: '#1e2330' }}>Edit</button>
-            </div>
-            <div className="flex items-center justify-between py-1">
-              <span className="text-sm" style={{ color: '#9aa8be' }}>Reset Password</span>
-              <button
-                onClick={handlePasswordReset}
-                disabled={resetLoading}
-                className="text-xs px-3 py-1.5 rounded-lg border"
-                style={{
-                  color: resetLoading ? '#6b7a96' : '#3b82f6',
-                  borderColor: '#1e2330',
-                  cursor: resetLoading ? 'not-allowed' : 'pointer'
-                }}
+
+            {/* TIMEZONE */}
+            <EditableRow
+              label="Timezone"
+              value={localTimezone ? formatTimezoneLabel(localTimezone) + ' (' + localTimezone + ')' : ''}
+              editing={editingTz}
+              onEdit={startEditTz}
+              onCancel={cancelEditTz}
+              onSave={saveTz}
+              saving={tzSaving}
+            >
+              <select
+                value={newTz}
+                onChange={function(e) { setNewTz(e.target.value) }}
+                className="w-full px-3 py-2.5 rounded-lg text-sm outline-none"
+                style={{ background: '#111318', border: '1px solid #1e2330', color: '#eceef5' }}
+                onFocus={function(e) { e.target.style.borderColor = '#3b82f6' }}
+                onBlur={function(e) { e.target.style.borderColor = '#1e2330' }}
               >
-                {resetLoading ? 'Sending...' : 'Send Reset Email'}
-              </button>
-            </div>
-            {resetMessage && (
-              <div className="px-3 py-2 rounded-lg text-xs" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', color: '#10b981' }}>
-                {resetMessage}
-              </div>
-            )}
-            {resetError && (
-              <div className="px-3 py-2 rounded-lg text-xs" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444' }}>
-                {resetError}
-              </div>
-            )}
-            <div className="flex items-center justify-between py-1">
-              <span className="text-sm" style={{ color: '#9aa8be' }}>Timezone</span>
-              <button className="text-xs px-3 py-1.5 rounded-lg border" style={{ color: '#3b82f6', borderColor: '#1e2330' }}>Edit</button>
-            </div>
+                {TIMEZONES.map(function(group) {
+                  return (
+                    <optgroup key={group.region} label={group.region}>
+                      {group.zones.map(function(tz) {
+                        return <option key={tz} value={tz}>{formatTimezoneLabel(tz)} ({tz})</option>
+                      })}
+                    </optgroup>
+                  )
+                })}
+              </select>
+              <p className="text-xs mt-2" style={{ color: '#6b7a96' }}>
+                Used for displaying times in Morning Brief, Daily Wrap, and market data.
+              </p>
+              <FeedbackBox feedback={tzFeedback} />
+            </EditableRow>
+
           </div>
         </DetailSection>
+
         <EmailNotificationsSection />
       </DetailPageLayout>
     </AppLayout>
@@ -254,7 +564,7 @@ export function Settings() {
         <DetailSection title="Display">
           <DataRow label="Theme" value="Dark (Default)" />
           <DataRow label="Currency" value="USD" />
-          <DataRow label="Timezone" value="CT (Chicago)" />
+          <DataRow label="Timezone" value="Set on the Account page" />
         </DetailSection>
         <DetailSection title="Data & Privacy">
           <div className="space-y-2">
@@ -337,7 +647,6 @@ export function AdminMarketSignals() {
     if (notify) { await sendNotificationToAllMembers('Market Signal Update', signal.signal_name + ' changed to ' + signal.signal_value, 'market_signals') }
     setSaving(null)
     showToast(signal.signal_name + ' saved!')
-    // Update the color in local state
     updateField(signal.id, 'color', color)
   }
 
