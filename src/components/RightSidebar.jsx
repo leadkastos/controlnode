@@ -1,10 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { TrendingUp, TrendingDown, ExternalLink, Zap } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import { useAuth } from '../contexts/AuthContext'
 import { usePrices, COINGECKO_IDS } from '../contexts/PriceContext'
-
-const DEFAULT_SYMBOLS = ['XRP', 'BTC', 'SOL', 'ETH', 'HBAR', 'XLM']
 
 const categoryColors = {
   Regulatory: { bg: 'rgba(139,92,246,0.12)', text: '#8b5cf6' },
@@ -57,26 +54,34 @@ function getCategoryLabel(categories) {
 }
 
 export default function RightSidebar() {
-  const { user } = useAuth()
   const prices = usePrices()
-  const [symbols, setSymbols] = useState(DEFAULT_SYMBOLS)
+  const [symbols, setSymbols] = useState([])
   const [news, setNews] = useState([])
   const [marketSignals, setMarketSignals] = useState([])
 
   useEffect(function() {
-    if (!user) return
-    async function loadWatchlist() {
-      var result = await supabase
-        .from('user_watchlist')
-        .select('symbol')
-        .eq('user_id', user.id)
-        .order('added_at', { ascending: true })
-      if (result.data && result.data.length > 0) {
-        setSymbols(result.data.map(function(d) { return d.symbol }))
+    async function loadMasterSymbols() {
+      try {
+        var result = await supabase
+          .from('master_watchlist')
+          .select('symbol')
+          .order('symbol')
+        if (result.data && result.data.length > 0) {
+          setSymbols(result.data.map(function(row) { return row.symbol }))
+        } else {
+          // If no data, set empty array - don't show fallback symbols
+          setSymbols([])
+        }
+      } catch(e) {
+        console.error('Error loading master symbols:', e)
+        // If error, set empty array - don't show fallback symbols
+        setSymbols([])
       }
     }
-    loadWatchlist()
-  }, [user])
+    loadMasterSymbols()
+    var interval = setInterval(loadMasterSymbols, 30 * 1000)
+    return function() { clearInterval(interval) }
+  }, [])
 
   useEffect(function() {
     async function loadMarketSignals() {
@@ -93,7 +98,6 @@ export default function RightSidebar() {
       }
     }
     loadMarketSignals()
-    // Refresh signals every 30 seconds
     var interval = setInterval(loadMarketSignals, 30 * 1000)
     return function() { clearInterval(interval) }
   }, [])
@@ -166,6 +170,7 @@ export default function RightSidebar() {
       className="hidden lg:flex fixed right-0 top-0 h-screen w-64 flex-col z-30"
       style={{ background: '#0d0f14', borderLeft: '1px solid #1e2330' }}
     >
+      {/* Top spacer to align with TopBar */}
       <div style={{ height: '56px', flexShrink: 0, borderBottom: '1px solid #1e2330' }} />
 
       <div className="flex-1 overflow-y-auto py-4 px-4 space-y-5">
@@ -226,6 +231,7 @@ export default function RightSidebar() {
           </div>
         </div>
 
+        {/* Market Signals */}
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#6b7a96' }}>
             Market Signals
@@ -264,6 +270,7 @@ export default function RightSidebar() {
           </div>
         </div>
 
+        {/* News Feed */}
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#6b7a96' }}>
             News Feed
