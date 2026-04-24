@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import AppLayout from '../components/AppLayout'
-import { Plus, Trash2, Save, Bell, MessageCircle, PlaySquare } from 'lucide-react'
+import { Plus, Trash2, Save, Bell, MessageCircle, PlaySquare, FileText, BarChart3, Globe, Zap, Target, TrendingUp, Calendar } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -39,11 +39,50 @@ export default function AdminPages() {
     send_email: true
   })
 
+  // Morning Brief state
+  const [morningBriefForm, setMorningBriefForm] = useState({
+    title: '',
+    content: '',
+    key_points: '',
+    market_outlook: ''
+  })
+
+  // Daily Wrap state
+  const [dailyWrapForm, setDailyWrapForm] = useState({
+    title: '',
+    content: '',
+    key_events: '',
+    tomorrow_outlook: ''
+  })
+
+  // Market Signals state
+  const [marketSignals, setMarketSignals] = useState([])
+  const [newSignal, setNewSignal] = useState({
+    signal_name: '',
+    signal_value: '',
+    color: 'blue'
+  })
+
+  // Breaking News state
+  const [breakingNewsForm, setBreakingNewsForm] = useState({
+    headline: '',
+    content: '',
+    urgency: 'medium',
+    show_ticker: true
+  })
+
+  // ETF Flows state
+  const [etfFlowsForm, setEtfFlowsForm] = useState({
+    date: '',
+    inflow_outflow: '',
+    total_aum: '',
+    notes: ''
+  })
+
   // Extract YouTube video ID from URL
   function extractVideoId(url) {
     if (!url) return ''
     
-    // Handle various YouTube URL formats
     const patterns = [
       /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
       /youtube\.com\/v\/([^&\n?#]+)/
@@ -74,9 +113,10 @@ export default function AdminPages() {
     }
   }, [youtubeForm.youtube_url])
 
-  // Load master watchlist
+  // Load data on mount
   useEffect(() => {
     loadMasterSymbols()
+    loadMarketSignals()
   }, [])
 
   async function loadMasterSymbols() {
@@ -95,6 +135,22 @@ export default function AdminPages() {
     }
   }
 
+  async function loadMarketSignals() {
+    try {
+      const result = await supabase
+        .from('market_signals')
+        .select('*')
+        .order('signal_name')
+      
+      if (result.data) {
+        setMarketSignals(result.data)
+      }
+    } catch (error) {
+      console.error('Error loading market signals:', error)
+    }
+  }
+
+  // Market News Submit
   async function handleMarketNewsSubmit(e) {
     e.preventDefault()
     if (!marketNewsForm.content.trim()) {
@@ -125,18 +181,6 @@ export default function AdminPages() {
         source: '',
         source_url: ''
       })
-
-      // Send notification if enabled
-      if (marketNewsForm.send_notification) {
-        await supabase
-          .from('notifications')
-          .insert([{
-            title: marketNewsForm.type === 'confirmed' ? 'New Confirmed Market News' : 'New Market Chatter',
-            message: marketNewsForm.content.substring(0, 100) + (marketNewsForm.content.length > 100 ? '...' : ''),
-            type: 'market_news',
-            created_by: profile.id
-          }])
-      }
     } catch (error) {
       console.error('Error posting market news:', error)
       setMessage('Error posting market news')
@@ -145,6 +189,7 @@ export default function AdminPages() {
     }
   }
 
+  // YouTube Submit
   async function handleYouTubeSubmit(e) {
     e.preventDefault()
     if (!youtubeForm.title.trim() || !youtubeForm.youtube_url.trim()) {
@@ -188,13 +233,13 @@ export default function AdminPages() {
     }
   }
 
+  // Master Watchlist Functions
   async function handleAddSymbol(e) {
     e.preventDefault()
     if (!newSymbol.trim()) return
 
     const symbol = newSymbol.toUpperCase().trim()
     
-    // Check if symbol already exists
     if (symbols.some(s => s.symbol === symbol)) {
       setMessage('Symbol already exists')
       return
@@ -241,6 +286,190 @@ export default function AdminPages() {
     }
   }
 
+  // Morning Brief Submit
+  async function handleMorningBriefSubmit(e) {
+    e.preventDefault()
+    if (!morningBriefForm.title.trim() || !morningBriefForm.content.trim()) {
+      setMessage('Title and content are required')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const { error } = await supabase
+        .from('morning_briefs')
+        .insert([{
+          title: morningBriefForm.title,
+          content: morningBriefForm.content,
+          key_points: morningBriefForm.key_points || null,
+          market_outlook: morningBriefForm.market_outlook || null,
+          created_by: profile.id
+        }])
+
+      if (error) throw error
+
+      setMessage('Morning Brief published successfully!')
+      setMorningBriefForm({
+        title: '',
+        content: '',
+        key_points: '',
+        market_outlook: ''
+      })
+    } catch (error) {
+      console.error('Error publishing morning brief:', error)
+      setMessage('Error publishing morning brief')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Daily Wrap Submit
+  async function handleDailyWrapSubmit(e) {
+    e.preventDefault()
+    if (!dailyWrapForm.title.trim() || !dailyWrapForm.content.trim()) {
+      setMessage('Title and content are required')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const { error } = await supabase
+        .from('daily_wraps')
+        .insert([{
+          title: dailyWrapForm.title,
+          content: dailyWrapForm.content,
+          key_events: dailyWrapForm.key_events || null,
+          tomorrow_outlook: dailyWrapForm.tomorrow_outlook || null,
+          created_by: profile.id
+        }])
+
+      if (error) throw error
+
+      setMessage('Daily Wrap published successfully!')
+      setDailyWrapForm({
+        title: '',
+        content: '',
+        key_events: '',
+        tomorrow_outlook: ''
+      })
+    } catch (error) {
+      console.error('Error publishing daily wrap:', error)
+      setMessage('Error publishing daily wrap')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Market Signal Functions
+  async function handleAddMarketSignal(e) {
+    e.preventDefault()
+    if (!newSignal.signal_name.trim() || !newSignal.signal_value.trim()) {
+      setMessage('Signal name and value are required')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const { error } = await supabase
+        .from('market_signals')
+        .upsert([{
+          signal_name: newSignal.signal_name,
+          signal_value: newSignal.signal_value,
+          color: newSignal.color
+        }], { onConflict: 'signal_name' })
+
+      if (error) throw error
+
+      setMessage('Market signal updated successfully!')
+      setNewSignal({
+        signal_name: '',
+        signal_value: '',
+        color: 'blue'
+      })
+      loadMarketSignals()
+    } catch (error) {
+      console.error('Error updating market signal:', error)
+      setMessage('Error updating market signal')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Breaking News Submit
+  async function handleBreakingNewsSubmit(e) {
+    e.preventDefault()
+    if (!breakingNewsForm.headline.trim()) {
+      setMessage('Headline is required')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const { error } = await supabase
+        .from('top_headlines')
+        .insert([{
+          headline: breakingNewsForm.headline,
+          content: breakingNewsForm.content || null,
+          urgency: breakingNewsForm.urgency,
+          show_ticker: breakingNewsForm.show_ticker,
+          created_by: profile.id
+        }])
+
+      if (error) throw error
+
+      setMessage('Breaking news posted successfully!')
+      setBreakingNewsForm({
+        headline: '',
+        content: '',
+        urgency: 'medium',
+        show_ticker: true
+      })
+    } catch (error) {
+      console.error('Error posting breaking news:', error)
+      setMessage('Error posting breaking news')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // ETF Flows Submit
+  async function handleETFFlowsSubmit(e) {
+    e.preventDefault()
+    if (!etfFlowsForm.date || !etfFlowsForm.inflow_outflow) {
+      setMessage('Date and flow amount are required')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const { error } = await supabase
+        .from('xrp_etf_flows')
+        .insert([{
+          date: etfFlowsForm.date,
+          inflow_outflow: parseFloat(etfFlowsForm.inflow_outflow),
+          total_aum: etfFlowsForm.total_aum ? parseFloat(etfFlowsForm.total_aum) : null,
+          notes: etfFlowsForm.notes || null,
+          created_by: profile.id
+        }])
+
+      if (error) throw error
+
+      setMessage('ETF flows data added successfully!')
+      setEtfFlowsForm({
+        date: '',
+        inflow_outflow: '',
+        total_aum: '',
+        notes: ''
+      })
+    } catch (error) {
+      console.error('Error adding ETF flows:', error)
+      setMessage('Error adding ETF flows')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Notification Submit
   async function handleNotificationSubmit(e) {
     e.preventDefault()
     if (!notificationForm.title.trim() || !notificationForm.message.trim()) {
@@ -277,7 +506,12 @@ export default function AdminPages() {
 
   const sections = [
     { id: 'market-news', label: 'Market News', icon: MessageCircle },
+    { id: 'morning-brief', label: 'Morning Brief', icon: FileText },
+    { id: 'daily-wrap', label: 'Daily Wrap', icon: Calendar },
+    { id: 'market-signals', label: 'Market Signals', icon: BarChart3 },
+    { id: 'breaking-news', label: 'Breaking News', icon: Zap },
     { id: 'youtube-intel', label: 'YouTube Intel', icon: PlaySquare },
+    { id: 'etf-flows', label: 'ETF Flows', icon: TrendingUp },
     { id: 'master-watchlist', label: 'Master Watchlist', icon: Plus },
     { id: 'notifications', label: 'Send Notification', icon: Bell },
   ]
@@ -440,16 +674,398 @@ export default function AdminPages() {
                       </div>
                     </div>
 
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="px-6 py-3 rounded-lg font-medium transition-all disabled:opacity-50"
+                      style={{
+                        background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+                        color: '#fff'
+                      }}
+                    >
+                      {loading ? 'Posting...' : 'Post'}
+                    </button>
+                  </form>
+                </div>
+              )}
+
+              {/* Morning Brief Section */}
+              {activeSection === 'morning-brief' && (
+                <div className="bg-slate-800/30 rounded-xl p-6" style={{ border: '1px solid #334155' }}>
+                  <h2 className="text-xl font-semibold mb-6" style={{ color: '#eceef5' }}>
+                    Publish Morning Brief
+                  </h2>
+                  
+                  <form onSubmit={handleMorningBriefSubmit} className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>
+                        Title
+                      </label>
+                      <input
+                        type="text"
+                        value={morningBriefForm.title}
+                        onChange={(e) => setMorningBriefForm(prev => ({ ...prev, title: e.target.value }))}
+                        placeholder="Enter morning brief title..."
+                        className="w-full px-4 py-3 rounded-lg border"
+                        style={{ 
+                          background: '#1e293b', 
+                          border: '1px solid #475569', 
+                          color: '#eceef5' 
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>
+                        Content
+                      </label>
+                      <textarea
+                        value={morningBriefForm.content}
+                        onChange={(e) => setMorningBriefForm(prev => ({ ...prev, content: e.target.value }))}
+                        placeholder="Enter morning brief content..."
+                        rows={6}
+                        className="w-full px-4 py-3 rounded-lg border resize-none"
+                        style={{ 
+                          background: '#1e293b', 
+                          border: '1px solid #475569', 
+                          color: '#eceef5' 
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>
+                        Key Points (Optional)
+                      </label>
+                      <textarea
+                        value={morningBriefForm.key_points}
+                        onChange={(e) => setMorningBriefForm(prev => ({ ...prev, key_points: e.target.value }))}
+                        placeholder="• Key point 1&#10;• Key point 2&#10;• Key point 3"
+                        rows={3}
+                        className="w-full px-4 py-3 rounded-lg border resize-none"
+                        style={{ 
+                          background: '#1e293b', 
+                          border: '1px solid #475569', 
+                          color: '#eceef5' 
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>
+                        Market Outlook (Optional)
+                      </label>
+                      <textarea
+                        value={morningBriefForm.market_outlook}
+                        onChange={(e) => setMorningBriefForm(prev => ({ ...prev, market_outlook: e.target.value }))}
+                        placeholder="Today's market outlook and expectations..."
+                        rows={3}
+                        className="w-full px-4 py-3 rounded-lg border resize-none"
+                        style={{ 
+                          background: '#1e293b', 
+                          border: '1px solid #475569', 
+                          color: '#eceef5' 
+                        }}
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="px-6 py-3 rounded-lg font-medium transition-all disabled:opacity-50"
+                      style={{
+                        background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+                        color: '#fff'
+                      }}
+                    >
+                      {loading ? 'Publishing...' : 'Publish Morning Brief'}
+                    </button>
+                  </form>
+                </div>
+              )}
+
+              {/* Daily Wrap Section */}
+              {activeSection === 'daily-wrap' && (
+                <div className="bg-slate-800/30 rounded-xl p-6" style={{ border: '1px solid #334155' }}>
+                  <h2 className="text-xl font-semibold mb-6" style={{ color: '#eceef5' }}>
+                    Publish Daily Wrap
+                  </h2>
+                  
+                  <form onSubmit={handleDailyWrapSubmit} className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>
+                        Title
+                      </label>
+                      <input
+                        type="text"
+                        value={dailyWrapForm.title}
+                        onChange={(e) => setDailyWrapForm(prev => ({ ...prev, title: e.target.value }))}
+                        placeholder="Enter daily wrap title..."
+                        className="w-full px-4 py-3 rounded-lg border"
+                        style={{ 
+                          background: '#1e293b', 
+                          border: '1px solid #475569', 
+                          color: '#eceef5' 
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>
+                        Content
+                      </label>
+                      <textarea
+                        value={dailyWrapForm.content}
+                        onChange={(e) => setDailyWrapForm(prev => ({ ...prev, content: e.target.value }))}
+                        placeholder="Enter daily wrap content..."
+                        rows={6}
+                        className="w-full px-4 py-3 rounded-lg border resize-none"
+                        style={{ 
+                          background: '#1e293b', 
+                          border: '1px solid #475569', 
+                          color: '#eceef5' 
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>
+                        Key Events (Optional)
+                      </label>
+                      <textarea
+                        value={dailyWrapForm.key_events}
+                        onChange={(e) => setDailyWrapForm(prev => ({ ...prev, key_events: e.target.value }))}
+                        placeholder="• Event 1&#10;• Event 2&#10;• Event 3"
+                        rows={3}
+                        className="w-full px-4 py-3 rounded-lg border resize-none"
+                        style={{ 
+                          background: '#1e293b', 
+                          border: '1px solid #475569', 
+                          color: '#eceef5' 
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>
+                        Tomorrow's Outlook (Optional)
+                      </label>
+                      <textarea
+                        value={dailyWrapForm.tomorrow_outlook}
+                        onChange={(e) => setDailyWrapForm(prev => ({ ...prev, tomorrow_outlook: e.target.value }))}
+                        placeholder="What to watch for tomorrow..."
+                        rows={3}
+                        className="w-full px-4 py-3 rounded-lg border resize-none"
+                        style={{ 
+                          background: '#1e293b', 
+                          border: '1px solid #475569', 
+                          color: '#eceef5' 
+                        }}
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="px-6 py-3 rounded-lg font-medium transition-all disabled:opacity-50"
+                      style={{
+                        background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+                        color: '#fff'
+                      }}
+                    >
+                      {loading ? 'Publishing...' : 'Publish Daily Wrap'}
+                    </button>
+                  </form>
+                </div>
+              )}
+
+              {/* Market Signals Section */}
+              {activeSection === 'market-signals' && (
+                <div className="bg-slate-800/30 rounded-xl p-6" style={{ border: '1px solid #334155' }}>
+                  <h2 className="text-xl font-semibold mb-6" style={{ color: '#eceef5' }}>
+                    Update Market Signals
+                  </h2>
+                  
+                  <form onSubmit={handleAddMarketSignal} className="space-y-6 mb-8">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>
+                          Signal Name
+                        </label>
+                        <input
+                          type="text"
+                          value={newSignal.signal_name}
+                          onChange={(e) => setNewSignal(prev => ({ ...prev, signal_name: e.target.value }))}
+                          placeholder="Market Sentiment"
+                          className="w-full px-4 py-3 rounded-lg border"
+                          style={{ 
+                            background: '#1e293b', 
+                            border: '1px solid #475569', 
+                            color: '#eceef5' 
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>
+                          Signal Value
+                        </label>
+                        <input
+                          type="text"
+                          value={newSignal.signal_value}
+                          onChange={(e) => setNewSignal(prev => ({ ...prev, signal_value: e.target.value }))}
+                          placeholder="Bullish"
+                          className="w-full px-4 py-3 rounded-lg border"
+                          style={{ 
+                            background: '#1e293b', 
+                            border: '1px solid #475569', 
+                            color: '#eceef5' 
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>
+                          Color
+                        </label>
+                        <select
+                          value={newSignal.color}
+                          onChange={(e) => setNewSignal(prev => ({ ...prev, color: e.target.value }))}
+                          className="w-full px-4 py-3 rounded-lg border"
+                          style={{ 
+                            background: '#1e293b', 
+                            border: '1px solid #475569', 
+                            color: '#eceef5' 
+                          }}
+                        >
+                          <option value="green">Green</option>
+                          <option value="yellow">Yellow</option>
+                          <option value="red">Red</option>
+                          <option value="blue">Blue</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="px-6 py-3 rounded-lg font-medium transition-all disabled:opacity-50"
+                      style={{
+                        background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+                        color: '#fff'
+                      }}
+                    >
+                      {loading ? 'Updating...' : 'Update Signal'}
+                    </button>
+                  </form>
+
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-medium mb-4" style={{ color: '#eceef5' }}>Current Signals</h3>
+                    {marketSignals.map(signal => (
+                      <div
+                        key={signal.signal_name}
+                        className="flex items-center justify-between p-3 rounded-lg"
+                        style={{ background: '#1e293b', border: '1px solid #475569' }}
+                      >
+                        <span className="font-medium" style={{ color: '#eceef5' }}>
+                          {signal.signal_name}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="px-3 py-1 rounded text-sm font-semibold"
+                            style={{
+                              background: signal.color === 'green' ? 'rgba(16,185,129,0.2)' : 
+                                         signal.color === 'red' ? 'rgba(239,68,68,0.2)' : 
+                                         signal.color === 'yellow' ? 'rgba(245,158,11,0.2)' : 'rgba(59,130,246,0.2)',
+                              color: signal.color === 'green' ? '#10b981' : 
+                                     signal.color === 'red' ? '#ef4444' : 
+                                     signal.color === 'yellow' ? '#f59e0b' : '#3b82f6'
+                            }}
+                          >
+                            {signal.signal_value}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Breaking News Section */}
+              {activeSection === 'breaking-news' && (
+                <div className="bg-slate-800/30 rounded-xl p-6" style={{ border: '1px solid #334155' }}>
+                  <h2 className="text-xl font-semibold mb-6" style={{ color: '#eceef5' }}>
+                    Post Breaking News
+                  </h2>
+                  
+                  <form onSubmit={handleBreakingNewsSubmit} className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>
+                        Headline
+                      </label>
+                      <input
+                        type="text"
+                        value={breakingNewsForm.headline}
+                        onChange={(e) => setBreakingNewsForm(prev => ({ ...prev, headline: e.target.value }))}
+                        placeholder="Enter breaking news headline..."
+                        className="w-full px-4 py-3 rounded-lg border"
+                        style={{ 
+                          background: '#1e293b', 
+                          border: '1px solid #475569', 
+                          color: '#eceef5' 
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>
+                        Content (Optional)
+                      </label>
+                      <textarea
+                        value={breakingNewsForm.content}
+                        onChange={(e) => setBreakingNewsForm(prev => ({ ...prev, content: e.target.value }))}
+                        placeholder="Additional details..."
+                        rows={4}
+                        className="w-full px-4 py-3 rounded-lg border resize-none"
+                        style={{ 
+                          background: '#1e293b', 
+                          border: '1px solid #475569', 
+                          color: '#eceef5' 
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>
+                        Urgency Level
+                      </label>
+                      <select
+                        value={breakingNewsForm.urgency}
+                        onChange={(e) => setBreakingNewsForm(prev => ({ ...prev, urgency: e.target.value }))}
+                        className="w-full px-4 py-3 rounded-lg border"
+                        style={{ 
+                          background: '#1e293b', 
+                          border: '1px solid #475569', 
+                          color: '#eceef5' 
+                        }}
+                      >
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                        <option value="critical">Critical</option>
+                      </select>
+                    </div>
+
                     <div className="flex items-center gap-2">
                       <input
                         type="checkbox"
-                        id="send_notification"
-                        checked={marketNewsForm.send_notification || false}
-                        onChange={(e) => setMarketNewsForm(prev => ({ ...prev, send_notification: e.target.checked }))}
+                        id="show_ticker"
+                        checked={breakingNewsForm.show_ticker}
+                        onChange={(e) => setBreakingNewsForm(prev => ({ ...prev, show_ticker: e.target.checked }))}
                         className="rounded"
                       />
-                      <label htmlFor="send_notification" className="text-sm" style={{ color: '#cbd5e1' }}>
-                        Send bell notification to all active members
+                      <label htmlFor="show_ticker" className="text-sm" style={{ color: '#cbd5e1' }}>
+                        Show in top ticker banner
                       </label>
                     </div>
 
@@ -462,7 +1078,105 @@ export default function AdminPages() {
                         color: '#fff'
                       }}
                     >
-                      {loading ? 'Posting...' : 'Post'}
+                      {loading ? 'Posting...' : 'Post Breaking News'}
+                    </button>
+                  </form>
+                </div>
+              )}
+
+              {/* ETF Flows Section */}
+              {activeSection === 'etf-flows' && (
+                <div className="bg-slate-800/30 rounded-xl p-6" style={{ border: '1px solid #334155' }}>
+                  <h2 className="text-xl font-semibold mb-6" style={{ color: '#eceef5' }}>
+                    Update ETF Flows
+                  </h2>
+                  
+                  <form onSubmit={handleETFFlowsSubmit} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>
+                          Date
+                        </label>
+                        <input
+                          type="date"
+                          value={etfFlowsForm.date}
+                          onChange={(e) => setEtfFlowsForm(prev => ({ ...prev, date: e.target.value }))}
+                          className="w-full px-4 py-3 rounded-lg border"
+                          style={{ 
+                            background: '#1e293b', 
+                            border: '1px solid #475569', 
+                            color: '#eceef5' 
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>
+                          Inflow/Outflow ($ millions)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={etfFlowsForm.inflow_outflow}
+                          onChange={(e) => setEtfFlowsForm(prev => ({ ...prev, inflow_outflow: e.target.value }))}
+                          placeholder="25.5 (positive = inflow)"
+                          className="w-full px-4 py-3 rounded-lg border"
+                          style={{ 
+                            background: '#1e293b', 
+                            border: '1px solid #475569', 
+                            color: '#eceef5' 
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>
+                        Total AUM ($ millions, Optional)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={etfFlowsForm.total_aum}
+                        onChange={(e) => setEtfFlowsForm(prev => ({ ...prev, total_aum: e.target.value }))}
+                        placeholder="1250.75"
+                        className="w-full px-4 py-3 rounded-lg border"
+                        style={{ 
+                          background: '#1e293b', 
+                          border: '1px solid #475569', 
+                          color: '#eceef5' 
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>
+                        Notes (Optional)
+                      </label>
+                      <textarea
+                        value={etfFlowsForm.notes}
+                        onChange={(e) => setEtfFlowsForm(prev => ({ ...prev, notes: e.target.value }))}
+                        placeholder="Additional context or notes..."
+                        rows={3}
+                        className="w-full px-4 py-3 rounded-lg border resize-none"
+                        style={{ 
+                          background: '#1e293b', 
+                          border: '1px solid #475569', 
+                          color: '#eceef5' 
+                        }}
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="px-6 py-3 rounded-lg font-medium transition-all disabled:opacity-50"
+                      style={{
+                        background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+                        color: '#fff'
+                      }}
+                    >
+                      {loading ? 'Adding...' : 'Add ETF Flow Data'}
                     </button>
                   </form>
                 </div>
