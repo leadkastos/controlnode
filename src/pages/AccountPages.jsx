@@ -139,7 +139,34 @@ function EmailNotificationsSection() {
 
 export function Account() {
   const { user, profile } = useAuth()
+  const [resetLoading, setResetLoading] = useState(false)
+  const [resetMessage, setResetMessage] = useState('')
+  const [resetError, setResetError] = useState('')
+
   var initials = profile?.full_name ? profile.full_name.split(' ').map(function(n) { return n[0] }).join('').toUpperCase() : 'CN'
+
+  async function handlePasswordReset() {
+    if (!user?.email) {
+      setResetError('No email address found on your account.')
+      setTimeout(function() { setResetError('') }, 4000)
+      return
+    }
+    setResetLoading(true)
+    setResetMessage('')
+    setResetError('')
+    const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+      redirectTo: 'https://app.controlnode.io/reset-password'
+    })
+    setResetLoading(false)
+    if (error) {
+      setResetError('Error: ' + error.message)
+      setTimeout(function() { setResetError('') }, 5000)
+    } else {
+      setResetMessage('Password reset email sent! Check your inbox.')
+      setTimeout(function() { setResetMessage('') }, 5000)
+    }
+  }
+
   return (
     <AppLayout hideRightSidebar>
       <DetailPageLayout title="My Profile" subtitle="Manage your ControlNode account and notification preferences.">
@@ -157,14 +184,43 @@ export function Account() {
         </DetailSection>
         <DetailSection title="Account Settings">
           <div className="space-y-3">
-            {['Email Address', 'Display Name', 'Reset Password', 'Timezone'].map(function(field) {
-              return (
-                <div key={field} className="flex items-center justify-between py-1">
-                  <span className="text-sm" style={{ color: '#9aa8be' }}>{field}</span>
-                  <button className="text-xs px-3 py-1.5 rounded-lg border" style={{ color: '#3b82f6', borderColor: '#1e2330' }}>{field === 'Reset Password' ? 'Send Reset Email' : 'Edit'}</button>
-                </div>
-              )
-            })}
+            <div className="flex items-center justify-between py-1">
+              <span className="text-sm" style={{ color: '#9aa8be' }}>Email Address</span>
+              <button className="text-xs px-3 py-1.5 rounded-lg border" style={{ color: '#3b82f6', borderColor: '#1e2330' }}>Edit</button>
+            </div>
+            <div className="flex items-center justify-between py-1">
+              <span className="text-sm" style={{ color: '#9aa8be' }}>Display Name</span>
+              <button className="text-xs px-3 py-1.5 rounded-lg border" style={{ color: '#3b82f6', borderColor: '#1e2330' }}>Edit</button>
+            </div>
+            <div className="flex items-center justify-between py-1">
+              <span className="text-sm" style={{ color: '#9aa8be' }}>Reset Password</span>
+              <button
+                onClick={handlePasswordReset}
+                disabled={resetLoading}
+                className="text-xs px-3 py-1.5 rounded-lg border"
+                style={{
+                  color: resetLoading ? '#6b7a96' : '#3b82f6',
+                  borderColor: '#1e2330',
+                  cursor: resetLoading ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {resetLoading ? 'Sending...' : 'Send Reset Email'}
+              </button>
+            </div>
+            {resetMessage && (
+              <div className="px-3 py-2 rounded-lg text-xs" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', color: '#10b981' }}>
+                {resetMessage}
+              </div>
+            )}
+            {resetError && (
+              <div className="px-3 py-2 rounded-lg text-xs" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444' }}>
+                {resetError}
+              </div>
+            )}
+            <div className="flex items-center justify-between py-1">
+              <span className="text-sm" style={{ color: '#9aa8be' }}>Timezone</span>
+              <button className="text-xs px-3 py-1.5 rounded-lg border" style={{ color: '#3b82f6', borderColor: '#1e2330' }}>Edit</button>
+            </div>
           </div>
         </DetailSection>
         <EmailNotificationsSection />
