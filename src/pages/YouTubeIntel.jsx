@@ -1,160 +1,188 @@
 import React, { useState, useEffect } from 'react'
 import AppLayout from '../components/AppLayout'
-import { ExternalLink, Clock, Youtube } from 'lucide-react'
+import { Play, ExternalLink, Calendar } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-
-const channelColors = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b']
-
-function timeAgo(dateStr) {
-  if (!dateStr) return ''
-  var diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000)
-  if (diff < 3600) return Math.floor(diff / 60) + ' min ago'
-  if (diff < 86400) return Math.floor(diff / 3600) + ' hrs ago'
-  return Math.floor(diff / 86400) + ' days ago'
-}
-
-function formatViews(n) {
-  if (!n) return ''
-  var num = parseInt(n)
-  if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M views'
-  if (num >= 1000) return Math.floor(num / 1000) + 'K views'
-  return num + ' views'
-}
-
-function parseDuration(iso) {
-  if (!iso) return ''
-  var match = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/)
-  if (!match) return ''
-  var h = parseInt(match[1] || 0)
-  var m = parseInt(match[2] || 0)
-  var s = parseInt(match[3] || 0)
-  if (h > 0) return h + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0')
-  return m + ':' + String(s).padStart(2, '0')
-}
-
-function VideoCard({ video, color }) {
-  return (
-    <div className="rounded-xl overflow-hidden border" style={{ background: '#161a22', borderColor: '#1e2330' }}>
-      <a href={'https://youtube.com/watch?v=' + video.video_id} target="_blank" rel="noopener noreferrer" className="block relative w-full" style={{ paddingBottom: '56.25%', textDecoration: 'none' }}>
-        <div className="absolute inset-0">
-          <img
-            src={video.thumbnail_url || ('https://img.youtube.com/vi/' + video.video_id + '/hqdefault.jpg')}
-            alt={video.title}
-            className="w-full h-full object-cover"
-            onError={function(e) { e.target.src = 'https://img.youtube.com/vi/' + video.video_id + '/hqdefault.jpg' }}
-          />
-          <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.35)' }}>
-            <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ background: 'rgba(239,68,68,0.9)' }}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21" /></svg>
-            </div>
-          </div>
-          {video.duration && (
-            <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded text-xs font-mono font-medium" style={{ background: 'rgba(0,0,0,0.85)', color: '#fff' }}>
-              {parseDuration(video.duration)}
-            </div>
-          )}
-        </div>
-      </a>
-      <div className="p-4">
-        <div className="flex items-center gap-2 mb-2">
-          <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: color + '20' }}>
-            <Youtube size={12} style={{ color: color }} />
-          </div>
-          <span className="text-xs font-semibold" style={{ color: color }}>{video.channel_name}</span>
-          <span className="text-xs" style={{ color: '#6b7a96' }}>{video.channel_handle}</span>
-        </div>
-        <p className="text-sm font-medium leading-snug mb-3" style={{ color: '#eceef5' }}>{video.title}</p>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1 text-xs" style={{ color: '#6b7a96' }}>
-              <Clock size={11} />{timeAgo(video.published_at)}
-            </span>
-            <span className="text-xs" style={{ color: '#6b7a96' }}>{formatViews(video.view_count)}</span>
-          </div>
-          <a href={'https://youtube.com/watch?v=' + video.video_id} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs" style={{ color: '#3b82f6' }}>
-            <ExternalLink size={11} />YouTube
-          </a>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 export default function YouTubeIntel() {
   const [videos, setVideos] = useState([])
-  const [channels, setChannels] = useState([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(function() {
-    async function load() {
-      var chRes = await supabase.from('youtube_channels').select('*').eq('active', true).order('sort_order', { ascending: true })
-      var ch = chRes.data || []
-      setChannels(ch)
-
-      var vidRes = await supabase.from('youtube_videos').select('*').order('published_at', { ascending: false })
-      setVideos(vidRes.data || [])
-      setLoading(false)
-    }
-    load()
+  useEffect(() => {
+    loadVideos()
   }, [])
 
-  // Get latest video per channel in channel order
-  function getDisplayVideos() {
-    var result = []
-    channels.forEach(function(ch) {
-      var chVideos = videos.filter(function(v) { return v.channel_handle === ch.channel_handle })
-      if (chVideos.length > 0) result.push(chVideos[0])
-    })
-    return result
+  async function loadVideos() {
+    try {
+      const { data, error } = await supabase
+        .from('youtube_videos')
+        .select('*')
+        .order('published_at', { ascending: false })
+
+      if (error) {
+        console.error('Query error:', error)
+        throw error
+      }
+
+      console.log('Loaded videos:', data)
+      setVideos(data || [])
+    } catch (error) {
+      console.error('Error loading videos:', error)
+      setVideos([])
+    } finally {
+      setLoading(false)
+    }
   }
 
-  var displayVideos = getDisplayVideos()
+  function formatDate(dateString) {
+    if (!dateString) return 'Unknown date'
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric' 
+    })
+  }
 
-  function getColor(video) {
-    var idx = channels.findIndex(function(ch) { return ch.channel_handle === video.channel_handle })
-    return channelColors[idx >= 0 ? idx : 0]
+  function openVideo(url) {
+    if (url && url !== '#') {
+      window.open(url, '_blank', 'noopener,noreferrer')
+    }
+  }
+
+  if (loading) {
+    return (
+      <AppLayout>
+        <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' }}>
+          <div className="max-w-7xl mx-auto px-6 py-8">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold mb-2" style={{ fontFamily: 'Syne, sans-serif', color: '#eceef5' }}>
+                YouTube Intel
+              </h1>
+              <p style={{ color: '#9aa8be' }}>Curated XRP and crypto video analysis.</p>
+            </div>
+
+            {/* Loading Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3, 4, 5, 6].map(i => (
+                <div key={i} className="rounded-xl overflow-hidden" style={{ background: '#1e293b', border: '1px solid #334155' }}>
+                  <div className="aspect-video animate-pulse" style={{ background: '#334155' }} />
+                  <div className="p-4 space-y-3">
+                    <div className="h-4 rounded animate-pulse" style={{ background: '#334155', width: '80%' }} />
+                    <div className="h-3 rounded animate-pulse" style={{ background: '#334155', width: '60%' }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </AppLayout>
+    )
   }
 
   return (
     <AppLayout>
-      <div className="mb-6">
-        <div className="flex items-center gap-3 mb-1">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(239,68,68,0.15)' }}>
-            <Youtube size={16} style={{ color: '#ef4444' }} />
+      <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' }}>
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold mb-2" style={{ fontFamily: 'Syne, sans-serif', color: '#eceef5' }}>
+              YouTube Intel
+            </h1>
+            <p style={{ color: '#9aa8be' }}>
+              Curated XRP and crypto video analysis for intelligent market insights.
+            </p>
+            
+            {/* Disclaimer */}
+            <div className="mt-4 p-4 rounded-lg" style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)' }}>
+              <p className="text-sm" style={{ color: '#60a5fa' }}>
+                <strong>Note:</strong> Videos below are from independent creators. Third-party content is provided for informational purposes only. ControlNode does not own or control this content. Nothing presented here constitutes financial advice. Always do your own research.
+              </p>
+            </div>
           </div>
-          <h1 className="text-2xl font-bold" style={{ fontFamily: 'Syne, sans-serif', color: '#eceef5' }}>YouTube Intel</h1>
-        </div>
-        <p className="text-sm" style={{ color: '#9aa8be' }}>Latest videos from curated XRP and crypto channels. Updated hourly during market hours.</p>
-        <div className="flex items-center gap-2 mt-3">
-          <div className="w-2 h-2 rounded-full" style={{ background: '#10b981' }} />
-          <span className="text-xs" style={{ color: '#6b7a96' }}>Following {channels.length} channel{channels.length !== 1 ? 's' : ''} · Updates every hour 7AM–9PM CT</span>
+
+          {videos.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ background: 'rgba(139,92,246,0.1)' }}>
+                <Play size={24} style={{ color: '#8b5cf6' }} />
+              </div>
+              <h2 className="text-xl font-semibold mb-2" style={{ color: '#eceef5' }}>
+                No videos yet
+              </h2>
+              <p style={{ color: '#9aa8be' }}>
+                Admin can add curated YouTube videos for member analysis.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {videos.map(video => (
+                <div
+                  key={video.id}
+                  onClick={() => openVideo(video.youtube_url)}
+                  className="group cursor-pointer rounded-xl overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl"
+                  style={{ 
+                    background: '#1e293b', 
+                    border: '1px solid #334155',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
+                  }}
+                >
+                  {/* Thumbnail */}
+                  <div className="relative aspect-video overflow-hidden">
+                    <img
+                      src={video.thumbnail_url}
+                      alt={video.title}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                      onError={(e) => {
+                        // Fallback to different thumbnail quality if maxres fails
+                        if (e.target.src.includes('maxresdefault')) {
+                          e.target.src = `https://img.youtube.com/vi/${video.video_id}/hqdefault.jpg`
+                        }
+                      }}
+                    />
+                    
+                    {/* Play overlay */}
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <div className="w-16 h-16 rounded-full bg-red-600 flex items-center justify-center transform scale-75 group-hover:scale-100 transition-transform duration-300">
+                        <Play size={24} className="text-white ml-1" fill="currentColor" />
+                      </div>
+                    </div>
+
+                    {/* External link indicator */}
+                    <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <div className="w-8 h-8 rounded-full bg-black/60 flex items-center justify-center">
+                        <ExternalLink size={14} className="text-white" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Content */}
+                  <div className="p-4">
+                    <h3 className="font-semibold mb-2 line-clamp-2 leading-tight group-hover:text-blue-400 transition-colors" style={{ color: '#eceef5' }}>
+                      {video.title}
+                    </h3>
+                    
+                    {video.description && (
+                      <p className="text-sm mb-3 line-clamp-2 leading-relaxed" style={{ color: '#9aa8be' }}>
+                        {video.description}
+                      </p>
+                    )}
+                    
+                    <div className="flex items-center gap-2 text-xs" style={{ color: '#6b7a96' }}>
+                      <Calendar size={12} />
+                      <span>Added {formatDate(video.published_at)}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Disclaimer */}
+          <div className="mt-12 text-center">
+            <p className="text-sm leading-relaxed max-w-2xl mx-auto" style={{ color: '#4a5870' }}>
+              Videos are curated for educational and informational purposes only. Content represents third-party opinions and should not be considered financial advice. Always conduct your own research and consult with qualified professionals before making investment decisions.
+            </p>
+          </div>
         </div>
       </div>
-
-      <div className="rounded-lg px-4 py-3 mb-6 text-xs" style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.15)', color: '#9aa8be' }}>
-        <span style={{ color: '#3b82f6', fontWeight: 600 }}>Note: </span>
-        Videos below are from independent creators. Third-party content is provided for informational purposes only. ControlNode does not own or control this content. Nothing presented here constitutes financial advice. Always do your own research.
-      </div>
-
-      {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          {[1,2,3,4].map(function(i) {
-            return <div key={i} className="rounded-xl animate-pulse" style={{ background: '#161a22', height: '320px' }} />
-          })}
-        </div>
-      ) : displayVideos.length === 0 ? (
-        <div className="rounded-xl p-8 text-center border" style={{ background: '#161a22', borderColor: '#1e2330' }}>
-          <Youtube size={32} style={{ color: '#6b7a96', margin: '0 auto 12px' }} />
-          <p className="text-sm font-medium mb-1" style={{ color: '#eceef5' }}>No videos yet</p>
-          <p className="text-xs" style={{ color: '#6b7a96' }}>Videos will appear here once channels are configured and fetched from the admin panel.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          {displayVideos.map(function(video) {
-            return <VideoCard key={video.id} video={video} color={getColor(video)} />
-          })}
-        </div>
-      )}
     </AppLayout>
   )
 }
