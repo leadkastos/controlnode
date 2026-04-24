@@ -28,6 +28,9 @@ export default function AdminPages() {
     thumbnail_url: ''
   })
 
+  // YouTube Videos list for management
+  const [youtubeVideos, setYoutubeVideos] = useState([])
+
   // Master Watchlist state
   const [symbols, setSymbols] = useState([])
   const [newSymbol, setNewSymbol] = useState('')
@@ -117,7 +120,23 @@ export default function AdminPages() {
   useEffect(() => {
     loadMasterSymbols()
     loadMarketSignals()
+    loadYouTubeVideos()
   }, [])
+
+  async function loadYouTubeVideos() {
+    try {
+      const result = await supabase
+        .from('youtube_videos')
+        .select('*')
+        .order('published_at', { ascending: false })
+      
+      if (result.data) {
+        setYoutubeVideos(result.data)
+      }
+    } catch (error) {
+      console.error('Error loading YouTube videos:', error)
+    }
+  }
 
   async function loadMasterSymbols() {
     try {
@@ -227,9 +246,34 @@ export default function AdminPages() {
         video_id: '',
         thumbnail_url: ''
       })
+      
+      // Refresh the videos list
+      loadYouTubeVideos()
     } catch (error) {
       console.error('Error adding YouTube video:', error)
       setMessage('Error adding YouTube video')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleDeleteYouTubeVideo(id) {
+    if (!confirm('Are you sure you want to delete this video?')) return
+
+    setLoading(true)
+    try {
+      const { error } = await supabase
+        .from('youtube_videos')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw error
+
+      setMessage('YouTube video deleted successfully!')
+      loadYouTubeVideos()
+    } catch (error) {
+      console.error('Error deleting video:', error)
+      setMessage('Error deleting video')
     } finally {
       setLoading(false)
     }
@@ -1191,7 +1235,7 @@ export default function AdminPages() {
                     Add YouTube Video
                   </h2>
                   
-                  <form onSubmit={handleYouTubeSubmit} className="space-y-6">
+                  <form onSubmit={handleYouTubeSubmit} className="space-y-6 mb-8">
                     <div>
                       <label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>
                         Video Title
@@ -1284,6 +1328,53 @@ export default function AdminPages() {
                       {loading ? 'Adding...' : 'Add Video'}
                     </button>
                   </form>
+
+                  {/* Video Management List */}
+                  <div className="border-t pt-6" style={{ borderColor: '#475569' }}>
+                    <h3 className="text-lg font-semibold mb-4" style={{ color: '#eceef5' }}>
+                      Manage Videos ({youtubeVideos.length})
+                    </h3>
+                    
+                    {youtubeVideos.length === 0 ? (
+                      <div className="text-center py-8" style={{ color: '#6b7a96' }}>
+                        No videos added yet.
+                      </div>
+                    ) : (
+                      <div className="space-y-3 max-h-96 overflow-y-auto">
+                        {youtubeVideos.map(video => (
+                          <div
+                            key={video.id}
+                            className="flex items-center gap-4 p-4 rounded-lg"
+                            style={{ background: '#1e293b', border: '1px solid #475569' }}
+                          >
+                            <img
+                              src={video.thumbnail_url}
+                              alt={video.title}
+                              className="w-16 h-12 object-cover rounded"
+                              onError={(e) => {
+                                e.target.src = `https://img.youtube.com/vi/${video.video_id}/hqdefault.jpg`
+                              }}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-medium truncate" style={{ color: '#eceef5' }}>
+                                {video.title}
+                              </h4>
+                              <p className="text-sm truncate" style={{ color: '#9aa8be' }}>
+                                {video.description || 'No description'}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => handleDeleteYouTubeVideo(video.id)}
+                              className="p-2 rounded-lg transition-colors hover:bg-red-600/20"
+                              style={{ color: '#ef4444' }}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
