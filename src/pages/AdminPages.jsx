@@ -1418,3 +1418,6 @@ export function AdminSmartMoney() {
 
 export function AdminUpdates() { return <AdminDailyWrap /> }
 
+
+// Default export for compatibility with 'import AdminPages from' style imports
+export default Admin
