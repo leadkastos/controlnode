@@ -128,7 +128,7 @@ export default function AdminPages() {
       const result = await supabase
         .from('youtube_videos')
         .select('*')
-        .order('published_at', { ascending: false })
+        .order('published_at', { ascending: false, nullsFirst: false })
       
       if (result.data) {
         setYoutubeVideos(result.data)
@@ -233,6 +233,7 @@ export default function AdminPages() {
           thumbnail_url: youtubeForm.thumbnail_url,
           channel_handle: 'unknown',
           channel_name: 'Unknown Channel',
+          published_at: new Date().toISOString(),
           created_by: '1d52916a-3b7d-4c0d-8290-cd7fb6f16d20'
         }])
 
