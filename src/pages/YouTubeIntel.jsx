@@ -16,7 +16,7 @@ export default function YouTubeIntel() {
       const { data, error } = await supabase
         .from('youtube_videos')
         .select('*')
-        .order('published_at', { ascending: false })
+        .order('published_at', { ascending: false, nullsFirst: false })
 
       if (error) {
         console.error('Query error:', error)
