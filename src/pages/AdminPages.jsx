@@ -212,7 +212,9 @@ export default function AdminPages() {
           youtube_url: youtubeForm.youtube_url,
           video_id: youtubeForm.video_id,
           thumbnail_url: youtubeForm.thumbnail_url,
-          created_by: profile.id
+          channel_handle: 'unknown',
+          channel_name: 'Unknown Channel',
+          created_by: '1d52916a-3b7d-4c0d-8290-cd7fb6f16d20'
         }])
 
       if (error) throw error
