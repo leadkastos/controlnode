@@ -20,22 +20,7 @@ import YouTubeIntel from './pages/YouTubeIntel'
 import SmartMoneyFlow from './pages/SmartMoneyFlow'
 import MarketNews from './pages/MarketNews'
 import { Account, Billing, Settings } from './pages/AccountPages'
-import {
-  Admin,
-  AdminMorningBrief,
-  AdminDailyWrap,
-  AdminDominoTheory,
-  AdminGeopoliticalWatch,
-  AdminOilYen,
-  AdminHeadlines,
-  AdminWatchlist,
-  AdminChatter,
-  AdminETFFlows,
-  AdminYouTube,
-  AdminSmartMoney,
-  AdminUpdates,
-  AdminMarketSignals,
-} from './pages/AdminPages'
+import AdminPages from './pages/AdminPages'
 
 export default function App() {
   return (
@@ -65,20 +50,7 @@ export default function App() {
         <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
         <Route path="/billing" element={<ProtectedRoute><Billing /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-        <Route path="/admin" element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
-        <Route path="/admin/morning-brief" element={<ProtectedRoute adminOnly><AdminMorningBrief /></ProtectedRoute>} />
-        <Route path="/admin/daily-wrap" element={<ProtectedRoute adminOnly><AdminDailyWrap /></ProtectedRoute>} />
-        <Route path="/admin/domino-theory" element={<ProtectedRoute adminOnly><AdminDominoTheory /></ProtectedRoute>} />
-        <Route path="/admin/geopolitical-watch" element={<ProtectedRoute adminOnly><AdminGeopoliticalWatch /></ProtectedRoute>} />
-        <Route path="/admin/oil-yen" element={<ProtectedRoute adminOnly><AdminOilYen /></ProtectedRoute>} />
-        <Route path="/admin/headlines" element={<ProtectedRoute adminOnly><AdminHeadlines /></ProtectedRoute>} />
-        <Route path="/admin/market-signals" element={<ProtectedRoute adminOnly><AdminMarketSignals /></ProtectedRoute>} />
-        <Route path="/admin/watchlist" element={<ProtectedRoute adminOnly><AdminWatchlist /></ProtectedRoute>} />
-        <Route path="/admin/chatter" element={<ProtectedRoute adminOnly><AdminChatter /></ProtectedRoute>} />
-        <Route path="/admin/etf-flows" element={<ProtectedRoute adminOnly><AdminETFFlows /></ProtectedRoute>} />
-        <Route path="/admin/youtube" element={<ProtectedRoute adminOnly><AdminYouTube /></ProtectedRoute>} />
-        <Route path="/admin/smart-money" element={<ProtectedRoute adminOnly><AdminSmartMoney /></ProtectedRoute>} />
-        <Route path="/admin/updates" element={<ProtectedRoute adminOnly><AdminUpdates /></ProtectedRoute>} />
+        <Route path="/admin" element={<ProtectedRoute adminOnly><AdminPages /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   )
