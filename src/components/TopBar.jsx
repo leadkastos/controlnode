@@ -37,7 +37,7 @@ const tickerStyle = `
 
 const COINGECKO_MAP = {
   XRP: 'ripple',
-  BTC: 'bitcoin', 
+  BTC: 'bitcoin',
   ETH: 'ethereum',
   SOL: 'solana',
   ADA: 'cardano',
@@ -62,89 +62,20 @@ function chgLabel(val) {
   return (n >= 0 ? '+' : '') + n.toFixed(2) + '%'
 }
 
-var macroCache = null
-var macroCacheTime = 0
-
-// Yahoo Finance unofficial API — free, no key required
-// Symbols: CL=F (WTI Crude), BZ=F (Brent Crude)
-async function fetchYahooQuote(symbol) {
-  try {
-    var url = 'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(symbol) + '?interval=1d&range=1d'
-    var res = await fetch(url)
-    if (!res.ok) return null
-    var data = await res.json()
-    var result = data && data.chart && data.chart.result && data.chart.result[0]
-    if (!result) return null
-    var meta = result.meta
-    if (!meta) return null
-    return {
-      price: meta.regularMarketPrice,
-      previousClose: meta.previousClose || meta.chartPreviousClose
-    }
-  } catch (e) {
-    return null
-  }
-}
-
-async function fetchAndCacheMacro() {
-  var result = { WTI_USD: null, BRENT_USD: null, USD_JPY: null, FEAR_GREED: null }
-
-  // USD/JPY — free, unchanged
-  try {
-    var fxRes = await fetch('https://open.er-api.com/v6/latest/USD')
-    var fx = await fxRes.json()
-    if (fx && fx.rates && fx.rates.JPY) result.USD_JPY = fx.rates.JPY
-  } catch(e) {}
-
-  // WTI Crude — Yahoo Finance free
-  try {
-    var wti = await fetchYahooQuote('CL=F')
-    if (wti && wti.price) result.WTI_USD = wti.price
-  } catch(e) {}
-
-  // Brent Crude — Yahoo Finance free
-  try {
-    var brent = await fetchYahooQuote('BZ=F')
-    if (brent && brent.price) result.BRENT_USD = brent.price
-  } catch(e) {}
-
-  // Fear & Greed — free, unchanged
-  try {
-    var fgRes = await fetch('https://api.alternative.me/fng/?limit=1')
-    var fg = await fgRes.json()
-    if (fg && fg.data && fg.data[0]) result.FEAR_GREED = parseInt(fg.data[0].value)
-  } catch(e) {}
-
-  var updates = []
-  if (result.USD_JPY) updates.push({ key: 'USD_JPY', value: result.USD_JPY, updated_at: new Date().toISOString() })
-  if (result.WTI_USD) updates.push({ key: 'WTI_USD', value: result.WTI_USD, updated_at: new Date().toISOString() })
-  if (result.BRENT_USD) updates.push({ key: 'BRENT_USD', value: result.BRENT_USD, updated_at: new Date().toISOString() })
-  if (result.FEAR_GREED) updates.push({ key: 'FEAR_GREED', value: result.FEAR_GREED, updated_at: new Date().toISOString() })
-  if (updates.length > 0) await supabase.from('market_data').upsert(updates, { onConflict: 'key' })
-
-  macroCache = result
-  macroCacheTime = Date.now()
-  return result
-}
-
+// Read ONLY from Supabase market_data table.
+// The oil-price-updater Edge Function writes to this table every 5 min via cron.
+// No browser-side API calls = no CORS issues, no rate limits, no broken tickers.
 async function getMacro() {
-  if (macroCache && (Date.now() - macroCacheTime) < 5 * 60 * 1000) return macroCache
-  var res = await supabase.from('market_data').select('*')
+  var res = await supabase.from('market_data').select('key, value')
+  var result = { WTI_USD: null, BRENT_USD: null, USD_JPY: null, FEAR_GREED: null }
   if (res.data && res.data.length > 0) {
-    var cached = {}
-    var oldestUpdate = null
     res.data.forEach(function(row) {
-      cached[row.key] = row.value
-      var t = new Date(row.updated_at).getTime()
-      if (!oldestUpdate || t < oldestUpdate) oldestUpdate = t
+      if (row.key in result) {
+        result[row.key] = row.value
+      }
     })
-    if (Date.now() - oldestUpdate < 5 * 60 * 1000) {
-      macroCache = { WTI_USD: cached.WTI_USD || null, BRENT_USD: cached.BRENT_USD || null, USD_JPY: cached.USD_JPY || null, FEAR_GREED: cached.FEAR_GREED || null }
-      macroCacheTime = Date.now()
-      return macroCache
-    }
   }
-  return fetchAndCacheMacro()
+  return result
 }
 
 export default function TopBar() {
@@ -169,7 +100,7 @@ export default function TopBar() {
           .from('master_watchlist')
           .select('symbol')
           .order('symbol')
-        
+
         if (result.data) {
           setMasterSymbols(result.data.map(function(row) { return row.symbol }))
         }
@@ -186,9 +117,10 @@ export default function TopBar() {
 
   useEffect(function() {
     getMacro().then(function(m) { setMacro(m) })
+    // Refresh from market_data every 60 seconds (Edge Function updates the table every 5 min)
     var interval = setInterval(function() {
-      fetchAndCacheMacro().then(function(m) { setMacro(m) })
-    }, 5 * 60 * 1000)
+      getMacro().then(function(m) { setMacro(m) })
+    }, 60 * 1000)
     return function() { clearInterval(interval) }
   }, [])
 
