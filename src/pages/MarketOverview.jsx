@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import AppLayout from '../components/AppLayout'
 import { usePrices, COINGECKO_IDS } from '../contexts/PriceContext'
+import { supabase } from '../lib/supabase'
 
 const ASSET_LIST = [
   { name: 'XRP', cgId: 'ripple' },
@@ -45,9 +46,9 @@ export default function MarketOverview() {
   const prices = usePrices()
   const [globalData, setGlobalData] = useState(null)
   const [assetDetails, setAssetDetails] = useState({})
-  const [tdData, setTdData] = useState(null)
+  const [macro, setMacro] = useState({ DXY: null, US_10Y: null, GOLD_USD: null, BRENT_USD: null, FEAR_GREED: null })
 
-  // Fetch CoinGecko global market data
+  // CoinGecko global market data
   useEffect(function() {
     async function fetchGlobal() {
       try {
@@ -63,7 +64,7 @@ export default function MarketOverview() {
     return function() { clearInterval(interval) }
   }, [])
 
-  // Fetch detailed asset data including market caps
+  // Asset detail data
   useEffect(function() {
     async function fetchAssets() {
       try {
@@ -82,44 +83,59 @@ export default function MarketOverview() {
     return function() { clearInterval(interval) }
   }, [])
 
-  // Fetch Twelve Data macro
+  // Macro data — reads from market_data table (single source of truth, populated by oil-price-updater Edge Function)
   useEffect(function() {
-    async function fetchMacro() {
+    async function loadMacro() {
       try {
-        var tdKey = import.meta.env.VITE_TWELVE_DATA_API_KEY
-        var res = await fetch(
-          'https://api.twelvedata.com/price?symbol=DXY,US10Y,XAU/USD,BRENT&apikey=' + tdKey
-        )
-        var data = await res.json()
-        setTdData(data)
+        var res = await supabase
+          .from('market_data')
+          .select('key, value')
+          .in('key', ['DXY', 'US_10Y', 'GOLD_USD', 'BRENT_USD', 'FEAR_GREED'])
+
+        if (res.data && res.data.length > 0) {
+          var lookup = {}
+          res.data.forEach(function(row) { lookup[row.key] = row.value })
+          setMacro({
+            DXY: lookup.DXY || null,
+            US_10Y: lookup.US_10Y || null,
+            GOLD_USD: lookup.GOLD_USD || null,
+            BRENT_USD: lookup.BRENT_USD || null,
+            FEAR_GREED: lookup.FEAR_GREED || null
+          })
+        }
       } catch(e) {
         console.error('Macro data error:', e)
       }
     }
-    fetchMacro()
-    var interval = setInterval(fetchMacro, 60 * 60 * 1000)
+    loadMacro()
+    var interval = setInterval(loadMacro, 60 * 1000)
     return function() { clearInterval(interval) }
   }, [])
-
-  // Fear & Greed from global data
-  var fgRes = null
-  useEffect(function() {}, [])
 
   var totalMktCap = globalData ? fmt(globalData.total_market_cap && globalData.total_market_cap.usd, '$') : '—'
   var total24hVol = globalData ? fmt(globalData.total_volume && globalData.total_volume.usd, '$') : '—'
   var btcDominance = globalData ? (globalData.market_cap_percentage && globalData.market_cap_percentage.btc ? globalData.market_cap_percentage.btc.toFixed(1) + '%' : '—') : '—'
 
-  function tdp(sym) {
-    return tdData && tdData[sym] && tdData[sym].price ? parseFloat(tdData[sym].price) : null
+  var fgValue = macro.FEAR_GREED
+  var fgLabel = '—'
+  var fgColor = '#9aa8be'
+  if (fgValue !== null) {
+    var label
+    if (fgValue <= 24) label = 'Extreme Fear'
+    else if (fgValue <= 49) label = 'Fear'
+    else if (fgValue <= 74) label = 'Greed'
+    else label = 'Extreme Greed'
+    fgLabel = fgValue + ' — ' + label
+    fgColor = fgValue <= 49 ? '#ef4444' : '#10b981'
   }
 
-  var dxy = tdp('DXY')
-  var us10y = tdp('US10Y')
-  var gold = tdp('XAU/USD')
-  var brent = tdp('BRENT')
+  var dxy = macro.DXY ? parseFloat(macro.DXY) : null
+  var us10y = macro.US_10Y ? parseFloat(macro.US_10Y) : null
+  var gold = macro.GOLD_USD ? parseFloat(macro.GOLD_USD) : null
+  var brent = macro.BRENT_USD ? parseFloat(macro.BRENT_USD) : null
 
   var macroItems = [
-    dxy ? 'DXY: ' + dxy.toFixed(1) + ' — ' + (dxy < 100 ? 'mild dollar weakness, broadly supportive for risk assets.' : dxy < 104 ? 'dollar neutral, watch for movement.' : 'dollar strength, potential headwind for risk assets.') : 'DXY: Loading...',
+    dxy ? 'DXY: ' + dxy.toFixed(2) + ' — ' + (dxy < 100 ? 'mild dollar weakness, broadly supportive for risk assets.' : dxy < 104 ? 'dollar neutral, watch for movement.' : 'dollar strength, potential headwind for risk assets.') : 'DXY: Loading...',
     us10y ? 'US 10Y Yield: ' + us10y.toFixed(2) + '% — ' + (us10y < 4 ? 'yields subdued, supportive for growth assets.' : us10y < 4.5 ? 'stable, no rate shock pressure currently.' : 'elevated yields, watch for risk-off pressure.') : 'US 10Y Yield: Loading...',
     gold ? 'Gold: $' + gold.toLocaleString('en-US', { maximumFractionDigits: 0 }) + '/oz — ' + (gold > 3000 ? 'elevated safe-haven demand, macro uncertainty present.' : 'modest safe-haven demand, not alarming.') : 'Gold: Loading...',
     brent ? 'Oil (Brent): $' + brent.toFixed(2) + ' — ' + (brent > 90 ? 'elevated; watch for inflation re-acceleration risk.' : brent > 75 ? 'moderate, manageable inflation impact.' : 'subdued oil prices, inflation pressure easing.') : 'Oil (Brent): Loading...',
@@ -134,24 +150,14 @@ export default function MarketOverview() {
         </div>
         <p className="text-sm" style={{ color: '#9aa8be' }}>A snapshot of the broader crypto market and macro conditions.</p>
       </div>
-
       <div className="space-y-6">
-
         {/* Total Crypto Market */}
         <div className="rounded-xl p-5 border" style={{ background: '#161a22', borderColor: '#1e2330' }}>
           <h2 className="text-sm font-semibold mb-4" style={{ color: '#eceef5' }}>Total Crypto Market</h2>
           <DataRow label="Total Market Cap" value={totalMktCap} />
           <DataRow label="24h Volume" value={total24hVol} />
           <DataRow label="BTC Dominance" value={btcDominance} />
-          <DataRow
-            label="Fear & Greed Index"
-            value={
-              prices && prices['fear-greed']
-                ? prices['fear-greed']
-                : '21 — Extreme Fear'
-            }
-            valueColor="#f59e0b"
-          />
+          <DataRow label="Fear & Greed Index" value={fgLabel} valueColor={fgColor} />
         </div>
 
         {/* Top Assets */}
@@ -197,10 +203,9 @@ export default function MarketOverview() {
             })}
           </div>
           <p className="text-xs mt-4" style={{ color: '#6b7a96' }}>
-            Source: Twelve Data · Updates hourly · For informational purposes only.
+            Source: Yahoo Finance · Updates every 5 min · For informational purposes only.
           </p>
         </div>
-
       </div>
     </AppLayout>
   )
