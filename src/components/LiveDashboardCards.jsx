@@ -174,35 +174,35 @@ export function OilYenCard() {
 
   useEffect(function() {
     async function load() {
-      // Read from oil_prices table (no API calls!)
+      // Read from market_data table — same source as TopBar ticker
+      // Updated every 5 min by oil-price-updater Edge Function (Yahoo Finance)
       var res = await supabase
-        .from('oil_prices')
-        .select('wti_crude, brent_crude, usd_jpy, last_updated')
-        .order('last_updated', { ascending: false })
-        .limit(1)
-      
+        .from('market_data')
+        .select('key, value')
+        .in('key', ['WTI_USD', 'BRENT_USD', 'USD_JPY'])
+
       if (res.data && res.data.length > 0) {
-        var latest = res.data[0]
-        setData({ 
-          wti: latest.wti_crude, 
-          brent: latest.brent_crude, 
-          usdjpy: latest.usd_jpy 
+        var lookup = {}
+        res.data.forEach(function(row) { lookup[row.key] = row.value })
+        setData({
+          wti: lookup.WTI_USD || null,
+          brent: lookup.BRENT_USD || null,
+          usdjpy: lookup.USD_JPY || null
         })
       }
     }
-    
+
     load()
-    
-    // Refresh from database every 60 seconds (no API calls)
+    // Refresh every 60 seconds (data only changes every 5 min on the backend)
     var interval = setInterval(load, 60 * 1000)
     return function() { clearInterval(interval) }
   }, [])
 
   return (
     <DashCard title="Oil vs Yen" route="/oil-vs-yen">
-      <Row label="WTI Crude" value={data.wti ? '$' + data.wti.toFixed(2) : '—'} color="#eceef5" />
-      <Row label="Brent Crude" value={data.brent ? '$' + data.brent.toFixed(2) : '—'} color="#eceef5" />
-      <Row label="USD/JPY" value={data.usdjpy ? data.usdjpy.toFixed(2) : '—'} color="#eceef5" />
+      <Row label="WTI Crude" value={data.wti ? '$' + parseFloat(data.wti).toFixed(2) : '—'} color="#eceef5" />
+      <Row label="Brent Crude" value={data.brent ? '$' + parseFloat(data.brent).toFixed(2) : '—'} color="#eceef5" />
+      <Row label="USD/JPY" value={data.usdjpy ? parseFloat(data.usdjpy).toFixed(2) : '—'} color="#eceef5" />
     </DashCard>
   )
 }
