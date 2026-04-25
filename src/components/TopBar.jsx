@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { Zap } from 'lucide-react'
 import NotificationBell from './NotificationBell'
 import { useAuth } from '../contexts/AuthContext'
 import { usePrices } from '../contexts/PriceContext'
@@ -62,9 +63,6 @@ function chgLabel(val) {
   return (n >= 0 ? '+' : '') + n.toFixed(2) + '%'
 }
 
-// Read ONLY from Supabase market_data table.
-// The oil-price-updater Edge Function writes to this table every 5 min via cron.
-// No browser-side API calls = no CORS issues, no rate limits, no broken tickers.
 async function getMacro() {
   var res = await supabase.from('market_data').select('key, value')
   var result = { WTI_USD: null, BRENT_USD: null, USD_JPY: null, FEAR_GREED: null }
@@ -117,7 +115,6 @@ export default function TopBar() {
 
   useEffect(function() {
     getMacro().then(function(m) { setMacro(m) })
-    // Refresh from market_data every 60 seconds (Edge Function updates the table every 5 min)
     var interval = setInterval(function() {
       getMacro().then(function(m) { setMacro(m) })
     }, 60 * 1000)
@@ -187,6 +184,18 @@ export default function TopBar() {
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
+          {/* XRP Intelligence Platform - decorative badge (hidden on small screens) */}
+          <div
+            className="hidden md:flex items-center gap-1.5 py-1.5 px-2.5 rounded-lg text-xs font-bold flex-shrink-0"
+            style={{
+              background: 'rgba(139,92,246,0.15)',
+              border: '1px solid rgba(139,92,246,0.4)',
+              color: '#8b5cf6',
+            }}
+          >
+            <Zap size={12} />
+            <span className="whitespace-nowrap">XRP Intelligence Platform</span>
+          </div>
           <NotificationBell />
           <button onClick={function() { navigate('/account') }} className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ml-1 transition-opacity hover:opacity-80" style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', color: '#fff' }} title="My Profile">
             {initials}
