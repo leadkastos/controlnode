@@ -35,7 +35,6 @@ const tickerStyle = `
   .cn-dash-wrapper { overflow: hidden; flex: 1; display: flex; }
 `
 
-// Symbol mapping for CoinGecko IDs
 const COINGECKO_MAP = {
   XRP: 'ripple',
   BTC: 'bitcoin', 
@@ -66,32 +65,50 @@ function chgLabel(val) {
 var macroCache = null
 var macroCacheTime = 0
 
+// Yahoo Finance unofficial API — free, no key required
+// Symbols: CL=F (WTI Crude), BZ=F (Brent Crude)
+async function fetchYahooQuote(symbol) {
+  try {
+    var url = 'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(symbol) + '?interval=1d&range=1d'
+    var res = await fetch(url)
+    if (!res.ok) return null
+    var data = await res.json()
+    var result = data && data.chart && data.chart.result && data.chart.result[0]
+    if (!result) return null
+    var meta = result.meta
+    if (!meta) return null
+    return {
+      price: meta.regularMarketPrice,
+      previousClose: meta.previousClose || meta.chartPreviousClose
+    }
+  } catch (e) {
+    return null
+  }
+}
+
 async function fetchAndCacheMacro() {
-  var oilKey = import.meta.env.VITE_OIL_PRICE_API_KEY
   var result = { WTI_USD: null, BRENT_USD: null, USD_JPY: null, FEAR_GREED: null }
 
+  // USD/JPY — free, unchanged
   try {
     var fxRes = await fetch('https://open.er-api.com/v6/latest/USD')
     var fx = await fxRes.json()
     if (fx && fx.rates && fx.rates.JPY) result.USD_JPY = fx.rates.JPY
   } catch(e) {}
 
+  // WTI Crude — Yahoo Finance free
   try {
-    var wtiRes = await fetch('https://api.oilpriceapi.com/v1/prices/latest?by_code=WTI_USD', {
-      headers: { 'Authorization': 'Token ' + oilKey, 'Content-Type': 'application/json' }
-    })
-    var wtiData = await wtiRes.json()
-    if (wtiData && wtiData.data && wtiData.data.price) result.WTI_USD = wtiData.data.price
+    var wti = await fetchYahooQuote('CL=F')
+    if (wti && wti.price) result.WTI_USD = wti.price
   } catch(e) {}
 
+  // Brent Crude — Yahoo Finance free
   try {
-    var brentRes = await fetch('https://api.oilpriceapi.com/v1/prices/latest?by_code=BRENT_CRUDE_USD', {
-      headers: { 'Authorization': 'Token ' + oilKey, 'Content-Type': 'application/json' }
-    })
-    var brentData = await brentRes.json()
-    if (brentData && brentData.data && brentData.data.price) result.BRENT_USD = brentData.data.price
+    var brent = await fetchYahooQuote('BZ=F')
+    if (brent && brent.price) result.BRENT_USD = brent.price
   } catch(e) {}
 
+  // Fear & Greed — free, unchanged
   try {
     var fgRes = await fetch('https://api.alternative.me/fng/?limit=1')
     var fg = await fgRes.json()
@@ -145,7 +162,6 @@ export default function TopBar() {
     initials = profile.full_name.split(' ').map(function(n) { return n[0] }).join('').toUpperCase().slice(0, 2)
   }
 
-  // Load master watchlist symbols from admin
   useEffect(function() {
     async function loadMasterSymbols() {
       try {
@@ -159,14 +175,11 @@ export default function TopBar() {
         }
       } catch(e) {
         console.error('Error loading master symbols:', e)
-        // Fallback to default symbols if master_watchlist fails
         setMasterSymbols(['XRP', 'BTC', 'ETH', 'XLM'])
       }
     }
 
     loadMasterSymbols()
-
-    // Refresh master symbols every 30 seconds (in case admin updates)
     var interval = setInterval(loadMasterSymbols, 30 * 1000)
     return function() { clearInterval(interval) }
   }, [])
@@ -182,7 +195,6 @@ export default function TopBar() {
   useEffect(function() {
     var items = []
 
-    // Dynamic crypto symbols from master_watchlist
     masterSymbols.forEach(function(symbol) {
       var coinId = COINGECKO_MAP[symbol]
       if (coinId && prices && prices[coinId]) {
@@ -195,7 +207,6 @@ export default function TopBar() {
           up: coin.usd_24h_change >= 0
         })
       } else {
-        // Show symbol even if price data isn't available yet
         items.push({
           sym: symbol,
           price: '—',
@@ -205,7 +216,6 @@ export default function TopBar() {
       }
     })
 
-    // Hardcoded macro data (keep these always)
     items.push(
       { sym: 'WTI CRUDE', price: macro.WTI_USD ? '$' + parseFloat(macro.WTI_USD).toFixed(2) : '—', chg: '—', up: true },
       { sym: 'BRENT CRUDE', price: macro.BRENT_USD ? '$' + parseFloat(macro.BRENT_USD).toFixed(2) : '—', chg: '—', up: true },
