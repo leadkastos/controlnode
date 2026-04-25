@@ -39,47 +39,27 @@ export default function OilVsYen() {
   const [wti, setWti] = useState(null)
   const [brent, setBrent] = useState(null)
   const [usdjpy, setUsdjpy] = useState(null)
-  const [scenarios, setScenarios] = useState([])
 
   useEffect(function() {
     async function load() {
-      var res = await supabase.from('market_data').select('*')
+      // Read ONLY from market_data table — single source of truth
+      // Edge Function (oil-price-updater) populates this every 5 min via cron
+      var res = await supabase
+        .from('market_data')
+        .select('key, value')
+        .in('key', ['WTI_USD', 'BRENT_USD', 'USD_JPY'])
+
       if (res.data && res.data.length > 0) {
-        var cached = {}
-        res.data.forEach(function(row) { cached[row.key] = parseFloat(row.value) })
-        var age = Date.now() - new Date(res.data[0].updated_at).getTime()
-        if (cached.WTI_USD > 0 && age < 5 * 60 * 1000) {
-          setWti(cached.WTI_USD)
-          setBrent(cached.BRENT_USD)
-          setUsdjpy(cached.USD_JPY)
-          return
-        }
+        var lookup = {}
+        res.data.forEach(function(row) { lookup[row.key] = parseFloat(row.value) })
+        setWti(lookup.WTI_USD || null)
+        setBrent(lookup.BRENT_USD || null)
+        setUsdjpy(lookup.USD_JPY || null)
       }
-      var oilKey = import.meta.env.VITE_OIL_PRICE_API_KEY
-      try {
-        var fxRes = await fetch('https://open.er-api.com/v6/latest/USD')
-        var fx = await fxRes.json()
-        if (fx && fx.rates && fx.rates.JPY) setUsdjpy(fx.rates.JPY)
-      } catch(e) {}
-      try {
-        var wtiRes = await fetch('https://api.oilpriceapi.com/v1/prices/latest?by_code=WTI_USD', {
-          headers: { 'Authorization': 'Token ' + oilKey, 'Content-Type': 'application/json' }
-        })
-        var wtiData = await wtiRes.json()
-        if (wtiData && wtiData.data && wtiData.data.price) setWti(wtiData.data.price)
-      } catch(e) {}
-      try {
-        var brentRes = await fetch('https://api.oilpriceapi.com/v1/prices/latest?by_code=BRENT_CRUDE_USD', {
-          headers: { 'Authorization': 'Token ' + oilKey, 'Content-Type': 'application/json' }
-        })
-        var brentData = await brentRes.json()
-        if (brentData && brentData.data && brentData.data.price) setBrent(brentData.data.price)
-      } catch(e) {}
     }
     load()
-    supabase.from('oil_yen_scenarios').select('*').order('sort_order', { ascending: true }).then(function(res) {
-      if (res.data) setScenarios(res.data)
-    })
+    var interval = setInterval(load, 60 * 1000)
+    return function() { clearInterval(interval) }
   }, [])
 
   return (
@@ -91,7 +71,6 @@ export default function OilVsYen() {
         </div>
         <p className="text-sm" style={{ color: '#9aa8be' }}>Tracking the relationship between oil prices, USD/JPY, and their historical correlation to crypto market conditions. For informational purposes only.</p>
       </div>
-
       <div className="space-y-6">
         <Section title="Current Readings">
           <DataRow label="Brent Crude" value={brent ? '$' + brent.toFixed(2) : '—'} valueColor={brent ? '#10b981' : '#6b7a96'} />
@@ -100,10 +79,9 @@ export default function OilVsYen() {
           <DataRow label="BOJ Rate" value="0.5% (Hold)" />
           <DataRow label="OPEC+ Stance" value="Production cuts maintained" />
           <p className="text-xs mt-3" style={{ color: '#6b7a96' }}>
-            Oil: OilPriceAPI · Forex: ExchangeRate API · Updates every 5 min · BOJ Rate and OPEC+ manually updated · For informational purposes only.
+            Source: Yahoo Finance · Updates every 5 min · BOJ Rate and OPEC+ manually updated · For informational purposes only.
           </p>
         </Section>
-
         <Section title="The Framework: Observed Correlations">
           <p className="text-sm leading-relaxed mb-3" style={{ color: '#9aa8be' }}>
             The Oil–Yen–XRP relationship is a macro correlation that has been historically observed. The chain of relationships:
@@ -117,31 +95,12 @@ export default function OilVsYen() {
           ]} />
           <p className="text-xs mt-3" style={{ color: '#6b7a96' }}>Historical correlations are observational only and do not guarantee future outcomes.</p>
         </Section>
-
         <Section title="Historical Correlation Notes">
           <DataRow label="Oil up + Yen weak" value="Historically observed positive XRP periods" />
           <DataRow label="Oil down + Yen strong" value="Historically observed negative XRP periods" />
           <DataRow label="Oil up + Yen strong" value="Mixed historical outcomes" />
           <DataRow label="Correlation Confidence" value="Moderate (6-month observation window)" />
           <p className="text-xs mt-3" style={{ color: '#6b7a96' }}>Past correlations are not predictive of future market behavior.</p>
-        </Section>
-
-        <Section title="Macro Scenarios to Monitor">
-          {scenarios.length === 0 ? (
-            <p className="text-sm" style={{ color: '#6b7a96' }}>No scenarios added yet. Check back soon.</p>
-          ) : (
-            <div className="space-y-3">
-              {scenarios.map(function(s) {
-                return (
-                  <div key={s.id} className="p-3 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid #1e2330' }}>
-                    <p className="text-xs font-semibold mb-1" style={{ color: '#eceef5' }}>{s.scenario}</p>
-                    <p className="text-xs" style={{ color: s.color || '#f59e0b' }}>{s.context}</p>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-          <p className="text-xs mt-3" style={{ color: '#6b7a96' }}>Scenarios are observational frameworks only — not predictions or recommendations.</p>
         </Section>
       </div>
     </AppLayout>
