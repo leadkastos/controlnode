@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { TrendingUp, TrendingDown, ExternalLink, Zap } from 'lucide-react'
+import { TrendingUp, TrendingDown, ExternalLink } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { usePrices, COINGECKO_IDS } from '../contexts/PriceContext'
 
@@ -69,12 +69,10 @@ export default function RightSidebar() {
         if (result.data && result.data.length > 0) {
           setSymbols(result.data.map(function(row) { return row.symbol }))
         } else {
-          // If no data, set empty array - don't show fallback symbols
           setSymbols([])
         }
       } catch(e) {
         console.error('Error loading master symbols:', e)
-        // If error, set empty array - don't show fallback symbols
         setSymbols([])
       }
     }
@@ -107,14 +105,13 @@ export default function RightSidebar() {
       try {
         var allNews = []
 
-        // Fetch manual posts from market_news table
         try {
           var manualRes = await supabase
             .from('market_news')
             .select('*')
             .order('created_at', { ascending: false })
             .limit(10)
-          
+
           if (manualRes.data) {
             var manualPosts = manualRes.data.map(function(post) {
               return {
@@ -135,7 +132,6 @@ export default function RightSidebar() {
           console.error('Manual news fetch error:', e)
         }
 
-        // Fetch automated crypto news
         try {
           var key = import.meta.env.VITE_CRYPTOCOMPARE_API_KEY
           var res = await fetch(
@@ -152,7 +148,6 @@ export default function RightSidebar() {
           console.error('Auto news fetch error:', e)
         }
 
-        // Sort all news by timestamp (newest first) and take top 8
         allNews.sort(function(a, b) { return b.published_on - a.published_on })
         setNews(allNews.slice(0, 8))
 
@@ -161,7 +156,7 @@ export default function RightSidebar() {
       }
     }
     fetchNews()
-    var interval = setInterval(fetchNews, 3 * 60 * 1000) // Refresh every 3 minutes
+    var interval = setInterval(fetchNews, 3 * 60 * 1000)
     return function() { clearInterval(interval) }
   }, [])
 
@@ -174,19 +169,6 @@ export default function RightSidebar() {
       <div style={{ height: '56px', flexShrink: 0, borderBottom: '1px solid #1e2330' }} />
 
       <div className="flex-1 overflow-y-auto py-4 px-4 space-y-5">
-
-        {/* XRP Intelligence Platform Badge */}
-        <div
-          className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-sm font-bold"
-          style={{
-            background: 'rgba(139,92,246,0.15)',
-            border: '1px solid rgba(139,92,246,0.4)',
-            color: '#8b5cf6',
-          }}
-        >
-          <Zap size={14} />
-          XRP Intelligence Platform
-        </div>
 
         {/* Watchlist */}
         <div>
@@ -291,9 +273,8 @@ export default function RightSidebar() {
             ) : (
               news.map(function(item) {
                 var cat, catLabel, sourceName
-                
+
                 if (item.isManual) {
-                  // Manual posts from admin
                   if (item.postType === 'confirmed') {
                     cat = { bg: 'rgba(16,185,129,0.12)', text: '#10b981' }
                     catLabel = 'CONFIRMED'
@@ -303,22 +284,21 @@ export default function RightSidebar() {
                   }
                   sourceName = item.source
                 } else {
-                  // Automated posts
                   cat = getCategoryColor(item.categories)
                   catLabel = getCategoryLabel(item.categories)
                   sourceName = item.source_info ? item.source_info.name : item.source
                 }
-                
+
                 return (
-                  <a 
-                    key={String(item.id)} 
-                    href={item.url !== '#' ? item.url : undefined} 
-                    target={item.url !== '#' ? "_blank" : undefined} 
-                    rel={item.url !== '#' ? "noopener noreferrer" : undefined} 
-                    className={item.url !== '#' ? "block px-3 py-3 rounded-lg transition-colors hover:bg-white/5" : "block px-3 py-3 rounded-lg"} 
-                    style={{ 
-                      background: '#161a22', 
-                      border: '1px solid #1e2330', 
+                  <a
+                    key={String(item.id)}
+                    href={item.url !== '#' ? item.url : undefined}
+                    target={item.url !== '#' ? "_blank" : undefined}
+                    rel={item.url !== '#' ? "noopener noreferrer" : undefined}
+                    className={item.url !== '#' ? "block px-3 py-3 rounded-lg transition-colors hover:bg-white/5" : "block px-3 py-3 rounded-lg"}
+                    style={{
+                      background: '#161a22',
+                      border: '1px solid #1e2330',
                       textDecoration: 'none',
                       cursor: item.url !== '#' ? 'pointer' : 'default'
                     }}
