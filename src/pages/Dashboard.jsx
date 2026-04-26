@@ -22,13 +22,14 @@ function BreakingNewsCard() {
   useEffect(function() {
     async function loadBreakingNews() {
       try {
+        // Read from market_news where type='breaking' (single source of truth)
         var result = await supabase
-          .from('top_headlines')
-          .select('id, title, source, url, created_at')
-          .eq('is_breaking', true)
+          .from('market_news')
+          .select('id, content, source, source_url, created_at')
+          .eq('type', 'breaking')
           .order('created_at', { ascending: false })
           .limit(3)
-        
+
         if (result.data) {
           setBreakingNews(result.data)
         }
@@ -60,16 +61,18 @@ function BreakingNewsCard() {
               {breakingNews.length === 1 ? (
                 // Single breaking news - show full headline
                 <div>
-                  {breakingNews[0].url ? (
-                    <a href={breakingNews[0].url} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold hover:underline" style={{ color: '#ef4444' }}>
-                      {breakingNews[0].title}
+                  {breakingNews[0].source_url ? (
+                    <a href={breakingNews[0].source_url} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold hover:underline" style={{ color: '#ef4444' }}>
+                      {breakingNews[0].content}
                     </a>
                   ) : (
                     <span className="text-sm font-semibold" style={{ color: '#ef4444' }}>
-                      {breakingNews[0].title}
+                      {breakingNews[0].content}
                     </span>
                   )}
-                  <span className="text-xs ml-2" style={{ color: '#9aa8be' }}>— {breakingNews[0].source}</span>
+                  {breakingNews[0].source && (
+                    <span className="text-xs ml-2" style={{ color: '#9aa8be' }}>— {breakingNews[0].source}</span>
+                  )}
                 </div>
               ) : (
                 // Multiple breaking news - scrolling ticker
@@ -78,16 +81,18 @@ function BreakingNewsCard() {
                     {breakingNews.map(function(news, index) {
                       return (
                         <span key={news.id} className="inline-block">
-                          {news.url ? (
-                            <a href={news.url} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold hover:underline" style={{ color: '#ef4444' }}>
-                              {news.title}
+                          {news.source_url ? (
+                            <a href={news.source_url} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold hover:underline" style={{ color: '#ef4444' }}>
+                              {news.content}
                             </a>
                           ) : (
                             <span className="text-sm font-semibold" style={{ color: '#ef4444' }}>
-                              {news.title}
+                              {news.content}
                             </span>
                           )}
-                          <span className="text-xs ml-1" style={{ color: '#9aa8be' }}>— {news.source}</span>
+                          {news.source && (
+                            <span className="text-xs ml-1" style={{ color: '#9aa8be' }}>— {news.source}</span>
+                          )}
                           {index < breakingNews.length - 1 && <span className="mx-8 text-sm" style={{ color: '#ef4444' }}>•</span>}
                         </span>
                       )
@@ -110,9 +115,9 @@ export default function Dashboard() {
         <MorningBriefCard />
         <DailyWrapCard />
       </div>
-      
+
       <BreakingNewsCard />
-      
+
       <div className="mb-4">
         <h2 className="text-xs font-semibold uppercase tracking-widest" style={{ color: '#6b7a96' }}>
           Intelligence Modules
