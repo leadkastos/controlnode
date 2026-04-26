@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import AppLayout from '../components/AppLayout'
-import { Plus, Trash2, Bell, MessageCircle, PlaySquare, FileText, BarChart3, Zap, TrendingUp, Calendar } from 'lucide-react'
+import { Plus, Trash2, Bell, MessageCircle, PlaySquare, FileText, BarChart3, TrendingUp, Calendar } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -10,7 +10,7 @@ export default function AdminPages() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
 
-  const [marketNewsForm, setMarketNewsForm] = useState({ type: 'chatter', content: '', category: 'General', source: '', source_url: '' })
+  const [marketNewsForm, setMarketNewsForm] = useState({ type: 'unconfirmed', content: '', category: 'General', source: '', source_url: '' })
   const [youtubeForm, setYoutubeForm] = useState({ title: '', description: '', youtube_url: '', video_id: '', thumbnail_url: '' })
   const [youtubeVideos, setYoutubeVideos] = useState([])
   const [symbols, setSymbols] = useState([])
@@ -20,7 +20,6 @@ export default function AdminPages() {
   const [dailyWrapForm, setDailyWrapForm] = useState({ title: '', content: '', key_events: '', tomorrow_outlook: '' })
   const [marketSignals, setMarketSignals] = useState([])
   const [newSignal, setNewSignal] = useState({ signal_name: '', signal_value: '', color: 'blue' })
-  const [breakingNewsForm, setBreakingNewsForm] = useState({ headline: '', content: '', urgency: 'medium', show_ticker: true })
 
   // ETF FLOWS state
   const [etfSummary, setEtfSummary] = useState(null)
@@ -73,11 +72,19 @@ export default function AdminPages() {
     e.preventDefault()
     if (!marketNewsForm.content.trim()) { setMessage('Content is required'); return }
     setLoading(true)
-    const { error } = await supabase.from('market_news').insert([{ type: marketNewsForm.type, content: marketNewsForm.content, category: marketNewsForm.category, source: marketNewsForm.source || null, source_url: marketNewsForm.source_url || null, created_by: profile.id }])
+    const { error } = await supabase.from('market_news').insert([{
+      type: marketNewsForm.type,
+      content: marketNewsForm.content,
+      category: marketNewsForm.category,
+      source: marketNewsForm.source || null,
+      source_url: marketNewsForm.source_url || null,
+      created_by: profile.id
+    }])
     setLoading(false)
-    if (error) { setMessage('Error posting market news'); return }
-    setMessage('Market news posted successfully!')
-    setMarketNewsForm({ type: 'chatter', content: '', category: 'General', source: '', source_url: '' })
+    if (error) { setMessage('Error posting market news: ' + error.message); return }
+    var label = marketNewsForm.type === 'breaking' ? 'Breaking news' : marketNewsForm.type === 'confirmed' ? 'Market news' : 'Market chatter'
+    setMessage(label + ' posted successfully!')
+    setMarketNewsForm({ type: 'unconfirmed', content: '', category: 'General', source: '', source_url: '' })
   }
 
   async function handleYouTubeSubmit(e) {
@@ -147,16 +154,6 @@ export default function AdminPages() {
     setLoading(false)
     if (error) { setMessage('Error updating'); return }
     setMessage('Signal updated!'); setNewSignal({ signal_name: '', signal_value: '', color: 'blue' }); loadMarketSignals()
-  }
-
-  async function handleBreakingNewsSubmit(e) {
-    e.preventDefault()
-    if (!breakingNewsForm.headline.trim()) { setMessage('Headline required'); return }
-    setLoading(true)
-    const { error } = await supabase.from('top_headlines').insert([{ headline: breakingNewsForm.headline, content: breakingNewsForm.content || null, urgency: breakingNewsForm.urgency, show_ticker: breakingNewsForm.show_ticker, created_by: profile.id }])
-    setLoading(false)
-    if (error) { setMessage('Error posting'); return }
-    setMessage('Breaking news posted!'); setBreakingNewsForm({ headline: '', content: '', urgency: 'medium', show_ticker: true })
   }
 
   // ETF FLOWS handlers
@@ -262,7 +259,6 @@ export default function AdminPages() {
     { id: 'morning-brief', label: 'Morning Brief', icon: FileText },
     { id: 'daily-wrap', label: 'Daily Wrap', icon: Calendar },
     { id: 'market-signals', label: 'Market Signals', icon: BarChart3 },
-    { id: 'breaking-news', label: 'Breaking News', icon: Zap },
     { id: 'youtube-intel', label: 'YouTube Intel', icon: PlaySquare },
     { id: 'etf-flows', label: 'ETF Flows', icon: TrendingUp },
     { id: 'master-watchlist', label: 'Master Watchlist', icon: Plus },
@@ -308,18 +304,24 @@ export default function AdminPages() {
             <div className="flex-1">
               {activeSection === 'market-news' && (
                 <div className="rounded-xl p-6" style={{ background: 'rgba(30,41,59,0.3)', border: '1px solid #334155' }}>
-                  <h2 className="text-xl font-semibold mb-6" style={{ color: '#eceef5' }}>Post Market News</h2>
+                  <h2 className="text-xl font-semibold mb-2" style={{ color: '#eceef5' }}>Post Market News</h2>
+                  <p className="text-sm mb-6" style={{ color: '#9aa8be' }}>
+                    Choose a Post Type. <span style={{ color: '#cbd5e1' }}>Breaking News</span> appears in the dashboard's red banner AND the right sidebar news feed. <span style={{ color: '#cbd5e1' }}>Confirmed News</span> and <span style={{ color: '#cbd5e1' }}>Chatter</span> appear in Market News and the news feed.
+                  </p>
                   <form onSubmit={handleMarketNewsSubmit} className="space-y-6">
                     <div>
                       <label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Post Type</label>
                       <select value={marketNewsForm.type} onChange={(e) => setMarketNewsForm(prev => ({ ...prev, type: e.target.value }))} className="w-full px-4 py-3 rounded-lg" style={inputStyle}>
-                        <option value="chatter">Market Chatter (Unconfirmed)</option>
+                        <option value="unconfirmed">Market Chatter (Unconfirmed)</option>
                         <option value="confirmed">Market News (Confirmed)</option>
+                        <option value="breaking">🚨 Breaking News</option>
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Content</label>
-                      <textarea value={marketNewsForm.content} onChange={(e) => setMarketNewsForm(prev => ({ ...prev, content: e.target.value }))} placeholder="Enter news content..." rows={4} className="w-full px-4 py-3 rounded-lg resize-none" style={inputStyle} />
+                      <label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>
+                        {marketNewsForm.type === 'breaking' ? 'Headline' : 'Content'}
+                      </label>
+                      <textarea value={marketNewsForm.content} onChange={(e) => setMarketNewsForm(prev => ({ ...prev, content: e.target.value }))} placeholder={marketNewsForm.type === 'breaking' ? 'Enter the breaking news headline...' : 'Enter news content...'} rows={4} className="w-full px-4 py-3 rounded-lg resize-none" style={inputStyle} />
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Category</label>
@@ -341,7 +343,7 @@ export default function AdminPages() {
                         <input type="url" value={marketNewsForm.source_url} onChange={(e) => setMarketNewsForm(prev => ({ ...prev, source_url: e.target.value }))} placeholder="https://..." className="w-full px-4 py-3 rounded-lg" style={inputStyle} />
                       </div>
                     </div>
-                    <button type="submit" disabled={loading} className="px-6 py-3 rounded-lg font-medium disabled:opacity-50" style={btnPrimary}>{loading ? 'Posting...' : 'Post'}</button>
+                    <button type="submit" disabled={loading} className="px-6 py-3 rounded-lg font-medium disabled:opacity-50" style={btnPrimary}>{loading ? 'Posting...' : marketNewsForm.type === 'breaking' ? 'Post Breaking News' : 'Post'}</button>
                   </form>
                 </div>
               )}
@@ -392,19 +394,6 @@ export default function AdminPages() {
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
-
-              {activeSection === 'breaking-news' && (
-                <div className="rounded-xl p-6" style={{ background: 'rgba(30,41,59,0.3)', border: '1px solid #334155' }}>
-                  <h2 className="text-xl font-semibold mb-6" style={{ color: '#eceef5' }}>Post Breaking News</h2>
-                  <form onSubmit={handleBreakingNewsSubmit} className="space-y-6">
-                    <div><label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Headline</label><input type="text" value={breakingNewsForm.headline} onChange={(e) => setBreakingNewsForm(prev => ({ ...prev, headline: e.target.value }))} placeholder="Enter headline..." className="w-full px-4 py-3 rounded-lg" style={inputStyle} /></div>
-                    <div><label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Content (Optional)</label><textarea value={breakingNewsForm.content} onChange={(e) => setBreakingNewsForm(prev => ({ ...prev, content: e.target.value }))} placeholder="Details..." rows={4} className="w-full px-4 py-3 rounded-lg resize-none" style={inputStyle} /></div>
-                    <div><label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Urgency Level</label><select value={breakingNewsForm.urgency} onChange={(e) => setBreakingNewsForm(prev => ({ ...prev, urgency: e.target.value }))} className="w-full px-4 py-3 rounded-lg" style={inputStyle}><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option></select></div>
-                    <div className="flex items-center gap-2"><input type="checkbox" id="st" checked={breakingNewsForm.show_ticker} onChange={(e) => setBreakingNewsForm(prev => ({ ...prev, show_ticker: e.target.checked }))} /><label htmlFor="st" className="text-sm" style={{ color: '#cbd5e1' }}>Show in top ticker banner</label></div>
-                    <button type="submit" disabled={loading} className="px-6 py-3 rounded-lg font-medium disabled:opacity-50" style={btnPrimary}>{loading ? 'Posting...' : 'Post Breaking News'}</button>
-                  </form>
                 </div>
               )}
 
