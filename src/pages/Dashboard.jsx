@@ -22,7 +22,6 @@ function BreakingNewsCard() {
   useEffect(function() {
     async function loadBreakingNews() {
       try {
-        // Read from market_news where type='breaking' (single source of truth)
         var result = await supabase
           .from('market_news')
           .select('id, content, source, source_url, created_at')
@@ -40,68 +39,74 @@ function BreakingNewsCard() {
     }
 
     loadBreakingNews()
-    // Refresh every 30 seconds
     var interval = setInterval(loadBreakingNews, 30 * 1000)
     return function() { clearInterval(interval) }
   }, [])
 
   if (loading || breakingNews.length === 0) {
-    return null // Don't show anything if no breaking news
+    return null
+  }
+
+  // Inner content for one breaking news item — badge + text + source
+  function BreakingNewsRow({ news, showBadge }) {
+    return (
+      <span className="inline-flex items-center gap-3">
+        {showBadge && (
+          <span className="text-sm font-bold px-3 py-1.5 rounded-lg flex-shrink-0" style={{ background: '#ef4444', color: '#fff' }}>
+            🚨 BREAKING NEWS
+          </span>
+        )}
+        <span className="text-sm font-semibold" style={{ color: '#ef4444' }}>
+          {news.content}
+        </span>
+        {news.source && (
+          <span className="text-xs" style={{ color: '#9aa8be' }}>— {news.source}</span>
+        )}
+      </span>
+    )
+  }
+
+  // Wraps a row in <a> if source_url exists, otherwise plain span
+  function ClickableRow({ news, showBadge }) {
+    if (news.source_url) {
+      return (
+        <a href={news.source_url} target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity" style={{ textDecoration: 'none' }}>
+          <BreakingNewsRow news={news} showBadge={showBadge} />
+        </a>
+      )
+    }
+    return <BreakingNewsRow news={news} showBadge={showBadge} />
   }
 
   return (
     <div className="mb-6">
       <div className="flex items-center justify-center">
         <div className="rounded-xl p-4 max-w-4xl w-full" style={{ background: 'rgba(239,68,68,0.08)', border: '2px solid rgba(239,68,68,0.2)' }}>
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-bold px-3 py-1.5 rounded-lg flex-shrink-0" style={{ background: '#ef4444', color: '#fff' }}>
-              🚨 BREAKING NEWS
-            </span>
-            <div className="flex-1 min-w-0">
-              {breakingNews.length === 1 ? (
-                // Single breaking news - show full headline
-                <div>
-                  {breakingNews[0].source_url ? (
-                    <a href={breakingNews[0].source_url} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold hover:underline" style={{ color: '#ef4444' }}>
-                      {breakingNews[0].content}
-                    </a>
-                  ) : (
-                    <span className="text-sm font-semibold" style={{ color: '#ef4444' }}>
-                      {breakingNews[0].content}
-                    </span>
-                  )}
-                  {breakingNews[0].source && (
-                    <span className="text-xs ml-2" style={{ color: '#9aa8be' }}>— {breakingNews[0].source}</span>
-                  )}
-                </div>
-              ) : (
-                // Multiple breaking news - scrolling ticker
-                <div className="overflow-hidden">
-                  <div className="animate-marquee whitespace-nowrap">
-                    {breakingNews.map(function(news, index) {
-                      return (
-                        <span key={news.id} className="inline-block">
-                          {news.source_url ? (
-                            <a href={news.source_url} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold hover:underline" style={{ color: '#ef4444' }}>
-                              {news.content}
-                            </a>
-                          ) : (
-                            <span className="text-sm font-semibold" style={{ color: '#ef4444' }}>
-                              {news.content}
-                            </span>
-                          )}
-                          {news.source && (
-                            <span className="text-xs ml-1" style={{ color: '#9aa8be' }}>— {news.source}</span>
-                          )}
-                          {index < breakingNews.length - 1 && <span className="mx-8 text-sm" style={{ color: '#ef4444' }}>•</span>}
-                        </span>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
+          {breakingNews.length === 1 ? (
+            // Single breaking news — entire row clickable
+            <div className="flex items-center justify-center">
+              <ClickableRow news={breakingNews[0]} showBadge={true} />
             </div>
-          </div>
+          ) : (
+            // Multiple breaking news — scrolling ticker, each item fully clickable
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-bold px-3 py-1.5 rounded-lg flex-shrink-0" style={{ background: '#ef4444', color: '#fff' }}>
+                🚨 BREAKING NEWS
+              </span>
+              <div className="flex-1 min-w-0 overflow-hidden">
+                <div className="animate-marquee whitespace-nowrap">
+                  {breakingNews.map(function(news, index) {
+                    return (
+                      <span key={news.id} className="inline-block">
+                        <ClickableRow news={news} showBadge={false} />
+                        {index < breakingNews.length - 1 && <span className="mx-8 text-sm" style={{ color: '#ef4444' }}>•</span>}
+                      </span>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
