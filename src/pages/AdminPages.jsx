@@ -4,6 +4,17 @@ import { Plus, Trash2, Bell, MessageCircle, PlaySquare, FileText, BarChart3, Tre
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 
+// Market Signals — locked options
+const SIGNAL_NAMES = ['Market Sentiment', 'Risk Environment', 'Technical Outlook']
+// Value → color mapping (locked)
+const SIGNAL_VALUE_COLORS = {
+  Bullish: 'green',
+  Bearish: 'red',
+  Neutral: 'yellow',
+  Cautious: 'blue'
+}
+const SIGNAL_VALUES = Object.keys(SIGNAL_VALUE_COLORS)
+
 export default function AdminPages() {
   const { profile } = useAuth()
   const [activeSection, setActiveSection] = useState('market-news')
@@ -17,14 +28,11 @@ export default function AdminPages() {
   const [newSymbol, setNewSymbol] = useState('')
   const [notificationForm, setNotificationForm] = useState({ title: '', message: '' })
 
-  // Morning Brief — matches actual DB columns: headline, summary, catalysts (array), date, published
   const [morningBriefForm, setMorningBriefForm] = useState({ headline: '', summary: '', catalysts: '', date: '' })
-
-  // Daily Wrap — same schema as morning_briefs
   const [dailyWrapForm, setDailyWrapForm] = useState({ headline: '', summary: '', catalysts: '', date: '' })
 
   const [marketSignals, setMarketSignals] = useState([])
-  const [newSignal, setNewSignal] = useState({ signal_name: '', signal_value: '', color: 'blue' })
+  const [signalForm, setSignalForm] = useState({ signal_name: 'Market Sentiment', signal_value: 'Bullish' })
 
   // ETF FLOWS state
   const [etfSummary, setEtfSummary] = useState(null)
@@ -44,7 +52,6 @@ export default function AdminPages() {
     return ''
   }
 
-  // Default the date to today (YYYY-MM-DD) when forms first load
   useEffect(() => {
     var today = new Date().toISOString().split('T')[0]
     setMorningBriefForm(prev => ({ ...prev, date: prev.date || today }))
@@ -138,7 +145,6 @@ export default function AdminPages() {
     setMessage('Deleted'); loadMasterSymbols()
   }
 
-  // Convert textarea catalysts (one per line) to a Postgres array
   function parseCatalysts(text) {
     if (!text || !text.trim()) return null
     return text.split('\n').map(s => s.replace(/^[-•\s]+/, '').trim()).filter(s => s.length > 0)
@@ -186,14 +192,28 @@ export default function AdminPages() {
     setDailyWrapForm({ headline: '', summary: '', catalysts: '', date: today })
   }
 
-  async function handleAddMarketSignal(e) {
+  // Market Signals — auto-assign color from value
+  async function handleSaveSignal(e) {
     e.preventDefault()
-    if (!newSignal.signal_name.trim() || !newSignal.signal_value.trim()) { setMessage('Name and value required'); return }
+    var color = SIGNAL_VALUE_COLORS[signalForm.signal_value]
     setLoading(true)
-    const { error } = await supabase.from('market_signals').upsert([{ signal_name: newSignal.signal_name, signal_value: newSignal.signal_value, color: newSignal.color }], { onConflict: 'signal_name' })
+    const { error } = await supabase.from('market_signals').upsert([{
+      signal_name: signalForm.signal_name,
+      signal_value: signalForm.signal_value,
+      color: color
+    }], { onConflict: 'signal_name' })
     setLoading(false)
-    if (error) { setMessage('Error updating'); return }
-    setMessage('Signal updated!'); setNewSignal({ signal_name: '', signal_value: '', color: 'blue' }); loadMarketSignals()
+    if (error) { setMessage('Error updating: ' + error.message); return }
+    setMessage(signalForm.signal_name + ' updated to ' + signalForm.signal_value + '!')
+    loadMarketSignals()
+  }
+
+  async function handleDeleteSignal(name) {
+    if (!confirm('Remove ' + name + '?')) return
+    const { error } = await supabase.from('market_signals').delete().eq('signal_name', name)
+    if (error) { setMessage('Error removing'); return }
+    setMessage(name + ' removed')
+    loadMarketSignals()
   }
 
   // ETF FLOWS handlers
@@ -308,6 +328,15 @@ export default function AdminPages() {
   const inputStyle = { background: '#1e293b', border: '1px solid #475569', color: '#eceef5' }
   const innerInputStyle = { background: '#0f172a', border: '1px solid #475569', color: '#eceef5' }
   const btnPrimary = { background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', color: '#fff' }
+
+  // Color preview map for the Market Signals form
+  const colorPreviewMap = {
+    green: { bg: 'rgba(16,185,129,0.20)', text: '#10b981' },
+    red: { bg: 'rgba(239,68,68,0.20)', text: '#ef4444' },
+    yellow: { bg: 'rgba(245,158,11,0.20)', text: '#f59e0b' },
+    blue: { bg: 'rgba(59,130,246,0.20)', text: '#3b82f6' }
+  }
+  var previewColor = colorPreviewMap[SIGNAL_VALUE_COLORS[signalForm.signal_value]] || colorPreviewMap.blue
 
   return (
     <AppLayout>
@@ -448,23 +477,50 @@ export default function AdminPages() {
 
               {activeSection === 'market-signals' && (
                 <div className="rounded-xl p-6" style={{ background: 'rgba(30,41,59,0.3)', border: '1px solid #334155' }}>
-                  <h2 className="text-xl font-semibold mb-6" style={{ color: '#eceef5' }}>Update Market Signals</h2>
-                  <form onSubmit={handleAddMarketSignal} className="space-y-6 mb-8">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div><label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Signal Name</label><input type="text" value={newSignal.signal_name} onChange={(e) => setNewSignal(prev => ({ ...prev, signal_name: e.target.value }))} placeholder="Market Sentiment" className="w-full px-4 py-3 rounded-lg" style={inputStyle} /></div>
-                      <div><label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Signal Value</label><input type="text" value={newSignal.signal_value} onChange={(e) => setNewSignal(prev => ({ ...prev, signal_value: e.target.value }))} placeholder="Bullish" className="w-full px-4 py-3 rounded-lg" style={inputStyle} /></div>
-                      <div><label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Color</label><select value={newSignal.color} onChange={(e) => setNewSignal(prev => ({ ...prev, color: e.target.value }))} className="w-full px-4 py-3 rounded-lg" style={inputStyle}><option value="green">Green</option><option value="yellow">Yellow</option><option value="red">Red</option><option value="blue">Blue</option></select></div>
+                  <h2 className="text-xl font-semibold mb-2" style={{ color: '#eceef5' }}>Update Market Signals</h2>
+                  <p className="text-sm mb-6" style={{ color: '#9aa8be' }}>
+                    Pick a Signal and a Value. Color is applied automatically: <span style={{ color: '#10b981' }}>Bullish = Green</span>, <span style={{ color: '#ef4444' }}>Bearish = Red</span>, <span style={{ color: '#f59e0b' }}>Neutral = Yellow</span>, <span style={{ color: '#3b82f6' }}>Cautious = Blue</span>.
+                  </p>
+                  <form onSubmit={handleSaveSignal} className="space-y-6 mb-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Signal</label>
+                        <select value={signalForm.signal_name} onChange={(e) => setSignalForm(prev => ({ ...prev, signal_name: e.target.value }))} className="w-full px-4 py-3 rounded-lg" style={inputStyle}>
+                          {SIGNAL_NAMES.map(n => <option key={n} value={n}>{n}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Value</label>
+                        <select value={signalForm.signal_value} onChange={(e) => setSignalForm(prev => ({ ...prev, signal_value: e.target.value }))} className="w-full px-4 py-3 rounded-lg" style={inputStyle}>
+                          {SIGNAL_VALUES.map(v => <option key={v} value={v}>{v}</option>)}
+                        </select>
+                      </div>
                     </div>
-                    <button type="submit" disabled={loading} className="px-6 py-3 rounded-lg font-medium disabled:opacity-50" style={btnPrimary}>{loading ? 'Updating...' : 'Update Signal'}</button>
+                    <div className="flex items-center gap-3 px-4 py-3 rounded-lg" style={{ background: '#0f172a', border: '1px solid #475569' }}>
+                      <span className="text-sm" style={{ color: '#9aa8be' }}>Preview:</span>
+                      <span className="font-medium" style={{ color: '#eceef5' }}>{signalForm.signal_name}</span>
+                      <span className="px-3 py-1 rounded text-sm font-semibold ml-auto" style={{ background: previewColor.bg, color: previewColor.text }}>{signalForm.signal_value}</span>
+                    </div>
+                    <button type="submit" disabled={loading} className="px-6 py-3 rounded-lg font-medium disabled:opacity-50" style={btnPrimary}>{loading ? 'Saving...' : 'Save Signal'}</button>
                   </form>
                   <div className="space-y-2">
                     <h3 className="text-lg font-medium mb-4" style={{ color: '#eceef5' }}>Current Signals</h3>
-                    {marketSignals.map(s => (
-                      <div key={s.signal_name} className="flex items-center justify-between p-3 rounded-lg" style={{ background: '#1e293b', border: '1px solid #475569' }}>
-                        <span className="font-medium" style={{ color: '#eceef5' }}>{s.signal_name}</span>
-                        <span className="px-3 py-1 rounded text-sm font-semibold" style={{ background: s.color === 'green' ? 'rgba(16,185,129,0.2)' : s.color === 'red' ? 'rgba(239,68,68,0.2)' : s.color === 'yellow' ? 'rgba(245,158,11,0.2)' : 'rgba(59,130,246,0.2)', color: s.color === 'green' ? '#10b981' : s.color === 'red' ? '#ef4444' : s.color === 'yellow' ? '#f59e0b' : '#3b82f6' }}>{s.signal_value}</span>
-                      </div>
-                    ))}
+                    {marketSignals.length === 0 ? (
+                      <p className="text-sm" style={{ color: '#6b7a96' }}>No signals set yet. Use the form above to add Market Sentiment, Risk Environment, and Technical Outlook.</p>
+                    ) : (
+                      marketSignals.map(s => {
+                        var c = colorPreviewMap[s.color] || colorPreviewMap.blue
+                        return (
+                          <div key={s.signal_name} className="flex items-center justify-between p-3 rounded-lg" style={{ background: '#1e293b', border: '1px solid #475569' }}>
+                            <span className="font-medium" style={{ color: '#eceef5' }}>{s.signal_name}</span>
+                            <div className="flex items-center gap-3">
+                              <span className="px-3 py-1 rounded text-sm font-semibold" style={{ background: c.bg, color: c.text }}>{s.signal_value}</span>
+                              <button onClick={() => handleDeleteSignal(s.signal_name)} className="p-2 rounded-lg" style={{ color: '#ef4444' }} title="Remove"><Trash2 size={14} /></button>
+                            </div>
+                          </div>
+                        )
+                      })
+                    )}
                   </div>
                 </div>
               )}
