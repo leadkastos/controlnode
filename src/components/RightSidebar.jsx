@@ -110,17 +110,25 @@ export default function RightSidebar() {
             .from('market_news')
             .select('*')
             .order('created_at', { ascending: false })
-            .limit(10)
+            .limit(15)
 
           if (manualRes.data) {
             var manualPosts = manualRes.data.map(function(post) {
+              var categoryLabel = 'CHATTER'
+              if (post.type === 'breaking') {
+                categoryLabel = 'Breaking|Manual'
+              } else if (post.type === 'confirmed') {
+                categoryLabel = 'Confirmed|Manual'
+              } else {
+                categoryLabel = 'Chatter|Manual'
+              }
               return {
                 id: 'manual_' + post.id,
                 title: post.content,
                 url: post.source_url || '#',
                 source: post.source || 'Admin Post',
                 source_info: { name: post.source || 'Admin Post' },
-                categories: post.type === 'confirmed' ? 'Confirmed|News' : 'Chatter|Unconfirmed',
+                categories: categoryLabel,
                 published_on: Math.floor(new Date(post.created_at).getTime() / 1000),
                 isManual: true,
                 postType: post.type
@@ -148,15 +156,21 @@ export default function RightSidebar() {
           console.error('Auto news fetch error:', e)
         }
 
-        allNews.sort(function(a, b) { return b.published_on - a.published_on })
-        setNews(allNews.slice(0, 8))
+        // Sort: breaking news always first, then by timestamp newest-first
+        allNews.sort(function(a, b) {
+          var aBreaking = a.postType === 'breaking' ? 1 : 0
+          var bBreaking = b.postType === 'breaking' ? 1 : 0
+          if (aBreaking !== bBreaking) return bBreaking - aBreaking
+          return b.published_on - a.published_on
+        })
+        setNews(allNews.slice(0, 10))
 
       } catch(e) {
         console.error('News fetch error:', e)
       }
     }
     fetchNews()
-    var interval = setInterval(fetchNews, 3 * 60 * 1000)
+    var interval = setInterval(fetchNews, 30 * 1000)
     return function() { clearInterval(interval) }
   }, [])
 
@@ -275,7 +289,10 @@ export default function RightSidebar() {
                 var cat, catLabel, sourceName
 
                 if (item.isManual) {
-                  if (item.postType === 'confirmed') {
+                  if (item.postType === 'breaking') {
+                    cat = { bg: 'rgba(239,68,68,0.18)', text: '#ef4444' }
+                    catLabel = '🚨 BREAKING'
+                  } else if (item.postType === 'confirmed') {
                     cat = { bg: 'rgba(16,185,129,0.12)', text: '#10b981' }
                     catLabel = 'CONFIRMED'
                   } else {
@@ -289,6 +306,9 @@ export default function RightSidebar() {
                   sourceName = item.source_info ? item.source_info.name : item.source
                 }
 
+                // Breaking posts get a red border to stand out
+                var borderColor = item.postType === 'breaking' ? '#ef4444' : '#1e2330'
+
                 return (
                   <a
                     key={String(item.id)}
@@ -298,7 +318,7 @@ export default function RightSidebar() {
                     className={item.url !== '#' ? "block px-3 py-3 rounded-lg transition-colors hover:bg-white/5" : "block px-3 py-3 rounded-lg"}
                     style={{
                       background: '#161a22',
-                      border: '1px solid #1e2330',
+                      border: '1px solid ' + borderColor,
                       textDecoration: 'none',
                       cursor: item.url !== '#' ? 'pointer' : 'default'
                     }}
