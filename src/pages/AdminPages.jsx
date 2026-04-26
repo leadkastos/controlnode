@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import AppLayout from '../components/AppLayout'
-import { Plus, Trash2, Bell, MessageCircle, PlaySquare, FileText, BarChart3, TrendingUp, Calendar, Database } from 'lucide-react'
+import { Plus, Trash2, Bell, MessageCircle, PlaySquare, FileText, BarChart3, TrendingUp, Calendar, Database, Pencil, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -16,6 +16,9 @@ export default function AdminPages() {
   const [message, setMessage] = useState('')
 
   const [marketNewsForm, setMarketNewsForm] = useState({ type: 'unconfirmed', content: '', category: 'General', source: '', source_url: '' })
+  const [editingNewsId, setEditingNewsId] = useState(null)
+  const [recentNews, setRecentNews] = useState([])
+
   const [youtubeForm, setYoutubeForm] = useState({ title: '', description: '', youtube_url: '', video_id: '', thumbnail_url: '' })
   const [youtubeVideos, setYoutubeVideos] = useState([])
   const [symbols, setSymbols] = useState([])
@@ -23,7 +26,12 @@ export default function AdminPages() {
   const [notificationForm, setNotificationForm] = useState({ title: '', message: '' })
 
   const [morningBriefForm, setMorningBriefForm] = useState({ headline: '', summary: '', catalysts: '', date: '' })
+  const [editingBriefId, setEditingBriefId] = useState(null)
+  const [recentBriefs, setRecentBriefs] = useState([])
+
   const [dailyWrapForm, setDailyWrapForm] = useState({ headline: '', summary: '', catalysts: '', date: '' })
+  const [editingWrapId, setEditingWrapId] = useState(null)
+  const [recentWraps, setRecentWraps] = useState([])
 
   const [marketSignals, setMarketSignals] = useState([])
   const [signalForm, setSignalForm] = useState({ signal_name: 'Market Sentiment', signal_value: 'Bullish' })
@@ -31,10 +39,10 @@ export default function AdminPages() {
   // ETF DAILY SNAPSHOTS state
   const [etfList, setEtfList] = useState([])
   const [snapshotDate, setSnapshotDate] = useState('')
-  const [snapshots, setSnapshots] = useState({}) // { ticker: { xrp_locked, aum_usd, nav_per_share } }
+  const [snapshots, setSnapshots] = useState({})
   const [savingSnapshots, setSavingSnapshots] = useState(false)
 
-  // ETF Pipeline state (kept from before)
+  // ETF Pipeline state
   const [etfPipeline, setEtfPipeline] = useState([])
   const [newPipeline, setNewPipeline] = useState({ issuer_name: '', priority: 'Medium', notes: '', status: 'Not Filed' })
   const [addingPipeline, setAddingPipeline] = useState(false)
@@ -59,9 +67,16 @@ export default function AdminPages() {
     else setYoutubeForm(prev => ({ ...prev, video_id: '', thumbnail_url: '' }))
   }, [youtubeForm.youtube_url])
 
-  useEffect(() => { loadMasterSymbols(); loadMarketSignals(); loadYouTubeVideos(); loadEtfData() }, [])
+  useEffect(() => {
+    loadMasterSymbols()
+    loadMarketSignals()
+    loadYouTubeVideos()
+    loadEtfData()
+    loadRecentNews()
+    loadRecentBriefs()
+    loadRecentWraps()
+  }, [])
 
-  // When date changes, reload snapshots for that date
   useEffect(() => {
     if (snapshotDate && etfList.length > 0) loadSnapshotsForDate(snapshotDate)
   }, [snapshotDate, etfList.length])
@@ -77,6 +92,18 @@ export default function AdminPages() {
   async function loadMarketSignals() {
     const r = await supabase.from('market_signals').select('*').order('signal_name')
     if (r.data) setMarketSignals(r.data)
+  }
+  async function loadRecentNews() {
+    const r = await supabase.from('market_news').select('*').order('created_at', { ascending: false }).limit(20)
+    if (r.data) setRecentNews(r.data)
+  }
+  async function loadRecentBriefs() {
+    const r = await supabase.from('morning_briefs').select('*').order('date', { ascending: false }).limit(10)
+    if (r.data) setRecentBriefs(r.data)
+  }
+  async function loadRecentWraps() {
+    const r = await supabase.from('daily_wraps').select('*').order('date', { ascending: false }).limit(10)
+    if (r.data) setRecentWraps(r.data)
   }
   async function loadEtfData() {
     const a = await supabase.from('etf_aum').select('*').eq('active', true).order('sort_order', { ascending: true })
@@ -119,7 +146,6 @@ export default function AdminPages() {
       var xrp = parseFloat(s.xrp_locked) || 0
       var nav = s.nav_per_share != null && s.nav_per_share !== '' ? parseFloat(s.nav_per_share) : null
 
-      // Skip if both AUM and XRP are zero — user hasn't entered anything for this ETF
       if (aum === 0 && xrp === 0) continue
 
       rows.push({
@@ -140,7 +166,6 @@ export default function AdminPages() {
       return
     }
 
-    // Upsert all snapshots
     const { error: snapErr } = await supabase
       .from('etf_daily_snapshots')
       .upsert(rows, { onConflict: 'ticker,snapshot_date' })
@@ -151,7 +176,6 @@ export default function AdminPages() {
       return
     }
 
-    // Update etf_aum (current AUM in millions)
     for (var j = 0; j < rows.length; j++) {
       var r = rows[j]
       await supabase.from('etf_aum').update({
@@ -160,23 +184,19 @@ export default function AdminPages() {
       }).eq('ticker', r.ticker)
     }
 
-    // Recalculate the etf_summary 5 cards by calling the calculation function
     await recalculateEtfSummary(snapshotDate)
 
     setSavingSnapshots(false)
     setMessage('Saved ' + rows.length + ' ETF snapshots! Member page now reflects updated numbers.')
   }
 
-  // Calculate inflows, outflows, net for 24h/7d/30d, write to etf_summary
   async function recalculateEtfSummary(forDate) {
-    // Get today's snapshots
     const { data: today } = await supabase.from('etf_daily_snapshots').select('*').eq('snapshot_date', forDate)
     if (!today || today.length === 0) return
 
     var totalAumUsd = today.reduce((s, r) => s + (Number(r.aum_usd) || 0), 0)
     var totalXrpLocked = today.reduce((s, r) => s + (Number(r.xrp_locked) || 0), 0)
 
-    // For each timeframe, compute total inflows + total outflows + net
     async function flows(daysBack) {
       var target = new Date(forDate)
       target.setDate(target.getDate() - daysBack)
@@ -219,11 +239,9 @@ export default function AdminPages() {
     var summary = {
       total_aum: totalAumUsd / 1000000,
       xrp_in_etfs: totalXrpLocked / 1000000,
-      // Legacy fields for backwards compat
       net_flow_24h: f24.net_usd / 1000000,
       net_flow_7d: f7.net_usd / 1000000,
       net_flow_30d: f30.net_usd / 1000000,
-      // New flow fields (in millions for display)
       inflows_xrp_24h: f24.inflows_xrp / 1000000,
       outflows_xrp_24h: f24.outflows_xrp / 1000000,
       net_xrp_24h: f24.net_xrp / 1000000,
@@ -253,25 +271,67 @@ export default function AdminPages() {
     }
   }
 
+  // ===== MARKET NEWS =====
   async function handleMarketNewsSubmit(e) {
     e.preventDefault()
     if (!marketNewsForm.content.trim()) { setMessage('Content is required'); return }
     setLoading(true)
-    const { error } = await supabase.from('market_news').insert([{
+
+    const payload = {
       type: marketNewsForm.type,
       content: marketNewsForm.content,
       category: marketNewsForm.category,
       source: marketNewsForm.source || null,
-      source_url: marketNewsForm.source_url || null,
-      created_by: profile.id
-    }])
+      source_url: marketNewsForm.source_url || null
+    }
+
+    var error
+    if (editingNewsId) {
+      const r = await supabase.from('market_news').update(payload).eq('id', editingNewsId)
+      error = r.error
+    } else {
+      payload.created_by = profile.id
+      const r = await supabase.from('market_news').insert([payload])
+      error = r.error
+    }
+
     setLoading(false)
-    if (error) { setMessage('Error posting market news: ' + error.message); return }
+    if (error) { setMessage('Error: ' + error.message); return }
+
     var label = marketNewsForm.type === 'breaking' ? 'Breaking news' : marketNewsForm.type === 'confirmed' ? 'Market news' : 'Market chatter'
-    setMessage(label + ' posted successfully!')
+    setMessage(editingNewsId ? label + ' updated successfully!' : label + ' posted successfully!')
+    setMarketNewsForm({ type: 'unconfirmed', content: '', category: 'General', source: '', source_url: '' })
+    setEditingNewsId(null)
+    loadRecentNews()
+  }
+
+  function handleEditNews(post) {
+    setEditingNewsId(post.id)
+    setMarketNewsForm({
+      type: post.type || 'unconfirmed',
+      content: post.content || '',
+      category: post.category || 'General',
+      source: post.source || '',
+      source_url: post.source_url || ''
+    })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  function handleCancelEditNews() {
+    setEditingNewsId(null)
     setMarketNewsForm({ type: 'unconfirmed', content: '', category: 'General', source: '', source_url: '' })
   }
 
+  async function handleDeleteNews(id) {
+    if (!confirm('Delete this post? This cannot be undone.')) return
+    const { error } = await supabase.from('market_news').delete().eq('id', id)
+    if (error) { setMessage('Error deleting: ' + error.message); return }
+    setMessage('Post deleted')
+    if (editingNewsId === id) handleCancelEditNews()
+    loadRecentNews()
+  }
+
+  // ===== YOUTUBE =====
   async function handleYouTubeSubmit(e) {
     e.preventDefault()
     if (!youtubeForm.title.trim() || !youtubeForm.youtube_url.trim()) { setMessage('Title and YouTube URL are required'); return }
@@ -292,6 +352,7 @@ export default function AdminPages() {
     setMessage('Video deleted'); loadYouTubeVideos()
   }
 
+  // ===== MASTER WATCHLIST =====
   async function handleAddSymbol(e) {
     e.preventDefault()
     if (!newSymbol.trim()) return
@@ -316,48 +377,132 @@ export default function AdminPages() {
     return text.split('\n').map(s => s.replace(/^[-•\s]+/, '').trim()).filter(s => s.length > 0)
   }
 
+  function catalystsToText(arr) {
+    if (!arr || !Array.isArray(arr)) return ''
+    return arr.join('\n')
+  }
+
+  // ===== MORNING BRIEF =====
   async function handleMorningBriefSubmit(e) {
     e.preventDefault()
     if (!morningBriefForm.headline.trim() || !morningBriefForm.summary.trim()) { setMessage('Headline and Summary required'); return }
     setLoading(true)
+
     const payload = {
       headline: morningBriefForm.headline,
       summary: morningBriefForm.summary,
       catalysts: parseCatalysts(morningBriefForm.catalysts),
       date: morningBriefForm.date || new Date().toISOString().split('T')[0],
       published: true,
-      published_at: new Date().toISOString(),
-      created_by: profile.id
+      published_at: new Date().toISOString()
     }
-    const { error } = await supabase.from('morning_briefs').insert([payload])
+
+    var error
+    if (editingBriefId) {
+      const r = await supabase.from('morning_briefs').update(payload).eq('id', editingBriefId)
+      error = r.error
+    } else {
+      payload.created_by = profile.id
+      const r = await supabase.from('morning_briefs').insert([payload])
+      error = r.error
+    }
+
     setLoading(false)
-    if (error) { setMessage('Error publishing: ' + error.message); return }
-    setMessage('Morning Brief published!')
+    if (error) { setMessage('Error: ' + error.message); return }
+    setMessage(editingBriefId ? 'Morning Brief updated!' : 'Morning Brief published!')
+    var today = new Date().toISOString().split('T')[0]
+    setMorningBriefForm({ headline: '', summary: '', catalysts: '', date: today })
+    setEditingBriefId(null)
+    loadRecentBriefs()
+  }
+
+  function handleEditBrief(brief) {
+    setEditingBriefId(brief.id)
+    setMorningBriefForm({
+      headline: brief.headline || '',
+      summary: brief.summary || '',
+      catalysts: catalystsToText(brief.catalysts),
+      date: brief.date || ''
+    })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  function handleCancelEditBrief() {
+    setEditingBriefId(null)
     var today = new Date().toISOString().split('T')[0]
     setMorningBriefForm({ headline: '', summary: '', catalysts: '', date: today })
   }
 
+  async function handleDeleteBrief(id) {
+    if (!confirm('Delete this Morning Brief? This cannot be undone.')) return
+    const { error } = await supabase.from('morning_briefs').delete().eq('id', id)
+    if (error) { setMessage('Error deleting: ' + error.message); return }
+    setMessage('Morning Brief deleted')
+    if (editingBriefId === id) handleCancelEditBrief()
+    loadRecentBriefs()
+  }
+
+  // ===== DAILY WRAP =====
   async function handleDailyWrapSubmit(e) {
     e.preventDefault()
     if (!dailyWrapForm.headline.trim() || !dailyWrapForm.summary.trim()) { setMessage('Headline and Summary required'); return }
     setLoading(true)
+
     const payload = {
       headline: dailyWrapForm.headline,
       summary: dailyWrapForm.summary,
       catalysts: parseCatalysts(dailyWrapForm.catalysts),
       date: dailyWrapForm.date || new Date().toISOString().split('T')[0],
       published: true,
-      published_at: new Date().toISOString(),
-      created_by: profile.id
+      published_at: new Date().toISOString()
     }
-    const { error } = await supabase.from('daily_wraps').insert([payload])
+
+    var error
+    if (editingWrapId) {
+      const r = await supabase.from('daily_wraps').update(payload).eq('id', editingWrapId)
+      error = r.error
+    } else {
+      payload.created_by = profile.id
+      const r = await supabase.from('daily_wraps').insert([payload])
+      error = r.error
+    }
+
     setLoading(false)
-    if (error) { setMessage('Error publishing: ' + error.message); return }
-    setMessage('Daily Wrap published!')
+    if (error) { setMessage('Error: ' + error.message); return }
+    setMessage(editingWrapId ? 'Daily Wrap updated!' : 'Daily Wrap published!')
+    var today = new Date().toISOString().split('T')[0]
+    setDailyWrapForm({ headline: '', summary: '', catalysts: '', date: today })
+    setEditingWrapId(null)
+    loadRecentWraps()
+  }
+
+  function handleEditWrap(wrap) {
+    setEditingWrapId(wrap.id)
+    setDailyWrapForm({
+      headline: wrap.headline || '',
+      summary: wrap.summary || '',
+      catalysts: catalystsToText(wrap.catalysts),
+      date: wrap.date || ''
+    })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  function handleCancelEditWrap() {
+    setEditingWrapId(null)
     var today = new Date().toISOString().split('T')[0]
     setDailyWrapForm({ headline: '', summary: '', catalysts: '', date: today })
   }
 
+  async function handleDeleteWrap(id) {
+    if (!confirm('Delete this Daily Wrap? This cannot be undone.')) return
+    const { error } = await supabase.from('daily_wraps').delete().eq('id', id)
+    if (error) { setMessage('Error deleting: ' + error.message); return }
+    setMessage('Daily Wrap deleted')
+    if (editingWrapId === id) handleCancelEditWrap()
+    loadRecentWraps()
+  }
+
+  // ===== MARKET SIGNALS =====
   async function handleSaveSignal(e) {
     e.preventDefault()
     var color = SIGNAL_VALUE_COLORS[signalForm.signal_value]
@@ -381,6 +526,7 @@ export default function AdminPages() {
     loadMarketSignals()
   }
 
+  // ===== ETF PIPELINE =====
   function updateEtfPipelineField(id, field, value) {
     setEtfPipeline(prev => prev.map(p => p.id === id ? { ...p, [field]: value } : p))
   }
@@ -409,6 +555,7 @@ export default function AdminPages() {
     setMessage('Entry removed'); loadEtfData()
   }
 
+  // ===== NOTIFICATIONS =====
   async function handleNotificationSubmit(e) {
     e.preventDefault()
     if (!notificationForm.title.trim() || !notificationForm.message.trim()) { setMessage('Title and message required'); return }
@@ -443,7 +590,6 @@ export default function AdminPages() {
   }
   var previewColor = colorPreviewMap[SIGNAL_VALUE_COLORS[signalForm.signal_value]] || colorPreviewMap.blue
 
-  // Helper for ETF source URLs (shown next to each ETF for reference)
   const ETF_SOURCES = {
     'XRP':  { name: 'Bitwise',           url: 'https://bitxrpetf.com/' },
     'XRPC': { name: 'Canary',            url: 'https://canaryetfs.com/xrpc/' },
@@ -451,6 +597,29 @@ export default function AdminPages() {
     'TOXR': { name: '21Shares',          url: 'https://www.21shares.com/en-us/products-us/toxr' },
     'GXRP': { name: 'Grayscale',         url: 'https://etfs.grayscale.com/gxrp' },
     'XRPR': { name: 'REX-Osprey',        url: 'https://www.rexshares.com/xrpr/' }
+  }
+
+  // Type badge for Market News list
+  function newsTypeBadge(type) {
+    if (type === 'breaking') return { label: '🚨 BREAKING', bg: 'rgba(239,68,68,0.20)', color: '#ef4444' }
+    if (type === 'confirmed') return { label: 'NEWS', bg: 'rgba(59,130,246,0.20)', color: '#3b82f6' }
+    return { label: 'CHATTER', bg: 'rgba(245,158,11,0.20)', color: '#f59e0b' }
+  }
+
+  function formatDate(d) {
+    if (!d) return ''
+    try {
+      var dt = new Date(d)
+      return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    } catch (e) { return d }
+  }
+
+  function formatDateTime(d) {
+    if (!d) return ''
+    try {
+      var dt = new Date(d)
+      return dt.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+    } catch (e) { return d }
   }
 
   return (
@@ -488,7 +657,16 @@ export default function AdminPages() {
             <div className="flex-1">
               {activeSection === 'market-news' && (
                 <div className="rounded-xl p-6" style={{ background: 'rgba(30,41,59,0.3)', border: '1px solid #334155' }}>
-                  <h2 className="text-xl font-semibold mb-2" style={{ color: '#eceef5' }}>Post Market News</h2>
+                  <div className="flex items-center justify-between mb-2">
+                    <h2 className="text-xl font-semibold" style={{ color: '#eceef5' }}>
+                      {editingNewsId ? 'Edit Market News Post' : 'Post Market News'}
+                    </h2>
+                    {editingNewsId && (
+                      <button onClick={handleCancelEditNews} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm" style={{ background: 'rgba(148,163,184,0.15)', color: '#cbd5e1' }}>
+                        <X size={14} /> Cancel Edit
+                      </button>
+                    )}
+                  </div>
                   <p className="text-sm mb-6" style={{ color: '#9aa8be' }}>
                     Choose a Post Type. <span style={{ color: '#cbd5e1' }}>Breaking News</span> appears in the dashboard's red banner AND the right sidebar news feed. <span style={{ color: '#cbd5e1' }}>Confirmed News</span> and <span style={{ color: '#cbd5e1' }}>Chatter</span> appear in Market News and the news feed.
                   </p>
@@ -527,14 +705,60 @@ export default function AdminPages() {
                         <input type="url" value={marketNewsForm.source_url} onChange={(e) => setMarketNewsForm(prev => ({ ...prev, source_url: e.target.value }))} placeholder="https://..." className="w-full px-4 py-3 rounded-lg" style={inputStyle} />
                       </div>
                     </div>
-                    <button type="submit" disabled={loading} className="px-6 py-3 rounded-lg font-medium disabled:opacity-50" style={btnPrimary}>{loading ? 'Posting...' : marketNewsForm.type === 'breaking' ? 'Post Breaking News' : 'Post'}</button>
+                    <button type="submit" disabled={loading} className="px-6 py-3 rounded-lg font-medium disabled:opacity-50" style={btnPrimary}>
+                      {loading ? (editingNewsId ? 'Updating...' : 'Posting...') : (editingNewsId ? 'Update Post' : (marketNewsForm.type === 'breaking' ? 'Post Breaking News' : 'Post'))}
+                    </button>
                   </form>
+
+                  {/* RECENT POSTS LIST */}
+                  <div className="mt-10 pt-6 border-t" style={{ borderColor: '#475569' }}>
+                    <h3 className="text-lg font-semibold mb-4" style={{ color: '#eceef5' }}>Recent Posts ({recentNews.length})</h3>
+                    {recentNews.length === 0 ? (
+                      <p className="text-sm" style={{ color: '#6b7a96' }}>No posts yet.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {recentNews.map(post => {
+                          var badge = newsTypeBadge(post.type)
+                          var isEditing = editingNewsId === post.id
+                          return (
+                            <div key={post.id} className="p-4 rounded-lg" style={{ background: isEditing ? 'rgba(59,130,246,0.10)' : '#1e293b', border: '1px solid ' + (isEditing ? '#3b82f6' : '#475569') }}>
+                              <div className="flex items-start gap-3">
+                                <span className="px-2 py-1 rounded text-xs font-bold flex-shrink-0" style={{ background: badge.bg, color: badge.color }}>{badge.label}</span>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm mb-2" style={{ color: '#eceef5' }}>{post.content}</p>
+                                  <div className="flex items-center gap-3 text-xs" style={{ color: '#9aa8be' }}>
+                                    <span>{post.category}</span>
+                                    {post.source && <><span style={{ color: '#475569' }}>·</span><span>{post.source}</span></>}
+                                    <span style={{ color: '#475569' }}>·</span>
+                                    <span>{formatDateTime(post.created_at)}</span>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                  <button onClick={() => handleEditNews(post)} className="p-2 rounded-lg" style={{ background: 'rgba(59,130,246,0.10)', color: '#3b82f6' }} title="Edit"><Pencil size={14} /></button>
+                                  <button onClick={() => handleDeleteNews(post.id)} className="p-2 rounded-lg" style={{ background: 'rgba(239,68,68,0.10)', color: '#ef4444' }} title="Delete"><Trash2 size={14} /></button>
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
               {activeSection === 'morning-brief' && (
                 <div className="rounded-xl p-6" style={{ background: 'rgba(30,41,59,0.3)', border: '1px solid #334155' }}>
-                  <h2 className="text-xl font-semibold mb-2" style={{ color: '#eceef5' }}>Publish Morning Brief</h2>
+                  <div className="flex items-center justify-between mb-2">
+                    <h2 className="text-xl font-semibold" style={{ color: '#eceef5' }}>
+                      {editingBriefId ? 'Edit Morning Brief' : 'Publish Morning Brief'}
+                    </h2>
+                    {editingBriefId && (
+                      <button onClick={handleCancelEditBrief} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm" style={{ background: 'rgba(148,163,184,0.15)', color: '#cbd5e1' }}>
+                        <X size={14} /> Cancel Edit
+                      </button>
+                    )}
+                  </div>
                   <p className="text-sm mb-6" style={{ color: '#9aa8be' }}>Headline = the bold title. Summary = the paragraph members read. Key Points = bullet list (one per line).</p>
                   <form onSubmit={handleMorningBriefSubmit} className="space-y-6">
                     <div>
@@ -554,14 +778,56 @@ export default function AdminPages() {
                       <label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Publication Date</label>
                       <input type="date" value={morningBriefForm.date} onChange={(e) => setMorningBriefForm(prev => ({ ...prev, date: e.target.value }))} className="w-full px-4 py-3 rounded-lg" style={inputStyle} />
                     </div>
-                    <button type="submit" disabled={loading} className="px-6 py-3 rounded-lg font-medium disabled:opacity-50" style={btnPrimary}>{loading ? 'Publishing...' : 'Publish Morning Brief'}</button>
+                    <button type="submit" disabled={loading} className="px-6 py-3 rounded-lg font-medium disabled:opacity-50" style={btnPrimary}>
+                      {loading ? (editingBriefId ? 'Updating...' : 'Publishing...') : (editingBriefId ? 'Update Morning Brief' : 'Publish Morning Brief')}
+                    </button>
                   </form>
+
+                  {/* RECENT BRIEFS LIST */}
+                  <div className="mt-10 pt-6 border-t" style={{ borderColor: '#475569' }}>
+                    <h3 className="text-lg font-semibold mb-4" style={{ color: '#eceef5' }}>Recent Morning Briefs ({recentBriefs.length})</h3>
+                    {recentBriefs.length === 0 ? (
+                      <p className="text-sm" style={{ color: '#6b7a96' }}>No briefs published yet.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {recentBriefs.map(brief => {
+                          var isEditing = editingBriefId === brief.id
+                          return (
+                            <div key={brief.id} className="p-4 rounded-lg" style={{ background: isEditing ? 'rgba(59,130,246,0.10)' : '#1e293b', border: '1px solid ' + (isEditing ? '#3b82f6' : '#475569') }}>
+                              <div className="flex items-start gap-3">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-xs font-medium px-2 py-0.5 rounded" style={{ background: 'rgba(59,130,246,0.15)', color: '#3b82f6' }}>{formatDate(brief.date)}</span>
+                                  </div>
+                                  <p className="font-medium mb-1" style={{ color: '#eceef5' }}>{brief.headline}</p>
+                                  <p className="text-sm line-clamp-2" style={{ color: '#9aa8be' }}>{brief.summary}</p>
+                                </div>
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                  <button onClick={() => handleEditBrief(brief)} className="p-2 rounded-lg" style={{ background: 'rgba(59,130,246,0.10)', color: '#3b82f6' }} title="Edit"><Pencil size={14} /></button>
+                                  <button onClick={() => handleDeleteBrief(brief.id)} className="p-2 rounded-lg" style={{ background: 'rgba(239,68,68,0.10)', color: '#ef4444' }} title="Delete"><Trash2 size={14} /></button>
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
               {activeSection === 'daily-wrap' && (
                 <div className="rounded-xl p-6" style={{ background: 'rgba(30,41,59,0.3)', border: '1px solid #334155' }}>
-                  <h2 className="text-xl font-semibold mb-2" style={{ color: '#eceef5' }}>Publish Daily Wrap</h2>
+                  <div className="flex items-center justify-between mb-2">
+                    <h2 className="text-xl font-semibold" style={{ color: '#eceef5' }}>
+                      {editingWrapId ? 'Edit Daily Wrap' : 'Publish Daily Wrap'}
+                    </h2>
+                    {editingWrapId && (
+                      <button onClick={handleCancelEditWrap} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm" style={{ background: 'rgba(148,163,184,0.15)', color: '#cbd5e1' }}>
+                        <X size={14} /> Cancel Edit
+                      </button>
+                    )}
+                  </div>
                   <p className="text-sm mb-6" style={{ color: '#9aa8be' }}>Headline = the bold title. Summary = the paragraph members read. Key Events = bullet list (one per line).</p>
                   <form onSubmit={handleDailyWrapSubmit} className="space-y-6">
                     <div>
@@ -581,8 +847,41 @@ export default function AdminPages() {
                       <label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Publication Date</label>
                       <input type="date" value={dailyWrapForm.date} onChange={(e) => setDailyWrapForm(prev => ({ ...prev, date: e.target.value }))} className="w-full px-4 py-3 rounded-lg" style={inputStyle} />
                     </div>
-                    <button type="submit" disabled={loading} className="px-6 py-3 rounded-lg font-medium disabled:opacity-50" style={btnPrimary}>{loading ? 'Publishing...' : 'Publish Daily Wrap'}</button>
+                    <button type="submit" disabled={loading} className="px-6 py-3 rounded-lg font-medium disabled:opacity-50" style={btnPrimary}>
+                      {loading ? (editingWrapId ? 'Updating...' : 'Publishing...') : (editingWrapId ? 'Update Daily Wrap' : 'Publish Daily Wrap')}
+                    </button>
                   </form>
+
+                  {/* RECENT WRAPS LIST */}
+                  <div className="mt-10 pt-6 border-t" style={{ borderColor: '#475569' }}>
+                    <h3 className="text-lg font-semibold mb-4" style={{ color: '#eceef5' }}>Recent Daily Wraps ({recentWraps.length})</h3>
+                    {recentWraps.length === 0 ? (
+                      <p className="text-sm" style={{ color: '#6b7a96' }}>No wraps published yet.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {recentWraps.map(wrap => {
+                          var isEditing = editingWrapId === wrap.id
+                          return (
+                            <div key={wrap.id} className="p-4 rounded-lg" style={{ background: isEditing ? 'rgba(59,130,246,0.10)' : '#1e293b', border: '1px solid ' + (isEditing ? '#3b82f6' : '#475569') }}>
+                              <div className="flex items-start gap-3">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-xs font-medium px-2 py-0.5 rounded" style={{ background: 'rgba(139,92,246,0.15)', color: '#8b5cf6' }}>{formatDate(wrap.date)}</span>
+                                  </div>
+                                  <p className="font-medium mb-1" style={{ color: '#eceef5' }}>{wrap.headline}</p>
+                                  <p className="text-sm line-clamp-2" style={{ color: '#9aa8be' }}>{wrap.summary}</p>
+                                </div>
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                  <button onClick={() => handleEditWrap(wrap)} className="p-2 rounded-lg" style={{ background: 'rgba(59,130,246,0.10)', color: '#3b82f6' }} title="Edit"><Pencil size={14} /></button>
+                                  <button onClick={() => handleDeleteWrap(wrap.id)} className="p-2 rounded-lg" style={{ background: 'rgba(239,68,68,0.10)', color: '#ef4444' }} title="Delete"><Trash2 size={14} /></button>
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
