@@ -16,8 +16,13 @@ export default function AdminPages() {
   const [symbols, setSymbols] = useState([])
   const [newSymbol, setNewSymbol] = useState('')
   const [notificationForm, setNotificationForm] = useState({ title: '', message: '' })
-  const [morningBriefForm, setMorningBriefForm] = useState({ title: '', content: '', key_points: '', market_outlook: '' })
-  const [dailyWrapForm, setDailyWrapForm] = useState({ title: '', content: '', key_events: '', tomorrow_outlook: '' })
+
+  // Morning Brief — matches actual DB columns: headline, summary, catalysts (array), date, published
+  const [morningBriefForm, setMorningBriefForm] = useState({ headline: '', summary: '', catalysts: '', date: '' })
+
+  // Daily Wrap — same schema as morning_briefs
+  const [dailyWrapForm, setDailyWrapForm] = useState({ headline: '', summary: '', catalysts: '', date: '' })
+
   const [marketSignals, setMarketSignals] = useState([])
   const [newSignal, setNewSignal] = useState({ signal_name: '', signal_value: '', color: 'blue' })
 
@@ -38,6 +43,13 @@ export default function AdminPages() {
     for (const p of patterns) { const m = url.match(p); if (m) return m[1] }
     return ''
   }
+
+  // Default the date to today (YYYY-MM-DD) when forms first load
+  useEffect(() => {
+    var today = new Date().toISOString().split('T')[0]
+    setMorningBriefForm(prev => ({ ...prev, date: prev.date || today }))
+    setDailyWrapForm(prev => ({ ...prev, date: prev.date || today }))
+  }, [])
 
   useEffect(() => {
     const id = extractVideoId(youtubeForm.youtube_url)
@@ -126,24 +138,52 @@ export default function AdminPages() {
     setMessage('Deleted'); loadMasterSymbols()
   }
 
+  // Convert textarea catalysts (one per line) to a Postgres array
+  function parseCatalysts(text) {
+    if (!text || !text.trim()) return null
+    return text.split('\n').map(s => s.replace(/^[-•\s]+/, '').trim()).filter(s => s.length > 0)
+  }
+
   async function handleMorningBriefSubmit(e) {
     e.preventDefault()
-    if (!morningBriefForm.title.trim() || !morningBriefForm.content.trim()) { setMessage('Title and content required'); return }
+    if (!morningBriefForm.headline.trim() || !morningBriefForm.summary.trim()) { setMessage('Headline and Summary required'); return }
     setLoading(true)
-    const { error } = await supabase.from('morning_briefs').insert([{ title: morningBriefForm.title, content: morningBriefForm.content, key_points: morningBriefForm.key_points || null, market_outlook: morningBriefForm.market_outlook || null, created_by: profile.id }])
+    const payload = {
+      headline: morningBriefForm.headline,
+      summary: morningBriefForm.summary,
+      catalysts: parseCatalysts(morningBriefForm.catalysts),
+      date: morningBriefForm.date || new Date().toISOString().split('T')[0],
+      published: true,
+      published_at: new Date().toISOString(),
+      created_by: profile.id
+    }
+    const { error } = await supabase.from('morning_briefs').insert([payload])
     setLoading(false)
-    if (error) { setMessage('Error publishing'); return }
-    setMessage('Morning Brief published!'); setMorningBriefForm({ title: '', content: '', key_points: '', market_outlook: '' })
+    if (error) { setMessage('Error publishing: ' + error.message); return }
+    setMessage('Morning Brief published!')
+    var today = new Date().toISOString().split('T')[0]
+    setMorningBriefForm({ headline: '', summary: '', catalysts: '', date: today })
   }
 
   async function handleDailyWrapSubmit(e) {
     e.preventDefault()
-    if (!dailyWrapForm.title.trim() || !dailyWrapForm.content.trim()) { setMessage('Title and content required'); return }
+    if (!dailyWrapForm.headline.trim() || !dailyWrapForm.summary.trim()) { setMessage('Headline and Summary required'); return }
     setLoading(true)
-    const { error } = await supabase.from('daily_wraps').insert([{ title: dailyWrapForm.title, content: dailyWrapForm.content, key_events: dailyWrapForm.key_events || null, tomorrow_outlook: dailyWrapForm.tomorrow_outlook || null, created_by: profile.id }])
+    const payload = {
+      headline: dailyWrapForm.headline,
+      summary: dailyWrapForm.summary,
+      catalysts: parseCatalysts(dailyWrapForm.catalysts),
+      date: dailyWrapForm.date || new Date().toISOString().split('T')[0],
+      published: true,
+      published_at: new Date().toISOString(),
+      created_by: profile.id
+    }
+    const { error } = await supabase.from('daily_wraps').insert([payload])
     setLoading(false)
-    if (error) { setMessage('Error publishing'); return }
-    setMessage('Daily Wrap published!'); setDailyWrapForm({ title: '', content: '', key_events: '', tomorrow_outlook: '' })
+    if (error) { setMessage('Error publishing: ' + error.message); return }
+    setMessage('Daily Wrap published!')
+    var today = new Date().toISOString().split('T')[0]
+    setDailyWrapForm({ headline: '', summary: '', catalysts: '', date: today })
   }
 
   async function handleAddMarketSignal(e) {
@@ -350,12 +390,28 @@ export default function AdminPages() {
 
               {activeSection === 'morning-brief' && (
                 <div className="rounded-xl p-6" style={{ background: 'rgba(30,41,59,0.3)', border: '1px solid #334155' }}>
-                  <h2 className="text-xl font-semibold mb-6" style={{ color: '#eceef5' }}>Publish Morning Brief</h2>
+                  <h2 className="text-xl font-semibold mb-2" style={{ color: '#eceef5' }}>Publish Morning Brief</h2>
+                  <p className="text-sm mb-6" style={{ color: '#9aa8be' }}>
+                    Headline = the bold title. Summary = the paragraph members read. Key Points = bullet list (one per line).
+                  </p>
                   <form onSubmit={handleMorningBriefSubmit} className="space-y-6">
-                    <div><label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Title</label><input type="text" value={morningBriefForm.title} onChange={(e) => setMorningBriefForm(prev => ({ ...prev, title: e.target.value }))} placeholder="Enter title..." className="w-full px-4 py-3 rounded-lg" style={inputStyle} /></div>
-                    <div><label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Content</label><textarea value={morningBriefForm.content} onChange={(e) => setMorningBriefForm(prev => ({ ...prev, content: e.target.value }))} placeholder="Enter content..." rows={6} className="w-full px-4 py-3 rounded-lg resize-none" style={inputStyle} /></div>
-                    <div><label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Key Points (Optional)</label><textarea value={morningBriefForm.key_points} onChange={(e) => setMorningBriefForm(prev => ({ ...prev, key_points: e.target.value }))} placeholder="• Key point 1" rows={3} className="w-full px-4 py-3 rounded-lg resize-none" style={inputStyle} /></div>
-                    <div><label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Market Outlook (Optional)</label><textarea value={morningBriefForm.market_outlook} onChange={(e) => setMorningBriefForm(prev => ({ ...prev, market_outlook: e.target.value }))} placeholder="Today's outlook..." rows={3} className="w-full px-4 py-3 rounded-lg resize-none" style={inputStyle} /></div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Headline</label>
+                      <input type="text" value={morningBriefForm.headline} onChange={(e) => setMorningBriefForm(prev => ({ ...prev, headline: e.target.value }))} placeholder="e.g. Crypto Holds Steady as XRP Consolidates Above $1.40" className="w-full px-4 py-3 rounded-lg" style={inputStyle} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Summary (Main Content)</label>
+                      <textarea value={morningBriefForm.summary} onChange={(e) => setMorningBriefForm(prev => ({ ...prev, summary: e.target.value }))} placeholder="Write the main summary paragraph here..." rows={6} className="w-full px-4 py-3 rounded-lg resize-none" style={inputStyle} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Key Points (One per line — Optional)</label>
+                      <textarea value={morningBriefForm.catalysts} onChange={(e) => setMorningBriefForm(prev => ({ ...prev, catalysts: e.target.value }))} placeholder={"BTC and XRP trading within recent ranges\nNo new ETF flow data overnight\nWatch for Fed commentary today"} rows={4} className="w-full px-4 py-3 rounded-lg resize-none" style={inputStyle} />
+                      <p className="text-xs mt-1.5" style={{ color: '#6b7a96' }}>Each line becomes a bullet point in the published brief. Leading dashes/bullets are stripped automatically.</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Publication Date</label>
+                      <input type="date" value={morningBriefForm.date} onChange={(e) => setMorningBriefForm(prev => ({ ...prev, date: e.target.value }))} className="w-full px-4 py-3 rounded-lg" style={inputStyle} />
+                    </div>
                     <button type="submit" disabled={loading} className="px-6 py-3 rounded-lg font-medium disabled:opacity-50" style={btnPrimary}>{loading ? 'Publishing...' : 'Publish Morning Brief'}</button>
                   </form>
                 </div>
@@ -363,12 +419,28 @@ export default function AdminPages() {
 
               {activeSection === 'daily-wrap' && (
                 <div className="rounded-xl p-6" style={{ background: 'rgba(30,41,59,0.3)', border: '1px solid #334155' }}>
-                  <h2 className="text-xl font-semibold mb-6" style={{ color: '#eceef5' }}>Publish Daily Wrap</h2>
+                  <h2 className="text-xl font-semibold mb-2" style={{ color: '#eceef5' }}>Publish Daily Wrap</h2>
+                  <p className="text-sm mb-6" style={{ color: '#9aa8be' }}>
+                    Headline = the bold title. Summary = the paragraph members read. Key Events = bullet list (one per line).
+                  </p>
                   <form onSubmit={handleDailyWrapSubmit} className="space-y-6">
-                    <div><label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Title</label><input type="text" value={dailyWrapForm.title} onChange={(e) => setDailyWrapForm(prev => ({ ...prev, title: e.target.value }))} placeholder="Enter title..." className="w-full px-4 py-3 rounded-lg" style={inputStyle} /></div>
-                    <div><label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Content</label><textarea value={dailyWrapForm.content} onChange={(e) => setDailyWrapForm(prev => ({ ...prev, content: e.target.value }))} placeholder="Enter content..." rows={6} className="w-full px-4 py-3 rounded-lg resize-none" style={inputStyle} /></div>
-                    <div><label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Key Events (Optional)</label><textarea value={dailyWrapForm.key_events} onChange={(e) => setDailyWrapForm(prev => ({ ...prev, key_events: e.target.value }))} placeholder="• Event 1" rows={3} className="w-full px-4 py-3 rounded-lg resize-none" style={inputStyle} /></div>
-                    <div><label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Tomorrow's Outlook (Optional)</label><textarea value={dailyWrapForm.tomorrow_outlook} onChange={(e) => setDailyWrapForm(prev => ({ ...prev, tomorrow_outlook: e.target.value }))} placeholder="What to watch..." rows={3} className="w-full px-4 py-3 rounded-lg resize-none" style={inputStyle} /></div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Headline</label>
+                      <input type="text" value={dailyWrapForm.headline} onChange={(e) => setDailyWrapForm(prev => ({ ...prev, headline: e.target.value }))} placeholder="e.g. Crypto Rallies Through Session as BTC and XRP Extend Gains" className="w-full px-4 py-3 rounded-lg" style={inputStyle} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Summary (Main Content)</label>
+                      <textarea value={dailyWrapForm.summary} onChange={(e) => setDailyWrapForm(prev => ({ ...prev, summary: e.target.value }))} placeholder="Write the main summary paragraph here..." rows={6} className="w-full px-4 py-3 rounded-lg resize-none" style={inputStyle} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Key Events (One per line — Optional)</label>
+                      <textarea value={dailyWrapForm.catalysts} onChange={(e) => setDailyWrapForm(prev => ({ ...prev, catalysts: e.target.value }))} placeholder={"BTC and XRP both moved higher into the close\nPrice action confirmed continuation\nNo confirmed ETF flow updates"} rows={4} className="w-full px-4 py-3 rounded-lg resize-none" style={inputStyle} />
+                      <p className="text-xs mt-1.5" style={{ color: '#6b7a96' }}>Each line becomes a bullet point in the published wrap. Leading dashes/bullets are stripped automatically.</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Publication Date</label>
+                      <input type="date" value={dailyWrapForm.date} onChange={(e) => setDailyWrapForm(prev => ({ ...prev, date: e.target.value }))} className="w-full px-4 py-3 rounded-lg" style={inputStyle} />
+                    </div>
                     <button type="submit" disabled={loading} className="px-6 py-3 rounded-lg font-medium disabled:opacity-50" style={btnPrimary}>{loading ? 'Publishing...' : 'Publish Daily Wrap'}</button>
                   </form>
                 </div>
