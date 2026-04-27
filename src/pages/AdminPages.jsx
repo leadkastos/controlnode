@@ -4,7 +4,6 @@ import { Plus, Trash2, Bell, MessageCircle, PlaySquare, FileText, BarChart3, Tre
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 
-// Market Signals — locked options
 const SIGNAL_NAMES = ['Market Sentiment', 'Risk Environment', 'Technical Outlook']
 const SIGNAL_VALUE_COLORS = { Bullish: 'green', Bearish: 'red', Neutral: 'yellow', Cautious: 'blue' }
 const SIGNAL_VALUES = Object.keys(SIGNAL_VALUE_COLORS)
@@ -36,13 +35,11 @@ export default function AdminPages() {
   const [marketSignals, setMarketSignals] = useState([])
   const [signalForm, setSignalForm] = useState({ signal_name: 'Market Sentiment', signal_value: 'Bullish' })
 
-  // ETF DAILY SNAPSHOTS state
   const [etfList, setEtfList] = useState([])
   const [snapshotDate, setSnapshotDate] = useState('')
   const [snapshots, setSnapshots] = useState({})
   const [savingSnapshots, setSavingSnapshots] = useState(false)
 
-  // ETF Pipeline state
   const [etfPipeline, setEtfPipeline] = useState([])
   const [newPipeline, setNewPipeline] = useState({ issuer_name: '', priority: 'Medium', notes: '', status: 'Not Filed' })
   const [addingPipeline, setAddingPipeline] = useState(false)
@@ -120,7 +117,8 @@ export default function AdminPages() {
         byTicker[s.ticker] = {
           xrp_locked: s.xrp_locked,
           aum_usd: s.aum_usd,
-          nav_per_share: s.nav_per_share
+          inflow_usd: s.inflow_usd,
+          outflow_usd: s.outflow_usd
         }
       })
     }
@@ -142,11 +140,12 @@ export default function AdminPages() {
     for (var i = 0; i < etfList.length; i++) {
       var etf = etfList[i]
       var s = snapshots[etf.ticker] || {}
-      var aum = parseFloat(s.aum_usd) || 0
-      var xrp = parseFloat(s.xrp_locked) || 0
-      var nav = s.nav_per_share != null && s.nav_per_share !== '' ? parseFloat(s.nav_per_share) : null
+      var aum = parseFloat(String(s.aum_usd || '').replace(/,/g, '')) || 0
+      var xrp = parseFloat(String(s.xrp_locked || '').replace(/,/g, '')) || 0
+      var inflow = parseFloat(String(s.inflow_usd || '').replace(/,/g, '')) || 0
+      var outflow = parseFloat(String(s.outflow_usd || '').replace(/,/g, '')) || 0
 
-      if (aum === 0 && xrp === 0) continue
+      if (aum === 0 && xrp === 0 && inflow === 0 && outflow === 0) continue
 
       rows.push({
         ticker: etf.ticker,
@@ -154,7 +153,8 @@ export default function AdminPages() {
         snapshot_date: snapshotDate,
         xrp_locked: xrp,
         aum_usd: aum,
-        nav_per_share: nav,
+        inflow_usd: inflow,
+        outflow_usd: outflow,
         data_source: 'manual',
         created_by: profile.id
       })
@@ -184,99 +184,30 @@ export default function AdminPages() {
       }).eq('ticker', r.ticker)
     }
 
-    await recalculateEtfSummary(snapshotDate)
+    var totalAumUsd = rows.reduce((s, r) => s + r.aum_usd, 0)
+    var totalXrpLocked = rows.reduce((s, r) => s + r.xrp_locked, 0)
 
-    setSavingSnapshots(false)
-    setMessage('Saved ' + rows.length + ' ETF snapshots! Member page now reflects updated numbers.')
-  }
-
-  async function recalculateEtfSummary(forDate) {
-    const { data: today } = await supabase.from('etf_daily_snapshots').select('*').eq('snapshot_date', forDate)
-    if (!today || today.length === 0) return
-
-    var totalAumUsd = today.reduce((s, r) => s + (Number(r.aum_usd) || 0), 0)
-    var totalXrpLocked = today.reduce((s, r) => s + (Number(r.xrp_locked) || 0), 0)
-
-    async function flows(daysBack) {
-      var target = new Date(forDate)
-      target.setDate(target.getDate() - daysBack)
-      var targetStr = target.toISOString().split('T')[0]
-      var inflowsXrp = 0
-      var outflowsXrp = 0
-      var inflowsUsd = 0
-      var outflowsUsd = 0
-      for (var i = 0; i < today.length; i++) {
-        var t = today[i]
-        const { data: prior } = await supabase
-          .from('etf_daily_snapshots')
-          .select('xrp_locked, aum_usd')
-          .eq('ticker', t.ticker)
-          .lte('snapshot_date', targetStr)
-          .order('snapshot_date', { ascending: false })
-          .limit(1)
-          .maybeSingle()
-        if (prior) {
-          var xrpDelta = (Number(t.xrp_locked) || 0) - (Number(prior.xrp_locked) || 0)
-          var usdDelta = (Number(t.aum_usd) || 0) - (Number(prior.aum_usd) || 0)
-          if (xrpDelta >= 0) inflowsXrp += xrpDelta; else outflowsXrp += Math.abs(xrpDelta)
-          if (usdDelta >= 0) inflowsUsd += usdDelta; else outflowsUsd += Math.abs(usdDelta)
-        }
-      }
-      return {
-        inflows_xrp: inflowsXrp,
-        outflows_xrp: outflowsXrp,
-        net_xrp: inflowsXrp - outflowsXrp,
-        inflows_usd: inflowsUsd,
-        outflows_usd: outflowsUsd,
-        net_usd: inflowsUsd - outflowsUsd
-      }
-    }
-
-    var f24 = await flows(1)
-    var f7 = await flows(7)
-    var f30 = await flows(30)
-
-    var summary = {
+    var summaryPayload = {
       total_aum: totalAumUsd / 1000000,
       xrp_in_etfs: totalXrpLocked / 1000000,
-      net_flow_24h: f24.net_usd / 1000000,
-      net_flow_7d: f7.net_usd / 1000000,
-      net_flow_30d: f30.net_usd / 1000000,
-      inflows_xrp_24h: f24.inflows_xrp / 1000000,
-      outflows_xrp_24h: f24.outflows_xrp / 1000000,
-      net_xrp_24h: f24.net_xrp / 1000000,
-      inflows_usd_24h: f24.inflows_usd / 1000000,
-      outflows_usd_24h: f24.outflows_usd / 1000000,
-      net_usd_24h: f24.net_usd / 1000000,
-      inflows_xrp_7d: f7.inflows_xrp / 1000000,
-      outflows_xrp_7d: f7.outflows_xrp / 1000000,
-      net_xrp_7d: f7.net_xrp / 1000000,
-      inflows_usd_7d: f7.inflows_usd / 1000000,
-      outflows_usd_7d: f7.outflows_usd / 1000000,
-      net_usd_7d: f7.net_usd / 1000000,
-      inflows_xrp_30d: f30.inflows_xrp / 1000000,
-      outflows_xrp_30d: f30.outflows_xrp / 1000000,
-      net_xrp_30d: f30.net_xrp / 1000000,
-      inflows_usd_30d: f30.inflows_usd / 1000000,
-      outflows_usd_30d: f30.outflows_usd / 1000000,
-      net_usd_30d: f30.net_usd / 1000000,
       updated_at: new Date().toISOString()
     }
 
     const { data: existing } = await supabase.from('etf_summary').select('id').limit(1).maybeSingle()
     if (existing) {
-      await supabase.from('etf_summary').update(summary).eq('id', existing.id)
+      await supabase.from('etf_summary').update(summaryPayload).eq('id', existing.id)
     } else {
-      await supabase.from('etf_summary').insert([summary])
+      await supabase.from('etf_summary').insert([summaryPayload])
     }
+
+    setSavingSnapshots(false)
+    setMessage('Saved ' + rows.length + ' ETF snapshots! Member page and dashboard now reflect updated numbers.')
   }
 
-  // ===== MARKET NEWS =====
   async function handleMarketNewsSubmit(e) {
     e.preventDefault()
     if (!marketNewsForm.content.trim()) { setMessage('Content is required'); return }
     setLoading(true)
-
     const payload = {
       type: marketNewsForm.type,
       content: marketNewsForm.content,
@@ -284,7 +215,6 @@ export default function AdminPages() {
       source: marketNewsForm.source || null,
       source_url: marketNewsForm.source_url || null
     }
-
     var error
     if (editingNewsId) {
       const r = await supabase.from('market_news').update(payload).eq('id', editingNewsId)
@@ -294,10 +224,8 @@ export default function AdminPages() {
       const r = await supabase.from('market_news').insert([payload])
       error = r.error
     }
-
     setLoading(false)
     if (error) { setMessage('Error: ' + error.message); return }
-
     var label = marketNewsForm.type === 'breaking' ? 'Breaking news' : marketNewsForm.type === 'confirmed' ? 'Market news' : 'Market chatter'
     setMessage(editingNewsId ? label + ' updated successfully!' : label + ' posted successfully!')
     setMarketNewsForm({ type: 'unconfirmed', content: '', category: 'General', source: '', source_url: '' })
@@ -331,7 +259,6 @@ export default function AdminPages() {
     loadRecentNews()
   }
 
-  // ===== YOUTUBE =====
   async function handleYouTubeSubmit(e) {
     e.preventDefault()
     if (!youtubeForm.title.trim() || !youtubeForm.youtube_url.trim()) { setMessage('Title and YouTube URL are required'); return }
@@ -352,7 +279,6 @@ export default function AdminPages() {
     setMessage('Video deleted'); loadYouTubeVideos()
   }
 
-  // ===== MASTER WATCHLIST =====
   async function handleAddSymbol(e) {
     e.preventDefault()
     if (!newSymbol.trim()) return
@@ -382,12 +308,10 @@ export default function AdminPages() {
     return arr.join('\n')
   }
 
-  // ===== MORNING BRIEF =====
   async function handleMorningBriefSubmit(e) {
     e.preventDefault()
     if (!morningBriefForm.headline.trim() || !morningBriefForm.summary.trim()) { setMessage('Headline and Summary required'); return }
     setLoading(true)
-
     const payload = {
       headline: morningBriefForm.headline,
       summary: morningBriefForm.summary,
@@ -396,7 +320,6 @@ export default function AdminPages() {
       published: true,
       published_at: new Date().toISOString()
     }
-
     var error
     if (editingBriefId) {
       const r = await supabase.from('morning_briefs').update(payload).eq('id', editingBriefId)
@@ -406,7 +329,6 @@ export default function AdminPages() {
       const r = await supabase.from('morning_briefs').insert([payload])
       error = r.error
     }
-
     setLoading(false)
     if (error) { setMessage('Error: ' + error.message); return }
     setMessage(editingBriefId ? 'Morning Brief updated!' : 'Morning Brief published!')
@@ -442,12 +364,10 @@ export default function AdminPages() {
     loadRecentBriefs()
   }
 
-  // ===== DAILY WRAP =====
   async function handleDailyWrapSubmit(e) {
     e.preventDefault()
     if (!dailyWrapForm.headline.trim() || !dailyWrapForm.summary.trim()) { setMessage('Headline and Summary required'); return }
     setLoading(true)
-
     const payload = {
       headline: dailyWrapForm.headline,
       summary: dailyWrapForm.summary,
@@ -456,7 +376,6 @@ export default function AdminPages() {
       published: true,
       published_at: new Date().toISOString()
     }
-
     var error
     if (editingWrapId) {
       const r = await supabase.from('daily_wraps').update(payload).eq('id', editingWrapId)
@@ -466,7 +385,6 @@ export default function AdminPages() {
       const r = await supabase.from('daily_wraps').insert([payload])
       error = r.error
     }
-
     setLoading(false)
     if (error) { setMessage('Error: ' + error.message); return }
     setMessage(editingWrapId ? 'Daily Wrap updated!' : 'Daily Wrap published!')
@@ -502,7 +420,6 @@ export default function AdminPages() {
     loadRecentWraps()
   }
 
-  // ===== MARKET SIGNALS =====
   async function handleSaveSignal(e) {
     e.preventDefault()
     var color = SIGNAL_VALUE_COLORS[signalForm.signal_value]
@@ -526,7 +443,6 @@ export default function AdminPages() {
     loadMarketSignals()
   }
 
-  // ===== ETF PIPELINE =====
   function updateEtfPipelineField(id, field, value) {
     setEtfPipeline(prev => prev.map(p => p.id === id ? { ...p, [field]: value } : p))
   }
@@ -555,7 +471,6 @@ export default function AdminPages() {
     setMessage('Entry removed'); loadEtfData()
   }
 
-  // ===== NOTIFICATIONS =====
   async function handleNotificationSubmit(e) {
     e.preventDefault()
     if (!notificationForm.title.trim() || !notificationForm.message.trim()) { setMessage('Title and message required'); return }
@@ -599,7 +514,6 @@ export default function AdminPages() {
     'XRPR': { name: 'REX-Osprey',        url: 'https://www.rexshares.com/xrpr/' }
   }
 
-  // Type badge for Market News list
   function newsTypeBadge(type) {
     if (type === 'breaking') return { label: '🚨 BREAKING', bg: 'rgba(239,68,68,0.20)', color: '#ef4444' }
     if (type === 'confirmed') return { label: 'NEWS', bg: 'rgba(59,130,246,0.20)', color: '#3b82f6' }
@@ -710,7 +624,6 @@ export default function AdminPages() {
                     </button>
                   </form>
 
-                  {/* RECENT POSTS LIST */}
                   <div className="mt-10 pt-6 border-t" style={{ borderColor: '#475569' }}>
                     <h3 className="text-lg font-semibold mb-4" style={{ color: '#eceef5' }}>Recent Posts ({recentNews.length})</h3>
                     {recentNews.length === 0 ? (
@@ -783,7 +696,6 @@ export default function AdminPages() {
                     </button>
                   </form>
 
-                  {/* RECENT BRIEFS LIST */}
                   <div className="mt-10 pt-6 border-t" style={{ borderColor: '#475569' }}>
                     <h3 className="text-lg font-semibold mb-4" style={{ color: '#eceef5' }}>Recent Morning Briefs ({recentBriefs.length})</h3>
                     {recentBriefs.length === 0 ? (
@@ -852,7 +764,6 @@ export default function AdminPages() {
                     </button>
                   </form>
 
-                  {/* RECENT WRAPS LIST */}
                   <div className="mt-10 pt-6 border-t" style={{ borderColor: '#475569' }}>
                     <h3 className="text-lg font-semibold mb-4" style={{ color: '#eceef5' }}>Recent Daily Wraps ({recentWraps.length})</h3>
                     {recentWraps.length === 0 ? (
@@ -939,12 +850,12 @@ export default function AdminPages() {
                 <div className="rounded-xl p-6" style={{ background: 'rgba(30,41,59,0.3)', border: '1px solid #334155' }}>
                   <h2 className="text-xl font-semibold mb-2" style={{ color: '#eceef5' }}>ETF Daily Data</h2>
                   <p className="text-sm mb-6" style={{ color: '#9aa8be' }}>
-                    Update each ETF's XRP locked + AUM (in dollars) once per day. The system automatically calculates 24h, 7d, and 30d inflows / outflows / net flow by comparing to past snapshots. <span style={{ color: '#cbd5e1' }}>Source links are next to each ETF name.</span>
+                    Update each ETF's <span style={{ color: '#cbd5e1' }}>XRP Locked</span>, <span style={{ color: '#cbd5e1' }}>AUM</span>, <span style={{ color: '#cbd5e1' }}>Inflow $</span>, and <span style={{ color: '#cbd5e1' }}>Outflow $</span> twice daily. Net flow is auto-calculated. Source links are next to each ETF name.
                   </p>
 
                   <div className="mb-6 p-4 rounded-lg" style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.3)' }}>
                     <p className="text-sm" style={{ color: '#cbd5e1' }}>
-                      <strong style={{ color: '#3b82f6' }}>Quick workflow:</strong> Open CoinGlass (or each issuer's site), copy today's XRP locked + AUM, paste here, click Save All. Takes ~60 seconds.
+                      <strong style={{ color: '#3b82f6' }}>Quick workflow:</strong> Open xrp-insights.com (or each issuer's site), copy today's XRP Locked + AUM + Inflows + Outflows, paste here, click Save All. Takes ~90 seconds.
                     </p>
                   </div>
 
@@ -961,6 +872,9 @@ export default function AdminPages() {
                       etfList.map(etf => {
                         var src = ETF_SOURCES[etf.ticker] || { name: 'source', url: '#' }
                         var s = snapshots[etf.ticker] || {}
+                        var inflow = parseFloat(String(s.inflow_usd || '').replace(/,/g, '')) || 0
+                        var outflow = parseFloat(String(s.outflow_usd || '').replace(/,/g, '')) || 0
+                        var net = inflow - outflow
                         return (
                           <div key={etf.ticker} className="p-4 rounded-lg" style={{ background: '#1e293b', border: '1px solid #475569' }}>
                             <div className="flex items-center gap-3 mb-3">
@@ -973,8 +887,16 @@ export default function AdminPages() {
                                   <a href={src.url} target="_blank" rel="noopener noreferrer" style={{ color: '#3b82f6' }}>{src.name} official site →</a>
                                 </div>
                               </div>
+                              {(inflow !== 0 || outflow !== 0) && (
+                                <div className="text-right flex-shrink-0">
+                                  <p className="text-xs" style={{ color: '#9aa8be' }}>Net flow</p>
+                                  <p className="text-sm font-bold" style={{ color: net >= 0 ? '#10b981' : '#ef4444' }}>
+                                    {net >= 0 ? '+' : '−'}${Math.abs(net).toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                                  </p>
+                                </div>
+                              )}
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                               <div>
                                 <label className="block text-xs font-medium mb-1.5" style={{ color: '#cbd5e1' }}>XRP Locked</label>
                                 <input type="text" value={s.xrp_locked != null ? s.xrp_locked : ''} onChange={(e) => updateSnapshotField(etf.ticker, 'xrp_locked', e.target.value)} placeholder="229,068,373" className="w-full px-4 py-2.5 rounded-lg" style={innerInputStyle} />
@@ -983,9 +905,15 @@ export default function AdminPages() {
                                 <label className="block text-xs font-medium mb-1.5" style={{ color: '#cbd5e1' }}>AUM ($ full dollars)</label>
                                 <input type="text" value={s.aum_usd != null ? s.aum_usd : ''} onChange={(e) => updateSnapshotField(etf.ticker, 'aum_usd', e.target.value)} placeholder="329,634,413" className="w-full px-4 py-2.5 rounded-lg" style={innerInputStyle} />
                               </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                               <div>
-                                <label className="block text-xs font-medium mb-1.5" style={{ color: '#cbd5e1' }}>NAV (Optional)</label>
-                                <input type="text" value={s.nav_per_share != null ? s.nav_per_share : ''} onChange={(e) => updateSnapshotField(etf.ticker, 'nav_per_share', e.target.value)} placeholder="16.10" className="w-full px-4 py-2.5 rounded-lg" style={innerInputStyle} />
+                                <label className="block text-xs font-medium mb-1.5" style={{ color: '#10b981' }}>Inflow $ (today)</label>
+                                <input type="text" value={s.inflow_usd != null ? s.inflow_usd : ''} onChange={(e) => updateSnapshotField(etf.ticker, 'inflow_usd', e.target.value)} placeholder="5,200,000" className="w-full px-4 py-2.5 rounded-lg" style={innerInputStyle} />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium mb-1.5" style={{ color: '#ef4444' }}>Outflow $ (today)</label>
+                                <input type="text" value={s.outflow_usd != null ? s.outflow_usd : ''} onChange={(e) => updateSnapshotField(etf.ticker, 'outflow_usd', e.target.value)} placeholder="0" className="w-full px-4 py-2.5 rounded-lg" style={innerInputStyle} />
                               </div>
                             </div>
                           </div>
@@ -995,7 +923,7 @@ export default function AdminPages() {
                   </div>
 
                   <button onClick={handleSaveAllSnapshots} disabled={savingSnapshots || etfList.length === 0} className="px-6 py-3 rounded-lg font-medium disabled:opacity-50" style={btnPrimary}>
-                    {savingSnapshots ? 'Saving + recalculating flows...' : 'Save All ETF Snapshots'}
+                    {savingSnapshots ? 'Saving...' : 'Save All ETF Snapshots'}
                   </button>
                 </div>
               )}
