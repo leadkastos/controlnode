@@ -3,9 +3,9 @@ import AppLayout from '../components/AppLayout'
 import { TrendingUp, TrendingDown, DollarSign, Lock, Activity, FileText, Building2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
-// Format helpers
+// ---------- Format helpers ----------
 function fmtAumUsd(val) {
-  if (val == null) return '—'
+  if (val == null || val === 0) return '—'
   if (val >= 1000) return '$' + (val / 1000).toFixed(2) + 'B'
   return '$' + val.toFixed(2) + 'M'
 }
@@ -16,20 +16,20 @@ function fmtXrp(val) {
   return val.toFixed(2) + 'M'
 }
 
-function fmtSignedXrp(val) {
+function fmtUsdMillions(val) {
   if (val == null) return '—'
-  var sign = val > 0 ? '+' : val < 0 ? '−' : ''
   var abs = Math.abs(val)
-  return sign + (abs >= 1000 ? (abs / 1000).toFixed(2) + 'B' : abs.toFixed(2) + 'M') + ' XRP'
+  if (abs >= 1000) return '$' + (abs / 1000).toFixed(2) + 'B'
+  return '$' + abs.toFixed(2) + 'M'
 }
 
-function fmtSignedUsd(val) {
+function fmtSignedUsdMillions(val) {
   if (val == null) return '—'
   var sign = val > 0 ? '+' : val < 0 ? '−' : ''
-  var abs = Math.abs(val)
-  return sign + '$' + (abs >= 1000 ? (abs / 1000).toFixed(2) + 'B' : abs.toFixed(2) + 'M')
+  return sign + fmtUsdMillions(val)
 }
 
+// ---------- Badges ----------
 function StatusBadge({ status }) {
   var map = {
     'Not Filed': { bg: 'rgba(139,92,246,0.12)', color: '#8b5cf6' },
@@ -51,7 +51,7 @@ function PriorityBadge({ priority }) {
   return <span className="text-xs font-semibold px-2 py-0.5 rounded" style={{ background: s.bg, color: s.color }}>{priority || 'Medium'}</span>
 }
 
-// SEC EDGAR live filings - restored from previous working version
+// ---------- SEC EDGAR live filings — UNTOUCHED, KEEP AUTOMATED ----------
 function EDGARFilingsSection() {
   const [filings, setFilings] = useState([])
   const [loading, setLoading] = useState(true)
@@ -110,10 +110,12 @@ function EDGARFilingsSection() {
   )
 }
 
+// ---------- Main ETF Flows page ----------
 export default function ETFFlows() {
-  const [summary, setSummary] = useState(null)
   const [aumList, setAumList] = useState([])
   const [pipeline, setPipeline] = useState([])
+  const [snapshots, setSnapshots] = useState([])
+  const [latestSnapshotDate, setLatestSnapshotDate] = useState(null)
   const [timeframe, setTimeframe] = useState('7d') // '24h' | '7d' | '30d'
   const [loading, setLoading] = useState(true)
   const [marketStatus, setMarketStatus] = useState({ open: false, label: 'Market closed' })
@@ -127,12 +129,33 @@ export default function ETFFlows() {
 
   async function loadAll() {
     setLoading(true)
-    const s = await supabase.from('etf_summary').select('*').limit(1).maybeSingle()
-    if (s.data) setSummary(s.data)
+
+    // Get active ETFs (for AUM list, donut chart, and headcount)
     const a = await supabase.from('etf_aum').select('*').eq('active', true).order('aum', { ascending: false })
     if (a.data) setAumList(a.data)
+
+    // Get pipeline entries
     const p = await supabase.from('etf_pipeline').select('*').order('sort_order', { ascending: true })
     if (p.data) setPipeline(p.data)
+
+    // Get last 30 days of snapshots — used for all flow calculations
+    var thirtyDaysAgo = new Date()
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+    var startDate = thirtyDaysAgo.toISOString().split('T')[0]
+
+    const snaps = await supabase
+      .from('etf_daily_snapshots')
+      .select('*')
+      .gte('snapshot_date', startDate)
+      .order('snapshot_date', { ascending: false })
+
+    if (snaps.data) {
+      setSnapshots(snaps.data)
+      if (snaps.data.length > 0) {
+        setLatestSnapshotDate(snaps.data[0].snapshot_date)
+      }
+    }
+
     setLoading(false)
   }
 
@@ -152,24 +175,49 @@ export default function ETFFlows() {
     })
   }
 
-  function getFlows() {
-    if (!summary) return { inflowsXrp: null, outflowsXrp: null, netXrp: null, inflowsUsd: null, outflowsUsd: null, netUsd: null }
-    var key = timeframe === '24h' ? '24h' : timeframe === '7d' ? '7d' : '30d'
-    return {
-      inflowsXrp: summary['inflows_xrp_' + key],
-      outflowsXrp: summary['outflows_xrp_' + key],
-      netXrp: summary['net_xrp_' + key],
-      inflowsUsd: summary['inflows_usd_' + key],
-      outflowsUsd: summary['outflows_usd_' + key],
-      netUsd: summary['net_usd_' + key]
-    }
+  // ---------- TOTALS (latest snapshot date) ----------
+  // Total AUM = sum of aum_usd for snapshots from the most recent date
+  // XRP Locked = sum of xrp_locked for snapshots from the most recent date
+  function getTotalsFromLatest() {
+    if (!latestSnapshotDate) return { totalAumUsd: 0, totalXrpLocked: 0 }
+    var latest = snapshots.filter(s => s.snapshot_date === latestSnapshotDate)
+    var totalAumUsd = latest.reduce((sum, s) => sum + (Number(s.aum_usd) || 0), 0)
+    var totalXrpLocked = latest.reduce((sum, s) => sum + (Number(s.xrp_locked) || 0), 0)
+    return { totalAumUsd: totalAumUsd, totalXrpLocked: totalXrpLocked }
   }
 
-  var f = getFlows()
-  var totalAum = summary ? summary.total_aum : null
-  var xrpInEtfs = summary ? summary.xrp_in_etfs : null
-  var totalAumAcrossActive = aumList.reduce(function(s, a) { return s + (Number(a.aum) || 0) }, 0)
+  // ---------- FLOWS for selected timeframe ----------
+  // 24h = latest day only, 7d = last 7 calendar days, 30d = last 30 calendar days
+  function getFlowsForTimeframe() {
+    var days = timeframe === '24h' ? 1 : timeframe === '7d' ? 7 : 30
 
+    var cutoff = new Date()
+    cutoff.setDate(cutoff.getDate() - days)
+    var cutoffStr = cutoff.toISOString().split('T')[0]
+
+    var inWindow = snapshots.filter(s => s.snapshot_date >= cutoffStr)
+
+    var totalInflow = inWindow.reduce((sum, s) => sum + (Number(s.inflow_usd) || 0), 0)
+    var totalOutflow = inWindow.reduce((sum, s) => sum + (Number(s.outflow_usd) || 0), 0)
+    var net = totalInflow - totalOutflow
+
+    return { inflowUsd: totalInflow, outflowUsd: totalOutflow, netUsd: net }
+  }
+
+  var totals = getTotalsFromLatest()
+  var flows = getFlowsForTimeframe()
+
+  // Total AUM in millions for cards
+  var totalAumMillions = totals.totalAumUsd / 1000000
+  var totalXrpMillions = totals.totalXrpLocked / 1000000
+
+  // Flow values in millions
+  var inflowMillions = flows.inflowUsd / 1000000
+  var outflowMillions = flows.outflowUsd / 1000000
+  var netMillions = flows.netUsd / 1000000
+
+  // Pie chart data (uses etf_aum.aum which is already in millions)
+  var totalAumAcrossActive = aumList.reduce(function(s, a) { return s + (Number(a.aum) || 0) }, 0)
   var pieData = aumList.map(function(a) {
     var pct = totalAumAcrossActive > 0 ? (Number(a.aum) / totalAumAcrossActive) * 100 : 0
     return { name: a.etf_name, ticker: a.ticker, aum: Number(a.aum) || 0, pct: pct, color: a.color || '#3b82f6' }
@@ -207,7 +255,7 @@ export default function ETFFlows() {
                 <DollarSign size={14} style={{ color: '#9aa8be' }} />
                 <p className="text-xs font-medium tracking-wide uppercase" style={{ color: '#9aa8be' }}>Total AUM</p>
               </div>
-              <p className="text-2xl font-bold" style={{ color: '#3b82f6', fontFamily: 'DM Sans, sans-serif' }}>{fmtAumUsd(totalAum)}</p>
+              <p className="text-2xl font-bold" style={{ color: '#3b82f6', fontFamily: 'DM Sans, sans-serif' }}>{fmtAumUsd(totalAumMillions)}</p>
               <p className="text-xs mt-1" style={{ color: '#6b7a96' }}>{aumList.length} active ETFs</p>
             </div>
 
@@ -216,7 +264,7 @@ export default function ETFFlows() {
                 <Lock size={14} style={{ color: '#9aa8be' }} />
                 <p className="text-xs font-medium tracking-wide uppercase" style={{ color: '#9aa8be' }}>XRP Locked</p>
               </div>
-              <p className="text-2xl font-bold" style={{ color: '#8b5cf6', fontFamily: 'DM Sans, sans-serif' }}>{fmtXrp(xrpInEtfs)} XRP</p>
+              <p className="text-2xl font-bold" style={{ color: '#8b5cf6', fontFamily: 'DM Sans, sans-serif' }}>{fmtXrp(totalXrpMillions)} XRP</p>
               <p className="text-xs mt-1" style={{ color: '#6b7a96' }}>Combined holdings</p>
             </div>
 
@@ -225,8 +273,8 @@ export default function ETFFlows() {
                 <TrendingUp size={14} style={{ color: '#10b981' }} />
                 <p className="text-xs font-medium tracking-wide uppercase" style={{ color: '#9aa8be' }}>Inflows ({timeframe})</p>
               </div>
-              <p className="text-2xl font-bold" style={{ color: '#10b981', fontFamily: 'DM Sans, sans-serif' }}>+{fmtXrp(f.inflowsXrp)} XRP</p>
-              <p className="text-xs mt-1" style={{ color: '#10b981' }}>{f.inflowsUsd != null ? '+$' + (Math.abs(f.inflowsUsd) >= 1000 ? (Math.abs(f.inflowsUsd)/1000).toFixed(2) + 'B' : Math.abs(f.inflowsUsd).toFixed(2) + 'M') : '—'}</p>
+              <p className="text-2xl font-bold" style={{ color: '#10b981', fontFamily: 'DM Sans, sans-serif' }}>{inflowMillions > 0 ? '+' + fmtUsdMillions(inflowMillions) : '$0'}</p>
+              <p className="text-xs mt-1" style={{ color: '#6b7a96' }}>Total dollars in</p>
             </div>
 
             <div className="rounded-xl p-5" style={{ background: 'rgba(30,41,59,0.5)', border: '1px solid #334155' }}>
@@ -234,21 +282,21 @@ export default function ETFFlows() {
                 <TrendingDown size={14} style={{ color: '#ef4444' }} />
                 <p className="text-xs font-medium tracking-wide uppercase" style={{ color: '#9aa8be' }}>Outflows ({timeframe})</p>
               </div>
-              <p className="text-2xl font-bold" style={{ color: '#ef4444', fontFamily: 'DM Sans, sans-serif' }}>−{fmtXrp(f.outflowsXrp)} XRP</p>
-              <p className="text-xs mt-1" style={{ color: '#ef4444' }}>{f.outflowsUsd != null ? '−$' + (Math.abs(f.outflowsUsd) >= 1000 ? (Math.abs(f.outflowsUsd)/1000).toFixed(2) + 'B' : Math.abs(f.outflowsUsd).toFixed(2) + 'M') : '—'}</p>
+              <p className="text-2xl font-bold" style={{ color: '#ef4444', fontFamily: 'DM Sans, sans-serif' }}>{outflowMillions > 0 ? '−' + fmtUsdMillions(outflowMillions) : '$0'}</p>
+              <p className="text-xs mt-1" style={{ color: '#6b7a96' }}>Total dollars out</p>
             </div>
 
-            <div className="rounded-xl p-5" style={{ background: 'rgba(30,41,59,0.5)', border: '1px solid ' + (f.netXrp >= 0 ? '#10b981' : '#ef4444') }}>
+            <div className="rounded-xl p-5" style={{ background: 'rgba(30,41,59,0.5)', border: '1px solid ' + (netMillions >= 0 ? '#10b981' : '#ef4444') }}>
               <div className="flex items-center gap-2 mb-2">
-                <Activity size={14} style={{ color: f.netXrp >= 0 ? '#10b981' : '#ef4444' }} />
+                <Activity size={14} style={{ color: netMillions >= 0 ? '#10b981' : '#ef4444' }} />
                 <p className="text-xs font-medium tracking-wide uppercase" style={{ color: '#9aa8be' }}>Net ({timeframe})</p>
               </div>
-              <p className="text-2xl font-bold" style={{ color: f.netXrp >= 0 ? '#10b981' : '#ef4444', fontFamily: 'DM Sans, sans-serif' }}>{fmtSignedXrp(f.netXrp)}</p>
-              <p className="text-xs mt-1" style={{ color: f.netUsd >= 0 ? '#10b981' : '#ef4444' }}>{fmtSignedUsd(f.netUsd)}</p>
+              <p className="text-2xl font-bold" style={{ color: netMillions >= 0 ? '#10b981' : '#ef4444', fontFamily: 'DM Sans, sans-serif' }}>{fmtSignedUsdMillions(netMillions)}</p>
+              <p className="text-xs mt-1" style={{ color: '#6b7a96' }}>Inflows − Outflows</p>
             </div>
           </div>
 
-          {/* SEC EDGAR live feed - restored to original working version */}
+          {/* SEC EDGAR live feed - UNTOUCHED */}
           <EDGARFilingsSection />
 
           {/* AUM PIE CHART + LIST */}
@@ -354,9 +402,9 @@ export default function ETFFlows() {
           </div>
 
           {/* Last updated */}
-          {summary && summary.updated_at && (
+          {latestSnapshotDate && (
             <p className="text-xs text-center mt-6 mb-4" style={{ color: '#6b7a96' }}>
-              Last updated: {new Date(summary.updated_at).toLocaleString('en-US', { timeZone: 'America/Chicago', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })}
+              Latest data: {new Date(latestSnapshotDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
             </p>
           )}
 
