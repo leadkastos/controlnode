@@ -123,24 +123,78 @@ export function GeopoliticalCard() {
   )
 }
 
+// ===== ETF FLOW CARD — FIXED =====
+// Reads directly from etf_daily_snapshots (latest date) — same source as ETF Flows page
+// Shows: Total AUM, XRP Locked, Active ETFs (replaced "Net Flow 7d")
 export function ETFFlowCard() {
-  const [etfs, setEtfs] = useState([])
+  const [totals, setTotals] = useState({ totalAumUsd: 0, totalXrpLocked: 0, activeCount: 0 })
+
   useEffect(function() {
-    supabase.from('xrp_etf_flows').select('aum, flow_7d, status').then(function(res) { if (res.data) setEtfs(res.data) })
+    async function load() {
+      // Get latest snapshot date
+      var latestDateRes = await supabase
+        .from('etf_daily_snapshots')
+        .select('snapshot_date')
+        .order('snapshot_date', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (!latestDateRes.data) {
+        // No snapshots yet — fall back to active ETF count only
+        var aumOnly = await supabase.from('etf_aum').select('id').eq('active', true)
+        setTotals({ totalAumUsd: 0, totalXrpLocked: 0, activeCount: aumOnly.data ? aumOnly.data.length : 0 })
+        return
+      }
+
+      var latestDate = latestDateRes.data.snapshot_date
+
+      // Get all snapshots for that date
+      var snapsRes = await supabase
+        .from('etf_daily_snapshots')
+        .select('aum_usd, xrp_locked')
+        .eq('snapshot_date', latestDate)
+
+      // Get active ETF count
+      var aumRes = await supabase.from('etf_aum').select('id').eq('active', true)
+
+      var totalAumUsd = 0
+      var totalXrpLocked = 0
+      if (snapsRes.data) {
+        snapsRes.data.forEach(function(s) {
+          totalAumUsd += Number(s.aum_usd) || 0
+          totalXrpLocked += Number(s.xrp_locked) || 0
+        })
+      }
+
+      setTotals({
+        totalAumUsd: totalAumUsd,
+        totalXrpLocked: totalXrpLocked,
+        activeCount: aumRes.data ? aumRes.data.length : 0
+      })
+    }
+
+    load()
   }, [])
-  var totalAUM = etfs.reduce(function(s, e) { return s + (e.aum || 0) }, 0)
-  var net7d = etfs.reduce(function(s, e) { return s + (e.flow_7d || 0) }, 0)
-  var active = etfs.filter(function(e) { return e.status === 'active' }).length
-  function fmt(n) {
-    if (Math.abs(n) >= 1e9) return '$' + (n / 1e9).toFixed(2) + 'B'
-    if (Math.abs(n) >= 1e6) return '$' + (n / 1e6).toFixed(0) + 'M'
-    return '$' + n.toFixed(0)
+
+  function fmtAum(usd) {
+    if (!usd || usd === 0) return '—'
+    if (usd >= 1e9) return '$' + (usd / 1e9).toFixed(2) + 'B'
+    if (usd >= 1e6) return '$' + (usd / 1e6).toFixed(0) + 'M'
+    return '$' + usd.toFixed(0)
   }
+
+  function fmtXrp(xrp) {
+    if (!xrp || xrp === 0) return '—'
+    if (xrp >= 1e9) return (xrp / 1e9).toFixed(2) + 'B XRP'
+    if (xrp >= 1e6) return (xrp / 1e6).toFixed(2) + 'M XRP'
+    return xrp.toFixed(0) + ' XRP'
+  }
+
   return (
     <DashCard title="XRP ETF Flow Tracker" route="/etf-flows">
-      <Row label="Total AUM" value={totalAUM > 0 ? fmt(totalAUM) : '—'} color="#3b82f6" />
-      <Row label="Net Flow 7d" value={net7d !== 0 ? (net7d >= 0 ? '+' : '') + fmt(net7d) : '—'} color={net7d >= 0 ? '#10b981' : '#ef4444'} />
-      <Row label="Active ETFs" value={active > 0 ? active + ' products' : '—'} color="#eceef5" />
+      <Row label="Total AUM" value={fmtAum(totals.totalAumUsd)} color="#3b82f6" />
+      <Row label="XRP Locked" value={fmtXrp(totals.totalXrpLocked)} color="#8b5cf6" />
+      <Row label="Active ETFs" value={totals.activeCount > 0 ? totals.activeCount + ' products' : '—'} color="#eceef5" />
     </DashCard>
   )
 }
