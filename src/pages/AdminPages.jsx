@@ -520,14 +520,25 @@ export default function AdminPages() {
     return { label: 'CHATTER', bg: 'rgba(245,158,11,0.20)', color: '#f59e0b' }
   }
 
+  // FIXED: Date-only fields (YYYY-MM-DD) need 'T00:00:00' appended to parse as local time, not UTC.
+  // Without this fix, "2026-04-28" gets parsed as midnight UTC, then converted to local time
+  // (e.g. CT) which shifts back 5+ hours and displays as "Apr 27".
   function formatDate(d) {
     if (!d) return ''
     try {
-      var dt = new Date(d)
+      // Detect plain date strings (YYYY-MM-DD) and force local-time parsing
+      var dt
+      if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)) {
+        dt = new Date(d + 'T00:00:00')
+      } else {
+        dt = new Date(d)
+      }
       return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
     } catch (e) { return d }
   }
 
+  // formatDateTime is used for created_at timestamps which already include time + timezone,
+  // so they don't have the day-shift problem. Kept as-is.
   function formatDateTime(d) {
     if (!d) return ''
     try {
