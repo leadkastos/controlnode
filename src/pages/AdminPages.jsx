@@ -39,6 +39,7 @@ export default function AdminPages() {
   const [snapshotDate, setSnapshotDate] = useState('')
   const [snapshots, setSnapshots] = useState({})
   const [savingSnapshots, setSavingSnapshots] = useState(false)
+  const [livePrice, setLivePrice] = useState(null)
 
   const [etfPipeline, setEtfPipeline] = useState([])
   const [newPipeline, setNewPipeline] = useState({ issuer_name: '', priority: 'Medium', notes: '', status: 'Not Filed' })
@@ -72,6 +73,7 @@ export default function AdminPages() {
     loadRecentNews()
     loadRecentBriefs()
     loadRecentWraps()
+    loadLivePrice()
   }, [])
 
   useEffect(() => {
@@ -108,6 +110,10 @@ export default function AdminPages() {
     const p = await supabase.from('etf_pipeline').select('*').order('sort_order', { ascending: true })
     if (p.data) setEtfPipeline(p.data)
   }
+  async function loadLivePrice() {
+    const r = await supabase.from('xrp_live_price').select('*').eq('id', 1).maybeSingle()
+    if (r.data) setLivePrice(r.data)
+  }
 
   async function loadSnapshotsForDate(date) {
     const r = await supabase.from('etf_daily_snapshots').select('*').eq('snapshot_date', date)
@@ -132,6 +138,21 @@ export default function AdminPages() {
     }))
   }
 
+  // Calculate live AUM for an ETF based on current XRP price × XRP Locked entered in form
+  function calcLiveAum(xrpLockedRaw) {
+    if (!livePrice || !livePrice.price_usd) return null
+    var xrp = parseFloat(String(xrpLockedRaw || '').replace(/,/g, '')) || 0
+    if (xrp === 0) return null
+    return xrp * Number(livePrice.price_usd)
+  }
+
+  function fmtAumDollars(usd) {
+    if (!usd) return '—'
+    if (usd >= 1e9) return '$' + (usd / 1e9).toFixed(2) + 'B'
+    if (usd >= 1e6) return '$' + (usd / 1e6).toFixed(2) + 'M'
+    return '$' + usd.toFixed(0)
+  }
+
   async function handleSaveAllSnapshots() {
     if (!snapshotDate) { setMessage('Pick a date first'); return }
     setSavingSnapshots(true)
@@ -140,19 +161,25 @@ export default function AdminPages() {
     for (var i = 0; i < etfList.length; i++) {
       var etf = etfList[i]
       var s = snapshots[etf.ticker] || {}
-      var aum = parseFloat(String(s.aum_usd || '').replace(/,/g, '')) || 0
       var xrp = parseFloat(String(s.xrp_locked || '').replace(/,/g, '')) || 0
       var inflow = parseFloat(String(s.inflow_usd || '').replace(/,/g, '')) || 0
       var outflow = parseFloat(String(s.outflow_usd || '').replace(/,/g, '')) || 0
 
-      if (aum === 0 && xrp === 0 && inflow === 0 && outflow === 0) continue
+      // Skip ETFs that have no XRP locked entered
+      if (xrp === 0) continue
+
+      // Auto-calculate AUM = XRP Locked × current XRP price (snapshot of "official" AUM at save time)
+      var calculatedAum = 0
+      if (livePrice && livePrice.price_usd) {
+        calculatedAum = xrp * Number(livePrice.price_usd)
+      }
 
       rows.push({
         ticker: etf.ticker,
         etf_name: etf.etf_name,
         snapshot_date: snapshotDate,
         xrp_locked: xrp,
-        aum_usd: aum,
+        aum_usd: calculatedAum,
         inflow_usd: inflow,
         outflow_usd: outflow,
         data_source: 'manual',
@@ -162,7 +189,7 @@ export default function AdminPages() {
 
     if (rows.length === 0) {
       setSavingSnapshots(false)
-      setMessage('Nothing to save — enter numbers for at least one ETF')
+      setMessage('Nothing to save — enter XRP Locked for at least one ETF')
       return
     }
 
@@ -176,6 +203,7 @@ export default function AdminPages() {
       return
     }
 
+    // Update etf_aum.aum (the millions-display field) with auto-calculated AUM
     for (var j = 0; j < rows.length; j++) {
       var r = rows[j]
       await supabase.from('etf_aum').update({
@@ -201,7 +229,10 @@ export default function AdminPages() {
     }
 
     setSavingSnapshots(false)
-    setMessage('Saved ' + rows.length + ' ETF snapshots! Member page and dashboard now reflect updated numbers.')
+    setMessage('Saved ' + rows.length + ' ETF snapshots! Live AUM will continue to update hourly during market hours.')
+    // Reload to show fresh data
+    loadSnapshotsForDate(snapshotDate)
+    loadLivePrice()
   }
 
   async function handleMarketNewsSubmit(e) {
@@ -521,12 +552,9 @@ export default function AdminPages() {
   }
 
   // FIXED: Date-only fields (YYYY-MM-DD) need 'T00:00:00' appended to parse as local time, not UTC.
-  // Without this fix, "2026-04-28" gets parsed as midnight UTC, then converted to local time
-  // (e.g. CT) which shifts back 5+ hours and displays as "Apr 27".
   function formatDate(d) {
     if (!d) return ''
     try {
-      // Detect plain date strings (YYYY-MM-DD) and force local-time parsing
       var dt
       if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)) {
         dt = new Date(d + 'T00:00:00')
@@ -537,8 +565,6 @@ export default function AdminPages() {
     } catch (e) { return d }
   }
 
-  // formatDateTime is used for created_at timestamps which already include time + timezone,
-  // so they don't have the day-shift problem. Kept as-is.
   function formatDateTime(d) {
     if (!d) return ''
     try {
@@ -857,16 +883,40 @@ export default function AdminPages() {
                 </div>
               )}
 
+              {/* ============== ETF DAILY DATA — SIMPLIFIED ============== */}
               {activeSection === 'etf-snapshots' && (
                 <div className="rounded-xl p-6" style={{ background: 'rgba(30,41,59,0.3)', border: '1px solid #334155' }}>
                   <h2 className="text-xl font-semibold mb-2" style={{ color: '#eceef5' }}>ETF Daily Data</h2>
                   <p className="text-sm mb-6" style={{ color: '#9aa8be' }}>
-                    Update each ETF's <span style={{ color: '#cbd5e1' }}>XRP Locked</span>, <span style={{ color: '#cbd5e1' }}>AUM</span>, <span style={{ color: '#cbd5e1' }}>Inflow $</span>, and <span style={{ color: '#cbd5e1' }}>Outflow $</span> twice daily. Net flow is auto-calculated. Source links are next to each ETF name.
+                    Just enter <span style={{ color: '#eceef5', fontWeight: 600 }}>XRP Locked</span> for each ETF. AUM auto-calculates from XRP price every hour during market hours.
                   </p>
+
+                  {/* Live XRP price status */}
+                  <div className="mb-6 p-4 rounded-lg flex items-center justify-between gap-3" style={{ background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.3)' }}>
+                    <div>
+                      <p className="text-xs uppercase tracking-wide" style={{ color: '#9aa8be' }}>Current XRP Price (used for AUM calculation)</p>
+                      <p className="text-2xl font-bold" style={{ color: '#8b5cf6', fontFamily: 'DM Sans, sans-serif' }}>
+                        {livePrice && livePrice.price_usd ? '$' + Number(livePrice.price_usd).toFixed(4) : 'Loading...'}
+                      </p>
+                      {livePrice && livePrice.updated_at && (
+                        <p className="text-xs mt-1" style={{ color: '#6b7a96' }}>
+                          Updated {formatDateTime(livePrice.updated_at)} CT · Refreshes hourly 8 AM–3 PM CT, Mon–Fri
+                        </p>
+                      )}
+                    </div>
+                    {livePrice && livePrice.change_24h_pct != null && (
+                      <div className="text-right">
+                        <p className="text-xs" style={{ color: '#9aa8be' }}>24h Change</p>
+                        <p className="text-lg font-bold" style={{ color: Number(livePrice.change_24h_pct) >= 0 ? '#10b981' : '#ef4444' }}>
+                          {Number(livePrice.change_24h_pct) >= 0 ? '+' : ''}{Number(livePrice.change_24h_pct).toFixed(2)}%
+                        </p>
+                      </div>
+                    )}
+                  </div>
 
                   <div className="mb-6 p-4 rounded-lg" style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.3)' }}>
                     <p className="text-sm" style={{ color: '#cbd5e1' }}>
-                      <strong style={{ color: '#3b82f6' }}>Quick workflow:</strong> Open xrp-insights.com (or each issuer's site), copy today's XRP Locked + AUM + Inflows + Outflows, paste here, click Save All. Takes ~90 seconds.
+                      <strong style={{ color: '#3b82f6' }}>Daily workflow:</strong> Open xrp-insights.com after market close. Copy each ETF's XRP Locked into the field below. Click Save All. Takes ~30 seconds. Inflow/Outflow fields are optional — only fill them in if you have official numbers from xrp-insights to log.
                     </p>
                   </div>
 
@@ -878,18 +928,16 @@ export default function AdminPages() {
 
                   <div className="space-y-4 mb-6">
                     {etfList.length === 0 ? (
-                      <p className="text-sm" style={{ color: '#6b7a96' }}>No ETFs found. Run the migration SQL first.</p>
+                      <p className="text-sm" style={{ color: '#6b7a96' }}>No ETFs found.</p>
                     ) : (
                       etfList.map(etf => {
                         var src = ETF_SOURCES[etf.ticker] || { name: 'source', url: '#' }
                         var s = snapshots[etf.ticker] || {}
-                        var inflow = parseFloat(String(s.inflow_usd || '').replace(/,/g, '')) || 0
-                        var outflow = parseFloat(String(s.outflow_usd || '').replace(/,/g, '')) || 0
-                        var net = inflow - outflow
+                        var liveAum = calcLiveAum(s.xrp_locked)
                         return (
                           <div key={etf.ticker} className="p-4 rounded-lg" style={{ background: '#1e293b', border: '1px solid #475569' }}>
                             <div className="flex items-center gap-3 mb-3">
-                              <div className="w-2 h-10 rounded-full flex-shrink-0" style={{ background: etf.color || '#3b82f6' }} />
+                              <div className="w-2 h-12 rounded-full flex-shrink-0" style={{ background: etf.color || '#3b82f6' }} />
                               <div className="flex-1 min-w-0">
                                 <p className="font-semibold" style={{ color: '#eceef5' }}>{etf.etf_name}</p>
                                 <div className="flex items-center gap-2 text-xs">
@@ -898,35 +946,60 @@ export default function AdminPages() {
                                   <a href={src.url} target="_blank" rel="noopener noreferrer" style={{ color: '#3b82f6' }}>{src.name} official site →</a>
                                 </div>
                               </div>
-                              {(inflow !== 0 || outflow !== 0) && (
+                              {liveAum && (
                                 <div className="text-right flex-shrink-0">
-                                  <p className="text-xs" style={{ color: '#9aa8be' }}>Net flow</p>
-                                  <p className="text-sm font-bold" style={{ color: net >= 0 ? '#10b981' : '#ef4444' }}>
-                                    {net >= 0 ? '+' : '−'}${Math.abs(net).toLocaleString('en-US', { maximumFractionDigits: 0 })}
-                                  </p>
+                                  <p className="text-xs" style={{ color: '#9aa8be' }}>Live AUM</p>
+                                  <p className="text-lg font-bold" style={{ color: '#3b82f6', fontFamily: 'DM Sans, sans-serif' }}>{fmtAumDollars(liveAum)}</p>
                                 </div>
                               )}
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                              <div>
-                                <label className="block text-xs font-medium mb-1.5" style={{ color: '#cbd5e1' }}>XRP Locked</label>
-                                <input type="text" value={s.xrp_locked != null ? s.xrp_locked : ''} onChange={(e) => updateSnapshotField(etf.ticker, 'xrp_locked', e.target.value)} placeholder="229,068,373" className="w-full px-4 py-2.5 rounded-lg" style={innerInputStyle} />
-                              </div>
-                              <div>
-                                <label className="block text-xs font-medium mb-1.5" style={{ color: '#cbd5e1' }}>AUM ($ full dollars)</label>
-                                <input type="text" value={s.aum_usd != null ? s.aum_usd : ''} onChange={(e) => updateSnapshotField(etf.ticker, 'aum_usd', e.target.value)} placeholder="329,634,413" className="w-full px-4 py-2.5 rounded-lg" style={innerInputStyle} />
-                              </div>
+
+                            {/* Primary input: XRP Locked */}
+                            <div className="mb-3">
+                              <label className="block text-sm font-semibold mb-1.5" style={{ color: '#eceef5' }}>XRP Locked</label>
+                              <input
+                                type="text"
+                                value={s.xrp_locked != null ? s.xrp_locked : ''}
+                                onChange={(e) => updateSnapshotField(etf.ticker, 'xrp_locked', e.target.value)}
+                                placeholder="e.g. 229,068,373"
+                                className="w-full px-4 py-3 rounded-lg text-base"
+                                style={innerInputStyle}
+                              />
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                              <div>
-                                <label className="block text-xs font-medium mb-1.5" style={{ color: '#10b981' }}>Inflow $ (today)</label>
-                                <input type="text" value={s.inflow_usd != null ? s.inflow_usd : ''} onChange={(e) => updateSnapshotField(etf.ticker, 'inflow_usd', e.target.value)} placeholder="5,200,000" className="w-full px-4 py-2.5 rounded-lg" style={innerInputStyle} />
+
+                            {/* Optional flow fields — collapsed visually */}
+                            <details className="mt-3">
+                              <summary className="text-xs cursor-pointer" style={{ color: '#6b7a96' }}>
+                                Optional: log official Inflow / Outflow numbers (if known)
+                              </summary>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                                <div>
+                                  <label className="block text-xs font-medium mb-1.5" style={{ color: '#10b981' }}>Inflow $ (optional)</label>
+                                  <input
+                                    type="text"
+                                    value={s.inflow_usd != null ? s.inflow_usd : ''}
+                                    onChange={(e) => updateSnapshotField(etf.ticker, 'inflow_usd', e.target.value)}
+                                    placeholder="e.g. 5,200,000"
+                                    className="w-full px-4 py-2.5 rounded-lg text-sm"
+                                    style={innerInputStyle}
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-xs font-medium mb-1.5" style={{ color: '#ef4444' }}>Outflow $ (optional)</label>
+                                  <input
+                                    type="text"
+                                    value={s.outflow_usd != null ? s.outflow_usd : ''}
+                                    onChange={(e) => updateSnapshotField(etf.ticker, 'outflow_usd', e.target.value)}
+                                    placeholder="e.g. 0"
+                                    className="w-full px-4 py-2.5 rounded-lg text-sm"
+                                    style={innerInputStyle}
+                                  />
+                                </div>
                               </div>
-                              <div>
-                                <label className="block text-xs font-medium mb-1.5" style={{ color: '#ef4444' }}>Outflow $ (today)</label>
-                                <input type="text" value={s.outflow_usd != null ? s.outflow_usd : ''} onChange={(e) => updateSnapshotField(etf.ticker, 'outflow_usd', e.target.value)} placeholder="0" className="w-full px-4 py-2.5 rounded-lg" style={innerInputStyle} />
-                              </div>
-                            </div>
+                              <p className="text-xs mt-2" style={{ color: '#6b7a96' }}>
+                                Leave blank to auto-calculate flow from day-over-day XRP Locked changes.
+                              </p>
+                            </details>
                           </div>
                         )
                       })
@@ -938,6 +1011,7 @@ export default function AdminPages() {
                   </button>
                 </div>
               )}
+              {/* ============== END ETF DAILY DATA ============== */}
 
               {activeSection === 'etf-pipeline' && (
                 <div className="rounded-xl p-6" style={{ background: 'rgba(30,41,59,0.3)', border: '1px solid #334155' }}>
