@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { TrendingUp, TrendingDown, ExternalLink } from 'lucide-react'
+import { TrendingUp, TrendingDown, ExternalLink, ChevronLeft, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { usePrices, COINGECKO_IDS } from '../contexts/PriceContext'
 
@@ -53,7 +53,9 @@ function getCategoryLabel(categories) {
   return categories.split('|')[0].trim()
 }
 
-export default function RightSidebar() {
+// Inner content of the right sidebar — used for both desktop and mobile drawer.
+// Receives optional onClose prop for the mobile drawer's close button.
+function RightSidebarContent({ onClose }) {
   const prices = usePrices()
   const [symbols, setSymbols] = useState([])
   const [news, setNews] = useState([])
@@ -104,14 +106,12 @@ export default function RightSidebar() {
     async function fetchNews() {
       try {
         var allNews = []
-
         try {
           var manualRes = await supabase
             .from('market_news')
             .select('*')
             .order('created_at', { ascending: false })
             .limit(15)
-
           if (manualRes.data) {
             var manualPosts = manualRes.data.map(function(post) {
               var categoryLabel = 'CHATTER'
@@ -139,7 +139,6 @@ export default function RightSidebar() {
         } catch(e) {
           console.error('Manual news fetch error:', e)
         }
-
         try {
           var key = import.meta.env.VITE_CRYPTOCOMPARE_API_KEY
           var res = await fetch(
@@ -155,7 +154,6 @@ export default function RightSidebar() {
         } catch(e) {
           console.error('Auto news fetch error:', e)
         }
-
         // Sort: breaking news always first, then by timestamp newest-first
         allNews.sort(function(a, b) {
           var aBreaking = a.postType === 'breaking' ? 1 : 0
@@ -164,7 +162,6 @@ export default function RightSidebar() {
           return b.published_on - a.published_on
         })
         setNews(allNews.slice(0, 10))
-
       } catch(e) {
         console.error('News fetch error:', e)
       }
@@ -175,15 +172,32 @@ export default function RightSidebar() {
   }, [])
 
   return (
-    <aside
-      className="hidden lg:flex fixed right-0 top-0 h-screen w-64 flex-col z-30"
-      style={{ background: '#0d0f14', borderLeft: '1px solid #1e2330' }}
-    >
-      {/* Top spacer to align with TopBar */}
-      <div style={{ height: '56px', flexShrink: 0, borderBottom: '1px solid #1e2330' }} />
+    <>
+      {/* Top spacer to align with TopBar — also holds the mobile drawer's close button */}
+      <div
+        style={{
+          height: '56px',
+          flexShrink: 0,
+          borderBottom: '1px solid #1e2330',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'flex-end',
+          padding: '0 16px'
+        }}
+      >
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="p-1 rounded-lg lg:hidden"
+            style={{ color: '#9aa8be' }}
+            aria-label="Close panel"
+          >
+            <X size={18} />
+          </button>
+        )}
+      </div>
 
       <div className="flex-1 overflow-y-auto py-4 px-4 space-y-5">
-
         {/* Watchlist */}
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#6b7a96' }}>
@@ -287,7 +301,6 @@ export default function RightSidebar() {
             ) : (
               news.map(function(item) {
                 var cat, catLabel, sourceName
-
                 if (item.isManual) {
                   if (item.postType === 'breaking') {
                     cat = { bg: 'rgba(239,68,68,0.18)', text: '#ef4444' }
@@ -305,10 +318,8 @@ export default function RightSidebar() {
                   catLabel = getCategoryLabel(item.categories)
                   sourceName = item.source_info ? item.source_info.name : item.source
                 }
-
                 // Breaking posts get a red border to stand out
                 var borderColor = item.postType === 'breaking' ? '#ef4444' : '#1e2330'
-
                 return (
                   <a
                     key={String(item.id)}
@@ -347,6 +358,53 @@ export default function RightSidebar() {
           </p>
         </div>
       </div>
-    </aside>
+    </>
+  )
+}
+
+export default function RightSidebar() {
+  const [mobileOpen, setMobileOpen] = useState(false)
+
+  return (
+    <>
+      {/* Mobile-only "open panel" button — fixed top-right, mirrors Sidebar's hamburger pattern */}
+      <button
+        className="fixed top-3.5 right-4 z-50 p-2 rounded-lg lg:hidden"
+        style={{ background: '#161a22', border: '1px solid #1e2330', color: '#eceef5' }}
+        onClick={() => setMobileOpen(true)}
+        aria-label="Open watchlist and news panel"
+      >
+        <ChevronLeft size={18} />
+      </button>
+
+      {/* Mobile drawer overlay — tap to dismiss */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-40 lg:hidden"
+          style={{ background: 'rgba(0,0,0,0.7)' }}
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      {/* Mobile drawer — slides in from right */}
+      <aside
+        className="fixed right-0 top-0 h-screen w-72 flex flex-col z-50 transition-transform duration-300 lg:hidden"
+        style={{
+          background: '#0d0f14',
+          borderLeft: '1px solid #1e2330',
+          transform: mobileOpen ? 'translateX(0)' : 'translateX(100%)'
+        }}
+      >
+        <RightSidebarContent onClose={() => setMobileOpen(false)} />
+      </aside>
+
+      {/* Desktop right sidebar — fixed rail, exactly as before */}
+      <aside
+        className="hidden lg:flex fixed right-0 top-0 h-screen w-64 flex-col z-30"
+        style={{ background: '#0d0f14', borderLeft: '1px solid #1e2330' }}
+      >
+        <RightSidebarContent />
+      </aside>
+    </>
   )
 }
