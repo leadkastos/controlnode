@@ -153,26 +153,88 @@ export default function AdminPages() {
     return '$' + usd.toFixed(0)
   }
 
+  // Get the most recent snapshot date BEFORE the given date — used to find "yesterday's" XRP Locked
+  // for auto-deriving flow direction. Returns null if no prior snapshot exists.
+  async function getPreviousSnapshotDate(currentDate) {
+    const r = await supabase
+      .from('etf_daily_snapshots')
+      .select('snapshot_date')
+      .lt('snapshot_date', currentDate)
+      .order('snapshot_date', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    return r.data ? r.data.snapshot_date : null
+  }
+
+  // Load all snapshots from a specific previous date as a lookup map { ticker: xrp_locked }
+  async function getPreviousXrpLockedByTicker(prevDate) {
+    if (!prevDate) return {}
+    const r = await supabase
+      .from('etf_daily_snapshots')
+      .select('ticker, xrp_locked')
+      .eq('snapshot_date', prevDate)
+    var lookup = {}
+    if (r.data) {
+      r.data.forEach(row => { lookup[row.ticker] = Number(row.xrp_locked) || 0 })
+    }
+    return lookup
+  }
+
   async function handleSaveAllSnapshots() {
     if (!snapshotDate) { setMessage('Pick a date first'); return }
     setSavingSnapshots(true)
+
+    // ===== Step 1: Find previous snapshot date and load its XRP Locked values =====
+    // We use this to auto-derive flows when admin doesn't manually enter them
+    const prevDate = await getPreviousSnapshotDate(snapshotDate)
+    const prevXrpByTicker = await getPreviousXrpLockedByTicker(prevDate)
+
+    // Use current XRP price for converting XRP flow to USD flow
+    const currentXrpPrice = livePrice && livePrice.price_usd ? Number(livePrice.price_usd) : 0
 
     var rows = []
     for (var i = 0; i < etfList.length; i++) {
       var etf = etfList[i]
       var s = snapshots[etf.ticker] || {}
       var xrp = parseFloat(String(s.xrp_locked || '').replace(/,/g, '')) || 0
-      var inflow = parseFloat(String(s.inflow_usd || '').replace(/,/g, '')) || 0
-      var outflow = parseFloat(String(s.outflow_usd || '').replace(/,/g, '')) || 0
 
       // Skip ETFs that have no XRP locked entered
       if (xrp === 0) continue
 
-      // Auto-calculate AUM = XRP Locked × current XRP price (snapshot of "official" AUM at save time)
-      var calculatedAum = 0
-      if (livePrice && livePrice.price_usd) {
-        calculatedAum = xrp * Number(livePrice.price_usd)
+      // ===== Step 2: Determine inflow / outflow values =====
+      // Priority order:
+      //   (a) If admin manually entered values in optional fields, use those (override)
+      //   (b) Otherwise, auto-derive from day-over-day XRP Locked change × current XRP price
+      var manualInflow = parseFloat(String(s.inflow_usd || '').replace(/,/g, ''))
+      var manualOutflow = parseFloat(String(s.outflow_usd || '').replace(/,/g, ''))
+
+      var finalInflow = 0
+      var finalOutflow = 0
+
+      if (!isNaN(manualInflow) && manualInflow > 0) {
+        finalInflow = manualInflow
       }
+      if (!isNaN(manualOutflow) && manualOutflow > 0) {
+        finalOutflow = manualOutflow
+      }
+
+      // If both flows are still 0 AND we have prior snapshot data AND we have a current XRP price,
+      // auto-derive flows from XRP Locked change
+      if (finalInflow === 0 && finalOutflow === 0 && prevXrpByTicker[etf.ticker] != null && currentXrpPrice > 0) {
+        var prevXrp = prevXrpByTicker[etf.ticker]
+        var xrpDelta = xrp - prevXrp  // positive = inflow, negative = outflow
+        var dollarDelta = Math.abs(xrpDelta) * currentXrpPrice
+
+        if (xrpDelta > 0) {
+          finalInflow = dollarDelta
+        } else if (xrpDelta < 0) {
+          finalOutflow = dollarDelta
+        }
+        // If xrpDelta is exactly 0, both stay at 0 (no change = no flow)
+      }
+
+      // ===== Step 3: Auto-calculate AUM = XRP Locked × current XRP price =====
+      var calculatedAum = currentXrpPrice > 0 ? xrp * currentXrpPrice : 0
 
       rows.push({
         ticker: etf.ticker,
@@ -180,8 +242,8 @@ export default function AdminPages() {
         snapshot_date: snapshotDate,
         xrp_locked: xrp,
         aum_usd: calculatedAum,
-        inflow_usd: inflow,
-        outflow_usd: outflow,
+        inflow_usd: finalInflow,
+        outflow_usd: finalOutflow,
         data_source: 'manual',
         created_by: profile.id
       })
@@ -228,8 +290,19 @@ export default function AdminPages() {
       await supabase.from('etf_summary').insert([summaryPayload])
     }
 
+    // Build a friendly summary message of derived flows
+    var flowMsg = ''
+    if (prevDate) {
+      var totalInflow = rows.reduce((s, r) => s + r.inflow_usd, 0)
+      var totalOutflow = rows.reduce((s, r) => s + r.outflow_usd, 0)
+      var netFlow = totalInflow - totalOutflow
+      if (totalInflow > 0 || totalOutflow > 0) {
+        flowMsg = ' Auto-calculated flows: +$' + (totalInflow / 1e6).toFixed(2) + 'M in / −$' + (totalOutflow / 1e6).toFixed(2) + 'M out (net ' + (netFlow >= 0 ? '+' : '−') + '$' + Math.abs(netFlow / 1e6).toFixed(2) + 'M).'
+      }
+    }
+
     setSavingSnapshots(false)
-    setMessage('Saved ' + rows.length + ' ETF snapshots! Live AUM will continue to update hourly during market hours.')
+    setMessage('Saved ' + rows.length + ' ETF snapshots!' + flowMsg + ' Live AUM continues updating hourly during market hours.')
     // Reload to show fresh data
     loadSnapshotsForDate(snapshotDate)
     loadLivePrice()
@@ -883,18 +956,17 @@ export default function AdminPages() {
                 </div>
               )}
 
-              {/* ============== ETF DAILY DATA — SIMPLIFIED ============== */}
+              {/* ============== ETF DAILY DATA — SIMPLIFIED + AUTO-FLOWS ============== */}
               {activeSection === 'etf-snapshots' && (
                 <div className="rounded-xl p-6" style={{ background: 'rgba(30,41,59,0.3)', border: '1px solid #334155' }}>
                   <h2 className="text-xl font-semibold mb-2" style={{ color: '#eceef5' }}>ETF Daily Data</h2>
                   <p className="text-sm mb-6" style={{ color: '#9aa8be' }}>
-                    Just enter <span style={{ color: '#eceef5', fontWeight: 600 }}>XRP Locked</span> for each ETF. AUM auto-calculates from XRP price every hour during market hours.
+                    Just enter <span style={{ color: '#eceef5', fontWeight: 600 }}>XRP Locked</span> for each ETF. AUM auto-calculates from XRP price. Inflows / Outflows auto-derive from day-over-day XRP Locked changes.
                   </p>
 
-                  {/* Live XRP price status */}
                   <div className="mb-6 p-4 rounded-lg flex items-center justify-between gap-3" style={{ background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.3)' }}>
                     <div>
-                      <p className="text-xs uppercase tracking-wide" style={{ color: '#9aa8be' }}>Current XRP Price (used for AUM calculation)</p>
+                      <p className="text-xs uppercase tracking-wide" style={{ color: '#9aa8be' }}>Current XRP Price (used for AUM + flow calculation)</p>
                       <p className="text-2xl font-bold" style={{ color: '#8b5cf6', fontFamily: 'DM Sans, sans-serif' }}>
                         {livePrice && livePrice.price_usd ? '$' + Number(livePrice.price_usd).toFixed(4) : 'Loading...'}
                       </p>
@@ -916,7 +988,7 @@ export default function AdminPages() {
 
                   <div className="mb-6 p-4 rounded-lg" style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.3)' }}>
                     <p className="text-sm" style={{ color: '#cbd5e1' }}>
-                      <strong style={{ color: '#3b82f6' }}>Daily workflow:</strong> Open xrp-insights.com after market close. Copy each ETF's XRP Locked into the field below. Click Save All. Takes ~30 seconds. Inflow/Outflow fields are optional — only fill them in if you have official numbers from xrp-insights to log.
+                      <strong style={{ color: '#3b82f6' }}>Daily workflow:</strong> Open xrp-insights.com after market close. Copy each ETF's XRP Locked into the field below. Click Save All. Inflows / Outflows are calculated automatically from the day-over-day change. Total time: ~30 seconds.
                     </p>
                   </div>
 
@@ -967,37 +1039,37 @@ export default function AdminPages() {
                               />
                             </div>
 
-                            {/* Optional flow fields — collapsed visually */}
+                            {/* Optional flow override */}
                             <details className="mt-3">
                               <summary className="text-xs cursor-pointer" style={{ color: '#6b7a96' }}>
-                                Optional: log official Inflow / Outflow numbers (if known)
+                                Override auto-calculated flows (only if xrp-insights publishes different official numbers)
                               </summary>
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
                                 <div>
-                                  <label className="block text-xs font-medium mb-1.5" style={{ color: '#10b981' }}>Inflow $ (optional)</label>
+                                  <label className="block text-xs font-medium mb-1.5" style={{ color: '#10b981' }}>Inflow $ (override)</label>
                                   <input
                                     type="text"
                                     value={s.inflow_usd != null ? s.inflow_usd : ''}
                                     onChange={(e) => updateSnapshotField(etf.ticker, 'inflow_usd', e.target.value)}
-                                    placeholder="e.g. 5,200,000"
+                                    placeholder="leave blank to auto-calculate"
                                     className="w-full px-4 py-2.5 rounded-lg text-sm"
                                     style={innerInputStyle}
                                   />
                                 </div>
                                 <div>
-                                  <label className="block text-xs font-medium mb-1.5" style={{ color: '#ef4444' }}>Outflow $ (optional)</label>
+                                  <label className="block text-xs font-medium mb-1.5" style={{ color: '#ef4444' }}>Outflow $ (override)</label>
                                   <input
                                     type="text"
                                     value={s.outflow_usd != null ? s.outflow_usd : ''}
                                     onChange={(e) => updateSnapshotField(etf.ticker, 'outflow_usd', e.target.value)}
-                                    placeholder="e.g. 0"
+                                    placeholder="leave blank to auto-calculate"
                                     className="w-full px-4 py-2.5 rounded-lg text-sm"
                                     style={innerInputStyle}
                                   />
                                 </div>
                               </div>
                               <p className="text-xs mt-2" style={{ color: '#6b7a96' }}>
-                                Leave blank to auto-calculate flow from day-over-day XRP Locked changes.
+                                Leave blank for auto-calculation from XRP Locked changes (recommended). Only fill if you have official issuer flow data that differs.
                               </p>
                             </details>
                           </div>
