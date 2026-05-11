@@ -8,6 +8,44 @@ const SIGNAL_NAMES = ['Market Sentiment', 'Risk Environment', 'Technical Outlook
 const SIGNAL_VALUE_COLORS = { Bullish: 'green', Bearish: 'red', Neutral: 'yellow', Cautious: 'blue' }
 const SIGNAL_VALUES = Object.keys(SIGNAL_VALUE_COLORS)
 
+// Parse XRP Locked input. Accepts ALL of these forms:
+//   "235"           -> 235,000,000  (assumes millions when value < 10000)
+//   "235.0"         -> 235,000,000
+//   "235.0M" / "235M" -> 235,000,000
+//   "235000000"     -> 235,000,000
+//   "235,000,000"   -> 235,000,000
+//   ""              -> 0
+function parseXrpLocked(raw) {
+  if (raw == null) return 0
+  var s = String(raw).trim().replace(/,/g, '').replace(/\s/g, '')
+  if (s === '') return 0
+  // Check for explicit M suffix
+  var hasM = /m$/i.test(s)
+  if (hasM) s = s.slice(0, -1)
+  var n = parseFloat(s)
+  if (isNaN(n)) return 0
+  // If has M suffix, multiply by 1M
+  if (hasM) return n * 1e6
+  // If number is small (< 10,000), assume it's shorthand in millions (e.g. 235.0 = 235M)
+  if (n < 10000) return n * 1e6
+  // Otherwise it's already the full number
+  return n
+}
+
+// Parse dollar amounts for inflow/outflow overrides. Accepts:
+//   "11700000" / "11,700,000" / "11.7M" / "11.7"
+function parseDollarAmount(raw) {
+  if (raw == null) return NaN
+  var s = String(raw).trim().replace(/,/g, '').replace(/\$/g, '').replace(/\s/g, '')
+  if (s === '') return NaN
+  var hasM = /m$/i.test(s)
+  if (hasM) s = s.slice(0, -1)
+  var n = parseFloat(s)
+  if (isNaN(n)) return NaN
+  if (hasM) return n * 1e6
+  return n
+}
+
 export default function AdminPages() {
   const { profile } = useAuth()
   const [activeSection, setActiveSection] = useState('market-news')
@@ -141,7 +179,7 @@ export default function AdminPages() {
   // Calculate live AUM for an ETF based on current XRP price × XRP Locked entered in form
   function calcLiveAum(xrpLockedRaw) {
     if (!livePrice || !livePrice.price_usd) return null
-    var xrp = parseFloat(String(xrpLockedRaw || '').replace(/,/g, '')) || 0
+    var xrp = parseXrpLocked(xrpLockedRaw)
     if (xrp === 0) return null
     return xrp * Number(livePrice.price_usd)
   }
@@ -153,8 +191,12 @@ export default function AdminPages() {
     return '$' + usd.toFixed(0)
   }
 
-  // Get the most recent snapshot date BEFORE the given date — used to find "yesterday's" XRP Locked
-  // for auto-deriving flow direction. Returns null if no prior snapshot exists.
+  function fmtXrpLockedDisplay(xrp) {
+    if (!xrp) return null
+    if (xrp >= 1e6) return (xrp / 1e6).toFixed(2) + 'M XRP'
+    return xrp.toLocaleString() + ' XRP'
+  }
+
   async function getPreviousSnapshotDate(currentDate) {
     const r = await supabase
       .from('etf_daily_snapshots')
@@ -166,7 +208,6 @@ export default function AdminPages() {
     return r.data ? r.data.snapshot_date : null
   }
 
-  // Load all snapshots from a specific previous date as a lookup map { ticker: xrp_locked }
   async function getPreviousXrpLockedByTicker(prevDate) {
     if (!prevDate) return {}
     const r = await supabase
@@ -184,29 +225,21 @@ export default function AdminPages() {
     if (!snapshotDate) { setMessage('Pick a date first'); return }
     setSavingSnapshots(true)
 
-    // ===== Step 1: Find previous snapshot date and load its XRP Locked values =====
-    // We use this to auto-derive flows when admin doesn't manually enter them
     const prevDate = await getPreviousSnapshotDate(snapshotDate)
     const prevXrpByTicker = await getPreviousXrpLockedByTicker(prevDate)
 
-    // Use current XRP price for converting XRP flow to USD flow
     const currentXrpPrice = livePrice && livePrice.price_usd ? Number(livePrice.price_usd) : 0
 
     var rows = []
     for (var i = 0; i < etfList.length; i++) {
       var etf = etfList[i]
       var s = snapshots[etf.ticker] || {}
-      var xrp = parseFloat(String(s.xrp_locked || '').replace(/,/g, '')) || 0
+      var xrp = parseXrpLocked(s.xrp_locked)
 
-      // Skip ETFs that have no XRP locked entered
       if (xrp === 0) continue
 
-      // ===== Step 2: Determine inflow / outflow values =====
-      // Priority order:
-      //   (a) If admin manually entered values in optional fields, use those (override)
-      //   (b) Otherwise, auto-derive from day-over-day XRP Locked change × current XRP price
-      var manualInflow = parseFloat(String(s.inflow_usd || '').replace(/,/g, ''))
-      var manualOutflow = parseFloat(String(s.outflow_usd || '').replace(/,/g, ''))
+      var manualInflow = parseDollarAmount(s.inflow_usd)
+      var manualOutflow = parseDollarAmount(s.outflow_usd)
 
       var finalInflow = 0
       var finalOutflow = 0
@@ -218,11 +251,9 @@ export default function AdminPages() {
         finalOutflow = manualOutflow
       }
 
-      // If both flows are still 0 AND we have prior snapshot data AND we have a current XRP price,
-      // auto-derive flows from XRP Locked change
       if (finalInflow === 0 && finalOutflow === 0 && prevXrpByTicker[etf.ticker] != null && currentXrpPrice > 0) {
         var prevXrp = prevXrpByTicker[etf.ticker]
-        var xrpDelta = xrp - prevXrp  // positive = inflow, negative = outflow
+        var xrpDelta = xrp - prevXrp
         var dollarDelta = Math.abs(xrpDelta) * currentXrpPrice
 
         if (xrpDelta > 0) {
@@ -230,10 +261,8 @@ export default function AdminPages() {
         } else if (xrpDelta < 0) {
           finalOutflow = dollarDelta
         }
-        // If xrpDelta is exactly 0, both stay at 0 (no change = no flow)
       }
 
-      // ===== Step 3: Auto-calculate AUM = XRP Locked × current XRP price =====
       var calculatedAum = currentXrpPrice > 0 ? xrp * currentXrpPrice : 0
 
       rows.push({
@@ -265,7 +294,6 @@ export default function AdminPages() {
       return
     }
 
-    // Update etf_aum.aum (the millions-display field) with auto-calculated AUM
     for (var j = 0; j < rows.length; j++) {
       var r = rows[j]
       await supabase.from('etf_aum').update({
@@ -290,7 +318,6 @@ export default function AdminPages() {
       await supabase.from('etf_summary').insert([summaryPayload])
     }
 
-    // Build a friendly summary message of derived flows
     var flowMsg = ''
     if (prevDate) {
       var totalInflow = rows.reduce((s, r) => s + r.inflow_usd, 0)
@@ -303,7 +330,6 @@ export default function AdminPages() {
 
     setSavingSnapshots(false)
     setMessage('Saved ' + rows.length + ' ETF snapshots!' + flowMsg + ' Live AUM continues updating hourly during market hours.')
-    // Reload to show fresh data
     loadSnapshotsForDate(snapshotDate)
     loadLivePrice()
   }
@@ -624,7 +650,6 @@ export default function AdminPages() {
     return { label: 'CHATTER', bg: 'rgba(245,158,11,0.20)', color: '#f59e0b' }
   }
 
-  // FIXED: Date-only fields (YYYY-MM-DD) need 'T00:00:00' appended to parse as local time, not UTC.
   function formatDate(d) {
     if (!d) return ''
     try {
@@ -956,12 +981,12 @@ export default function AdminPages() {
                 </div>
               )}
 
-              {/* ============== ETF DAILY DATA — SIMPLIFIED + AUTO-FLOWS ============== */}
+              {/* ============== ETF DAILY DATA — SIMPLIFIED + AUTO-FLOWS + SHORTHAND PARSING ============== */}
               {activeSection === 'etf-snapshots' && (
                 <div className="rounded-xl p-6" style={{ background: 'rgba(30,41,59,0.3)', border: '1px solid #334155' }}>
                   <h2 className="text-xl font-semibold mb-2" style={{ color: '#eceef5' }}>ETF Daily Data</h2>
                   <p className="text-sm mb-6" style={{ color: '#9aa8be' }}>
-                    Just enter <span style={{ color: '#eceef5', fontWeight: 600 }}>XRP Locked</span> for each ETF. AUM auto-calculates from XRP price. Inflows / Outflows auto-derive from day-over-day XRP Locked changes.
+                    Just enter <span style={{ color: '#eceef5', fontWeight: 600 }}>XRP Locked</span> for each ETF. Type the shorthand (e.g. <span style={{ color: '#10b981', fontFamily: 'monospace' }}>235.0</span> or <span style={{ color: '#10b981', fontFamily: 'monospace' }}>235M</span>) — the system converts automatically. AUM and flows auto-calculate.
                   </p>
 
                   <div className="mb-6 p-4 rounded-lg flex items-center justify-between gap-3" style={{ background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.3)' }}>
@@ -987,8 +1012,14 @@ export default function AdminPages() {
                   </div>
 
                   <div className="mb-6 p-4 rounded-lg" style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.3)' }}>
-                    <p className="text-sm" style={{ color: '#cbd5e1' }}>
-                      <strong style={{ color: '#3b82f6' }}>Daily workflow:</strong> Open xrp-insights.com after market close. Copy each ETF's XRP Locked into the field below. Click Save All. Inflows / Outflows are calculated automatically from the day-over-day change. Total time: ~30 seconds.
+                    <p className="text-sm mb-2" style={{ color: '#cbd5e1' }}>
+                      <strong style={{ color: '#3b82f6' }}>Daily workflow:</strong> Open xrp-insights.com after market close. For each ETF, type the XRP Locked number from the left side of their page. You can use shorthand:
+                    </p>
+                    <p className="text-xs ml-4" style={{ color: '#9aa8be', fontFamily: 'monospace' }}>
+                      • <span style={{ color: '#10b981' }}>235</span> or <span style={{ color: '#10b981' }}>235.0</span> or <span style={{ color: '#10b981' }}>235M</span> → 235,000,000
+                    </p>
+                    <p className="text-xs ml-4" style={{ color: '#9aa8be', fontFamily: 'monospace' }}>
+                      • <span style={{ color: '#10b981' }}>235000000</span> → 235,000,000 (full number also works)
                     </p>
                   </div>
 
@@ -1005,7 +1036,9 @@ export default function AdminPages() {
                       etfList.map(etf => {
                         var src = ETF_SOURCES[etf.ticker] || { name: 'source', url: '#' }
                         var s = snapshots[etf.ticker] || {}
+                        var parsedXrp = parseXrpLocked(s.xrp_locked)
                         var liveAum = calcLiveAum(s.xrp_locked)
+                        var xrpDisplay = fmtXrpLockedDisplay(parsedXrp)
                         return (
                           <div key={etf.ticker} className="p-4 rounded-lg" style={{ background: '#1e293b', border: '1px solid #475569' }}>
                             <div className="flex items-center gap-3 mb-3">
@@ -1026,20 +1059,23 @@ export default function AdminPages() {
                               )}
                             </div>
 
-                            {/* Primary input: XRP Locked */}
                             <div className="mb-3">
                               <label className="block text-sm font-semibold mb-1.5" style={{ color: '#eceef5' }}>XRP Locked</label>
                               <input
                                 type="text"
                                 value={s.xrp_locked != null ? s.xrp_locked : ''}
                                 onChange={(e) => updateSnapshotField(etf.ticker, 'xrp_locked', e.target.value)}
-                                placeholder="e.g. 229,068,373"
+                                placeholder="e.g. 235 or 235M or 235000000"
                                 className="w-full px-4 py-3 rounded-lg text-base"
                                 style={innerInputStyle}
                               />
+                              {xrpDisplay && (
+                                <p className="text-xs mt-1.5" style={{ color: '#10b981' }}>
+                                  ✓ Saved as: {xrpDisplay}
+                                </p>
+                              )}
                             </div>
 
-                            {/* Optional flow override */}
                             <details className="mt-3">
                               <summary className="text-xs cursor-pointer" style={{ color: '#6b7a96' }}>
                                 Override auto-calculated flows (only if xrp-insights publishes different official numbers)
@@ -1051,7 +1087,7 @@ export default function AdminPages() {
                                     type="text"
                                     value={s.inflow_usd != null ? s.inflow_usd : ''}
                                     onChange={(e) => updateSnapshotField(etf.ticker, 'inflow_usd', e.target.value)}
-                                    placeholder="leave blank to auto-calculate"
+                                    placeholder="e.g. 11.7M or 11700000"
                                     className="w-full px-4 py-2.5 rounded-lg text-sm"
                                     style={innerInputStyle}
                                   />
@@ -1062,7 +1098,7 @@ export default function AdminPages() {
                                     type="text"
                                     value={s.outflow_usd != null ? s.outflow_usd : ''}
                                     onChange={(e) => updateSnapshotField(etf.ticker, 'outflow_usd', e.target.value)}
-                                    placeholder="leave blank to auto-calculate"
+                                    placeholder="e.g. 2.4M or 2400000"
                                     className="w-full px-4 py-2.5 rounded-lg text-sm"
                                     style={innerInputStyle}
                                   />
