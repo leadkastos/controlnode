@@ -641,7 +641,8 @@ export default function AdminPages() {
     'XRPZ': { name: 'Franklin Templeton',url: 'https://www.franklintempleton.com/investments/options/exchange-traded-funds/products/47318/SINGLCLASS/franklin-xrp-etf/XRPZ' },
     'TOXR': { name: '21Shares',          url: 'https://www.21shares.com/en-us/products-us/toxr' },
     'GXRP': { name: 'Grayscale',         url: 'https://etfs.grayscale.com/gxrp' },
-    'XRPR': { name: 'REX-Osprey',        url: 'https://www.rexshares.com/xrpr/' }
+    'XRPR': { name: 'REX-Osprey',        url: 'https://www.rexshares.com/xrpr/' },
+    'BITW': { name: 'Bitwise 10 Index',  url: 'https://bitwiseinvestments.com/crypto-funds/bitw' }
   }
 
   function newsTypeBadge(type) {
