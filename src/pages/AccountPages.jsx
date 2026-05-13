@@ -121,7 +121,10 @@ function EmailNotificationsSection() {
   }
 
   return (
-    <DetailSection title="Email Notifications">
+    <DetailSection title="Email Notifications" titleBadge={<span className="text-xs font-bold px-2 py-1 rounded ml-2" style={{ background: 'rgba(245,158,11,0.15)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)', letterSpacing: '0.5px' }}>COMING SOON</span>}>
+      <div className="rounded-lg px-3 py-2 mb-4 text-xs" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', color: '#f59e0b' }}>
+        Email delivery for Morning Brief and Daily Wrap is launching soon. You can set your preferences now and they'll automatically activate when this feature goes live.
+      </div>
       <div className="space-y-3">
         <div className="flex items-center justify-between py-2" style={{ borderBottom: '1px solid #1e2330' }}>
           <div><p className="text-sm font-medium" style={{ color: '#eceef5' }}>Morning Brief</p><p className="text-xs" style={{ color: '#9aa8be' }}>Delivered to your email each morning when published</p></div>
