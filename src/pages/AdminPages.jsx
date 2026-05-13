@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react'
 import AppLayout from '../components/AppLayout'
-import { Plus, Trash2, Bell, MessageCircle, PlaySquare, FileText, BarChart3, TrendingUp, Calendar, Database, Pencil, X } from 'lucide-react'
+import { Plus, Trash2, Bell, MessageCircle, PlaySquare, FileText, BarChart3, TrendingUp, Calendar, Database, Pencil, X, Layers } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 
 const SIGNAL_NAMES = ['Market Sentiment', 'Risk Environment', 'Technical Outlook']
 const SIGNAL_VALUE_COLORS = { Bullish: 'green', Bearish: 'red', Neutral: 'yellow', Cautious: 'blue' }
 const SIGNAL_VALUES = Object.keys(SIGNAL_VALUE_COLORS)
+
+const DOMINO_STATUSES = ['Standing', 'Tipping', 'Fallen']
 
 // Parse XRP Locked input. Accepts ALL of these forms:
 //   "235"           -> 235,000,000  (assumes millions when value < 10000)
@@ -19,21 +21,15 @@ function parseXrpLocked(raw) {
   if (raw == null) return 0
   var s = String(raw).trim().replace(/,/g, '').replace(/\s/g, '')
   if (s === '') return 0
-  // Check for explicit M suffix
   var hasM = /m$/i.test(s)
   if (hasM) s = s.slice(0, -1)
   var n = parseFloat(s)
   if (isNaN(n)) return 0
-  // If has M suffix, multiply by 1M
   if (hasM) return n * 1e6
-  // If number is small (< 10,000), assume it's shorthand in millions (e.g. 235.0 = 235M)
   if (n < 10000) return n * 1e6
-  // Otherwise it's already the full number
   return n
 }
 
-// Parse dollar amounts for inflow/outflow overrides. Accepts:
-//   "11700000" / "11,700,000" / "11.7M" / "11.7"
 function parseDollarAmount(raw) {
   if (raw == null) return NaN
   var s = String(raw).trim().replace(/,/g, '').replace(/\$/g, '').replace(/\s/g, '')
@@ -83,6 +79,10 @@ export default function AdminPages() {
   const [newPipeline, setNewPipeline] = useState({ issuer_name: '', priority: 'Medium', notes: '', status: 'Not Filed' })
   const [addingPipeline, setAddingPipeline] = useState(false)
 
+  // DOMINO THEORY state
+  const [dominoes, setDominoes] = useState([])
+  const [savingDominoId, setSavingDominoId] = useState(null)
+
   function extractVideoId(url) {
     if (!url) return ''
     const patterns = [/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/, /youtube\.com\/v\/([^&\n?#]+)/]
@@ -112,6 +112,7 @@ export default function AdminPages() {
     loadRecentBriefs()
     loadRecentWraps()
     loadLivePrice()
+    loadDominoes()
   }, [])
 
   useEffect(() => {
@@ -152,6 +153,10 @@ export default function AdminPages() {
     const r = await supabase.from('xrp_live_price').select('*').eq('id', 1).maybeSingle()
     if (r.data) setLivePrice(r.data)
   }
+  async function loadDominoes() {
+    const r = await supabase.from('domino_theory').select('*').order('domino_number', { ascending: true })
+    if (r.data) setDominoes(r.data)
+  }
 
   async function loadSnapshotsForDate(date) {
     const r = await supabase.from('etf_daily_snapshots').select('*').eq('snapshot_date', date)
@@ -176,7 +181,6 @@ export default function AdminPages() {
     }))
   }
 
-  // Calculate live AUM for an ETF based on current XRP price × XRP Locked entered in form
   function calcLiveAum(xrpLockedRaw) {
     if (!livePrice || !livePrice.price_usd) return null
     var xrp = parseXrpLocked(xrpLockedRaw)
@@ -611,11 +615,37 @@ export default function AdminPages() {
     setMessage('Notification sent!'); setNotificationForm({ title: '', message: '' })
   }
 
+  // ============ DOMINO THEORY HANDLERS ============
+  function updateDominoField(id, field, value) {
+    setDominoes(prev => prev.map(d => d.id === id ? { ...d, [field]: value } : d))
+  }
+
+  async function handleSaveDomino(domino) {
+    setSavingDominoId(domino.id)
+    const { error } = await supabase.from('domino_theory').update({
+      status: domino.status,
+      notes: domino.notes,
+      updated_by: profile.id,
+      updated_at: new Date().toISOString()
+    }).eq('id', domino.id)
+    setSavingDominoId(null)
+    if (error) { setMessage('Error saving: ' + error.message); return }
+    setMessage('Domino ' + domino.domino_number + ' — ' + domino.domino_name + ' saved!')
+    loadDominoes()
+  }
+
+  function getDominoStatusColor(status) {
+    if (status === 'Fallen') return { bg: 'rgba(239,68,68,0.20)', text: '#ef4444', border: '#ef4444' }
+    if (status === 'Tipping') return { bg: 'rgba(245,158,11,0.20)', text: '#f59e0b', border: '#f59e0b' }
+    return { bg: 'rgba(16,185,129,0.20)', text: '#10b981', border: '#10b981' }
+  }
+
   const sections = [
     { id: 'market-news', label: 'Market News', icon: MessageCircle },
     { id: 'morning-brief', label: 'Morning Brief', icon: FileText },
     { id: 'daily-wrap', label: 'Daily Wrap', icon: Calendar },
     { id: 'market-signals', label: 'Market Signals', icon: BarChart3 },
+    { id: 'domino-theory', label: 'Domino Theory', icon: Layers },
     { id: 'youtube-intel', label: 'YouTube Intel', icon: PlaySquare },
     { id: 'etf-snapshots', label: 'ETF Daily Data', icon: Database },
     { id: 'etf-pipeline', label: 'ETF Pipeline', icon: TrendingUp },
@@ -981,6 +1011,81 @@ export default function AdminPages() {
                   </div>
                 </div>
               )}
+
+              {/* ============== DOMINO THEORY ============== */}
+              {activeSection === 'domino-theory' && (
+                <div className="rounded-xl p-6" style={{ background: 'rgba(30,41,59,0.3)', border: '1px solid #334155' }}>
+                  <h2 className="text-xl font-semibold mb-2" style={{ color: '#eceef5' }}>Domino Theory</h2>
+                  <p className="text-sm mb-6" style={{ color: '#9aa8be' }}>
+                    Set each domino's status. <span style={{ color: '#10b981' }}>Standing</span> = upright (monitoring), <span style={{ color: '#f59e0b' }}>Tipping</span> = in progress (warning), <span style={{ color: '#ef4444' }}>Fallen</span> = triggered. Changes appear on the member-facing Domino Theory page immediately.
+                  </p>
+
+                  <div className="mb-6 p-4 rounded-lg" style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.3)' }}>
+                    <p className="text-sm" style={{ color: '#cbd5e1' }}>
+                      <strong style={{ color: '#3b82f6' }}>Current state:</strong> {dominoes.filter(d => d.status === 'Fallen').length} Fallen · {dominoes.filter(d => d.status === 'Tipping').length} Tipping · {dominoes.filter(d => d.status === 'Standing').length} Standing
+                    </p>
+                  </div>
+
+                  {dominoes.length === 0 ? (
+                    <p className="text-sm" style={{ color: '#6b7a96' }}>Loading dominoes...</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {dominoes.map(d => {
+                        var c = getDominoStatusColor(d.status)
+                        var isSaving = savingDominoId === d.id
+                        return (
+                          <div key={d.id} className="p-4 rounded-lg" style={{ background: '#1e293b', border: '1px solid ' + c.border }}>
+                            <div className="flex items-center gap-3 mb-3">
+                              <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 font-bold" style={{ background: c.bg, color: c.text }}>
+                                {d.domino_number}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-semibold" style={{ color: '#eceef5' }}>{d.domino_name}</p>
+                                <span className="text-xs font-bold px-2 py-0.5 rounded inline-block mt-1" style={{ background: c.bg, color: c.text }}>{d.status}</span>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                              <div className="md:col-span-1">
+                                <label className="block text-xs font-medium mb-1.5" style={{ color: '#cbd5e1' }}>Status</label>
+                                <select
+                                  value={d.status || 'Standing'}
+                                  onChange={(e) => updateDominoField(d.id, 'status', e.target.value)}
+                                  className="w-full px-4 py-2.5 rounded-lg"
+                                  style={innerInputStyle}
+                                >
+                                  {DOMINO_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                                </select>
+                              </div>
+                              <div className="md:col-span-2">
+                                <label className="block text-xs font-medium mb-1.5" style={{ color: '#cbd5e1' }}>Notes</label>
+                                <textarea
+                                  value={d.notes || ''}
+                                  onChange={(e) => updateDominoField(d.id, 'notes', e.target.value)}
+                                  placeholder="Assessment notes for this domino..."
+                                  rows={2}
+                                  className="w-full px-4 py-2.5 rounded-lg resize-none"
+                                  style={innerInputStyle}
+                                />
+                              </div>
+                            </div>
+
+                            <button
+                              onClick={() => handleSaveDomino(d)}
+                              disabled={isSaving}
+                              className="px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50"
+                              style={btnPrimary}
+                            >
+                              {isSaving ? 'Saving...' : 'Save'}
+                            </button>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+              {/* ============== END DOMINO THEORY ============== */}
 
               {/* ============== ETF DAILY DATA — SIMPLIFIED + AUTO-FLOWS + SHORTHAND PARSING ============== */}
               {activeSection === 'etf-snapshots' && (
