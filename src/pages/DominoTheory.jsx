@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import AppLayout from '../components/AppLayout'
-import { AlertTriangle, X, ChevronRight } from 'lucide-react'
+import { AlertTriangle, X, ChevronRight, MousePointerClick } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
 const TILE_W = 58
@@ -193,6 +193,7 @@ function DetailPanel({ domino, onClose }) {
 export default function DominoTheory() {
   const [activeDomino, setActiveDomino] = useState(null)
   const [dbStatuses, setDbStatuses] = useState({})
+  const [hasClicked, setHasClicked] = useState(false)
 
   useEffect(function() {
     supabase.from('domino_theory').select('domino_number, status, notes').then(function(res) {
@@ -222,6 +223,7 @@ export default function DominoTheory() {
   const progressPct   = Math.round((progressCount / dominoes.length) * 100)
 
   function handleClick(domino) {
+    setHasClicked(true)
     setActiveDomino(function(prev) { return prev?.id === domino.id ? null : domino })
   }
 
@@ -230,6 +232,9 @@ export default function DominoTheory() {
       <style>{`
         @keyframes rockTile { 0%{transform:rotate(0deg)} 30%{transform:rotate(3deg)} 60%{transform:rotate(-2deg)} 100%{transform:rotate(0deg)} }
         @keyframes fragileRing { 0%{opacity:0.1} 50%{opacity:0.4} 100%{opacity:0.1} }
+        @keyframes clickPulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.05);opacity:0.85} }
+        @keyframes clickGlow { 0%,100%{box-shadow:0 0 0 0 rgba(245,158,11,0.5)} 50%{box-shadow:0 0 0 8px rgba(245,158,11,0)} }
+        @keyframes pointerBounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(4px)} }
       `}</style>
 
       <div className="mb-5">
@@ -266,14 +271,38 @@ export default function DominoTheory() {
         </div>
       </div>
 
+      {/* PROMINENT CLICK INSTRUCTION BANNER */}
+      {!hasClicked && (
+        <div
+          className="rounded-xl p-4 mb-4 flex items-center justify-center gap-3 flex-wrap"
+          style={{
+            background:'linear-gradient(135deg, rgba(245,158,11,0.18), rgba(239,68,68,0.12))',
+            border:'2px solid rgba(245,158,11,0.5)',
+            animation:'clickGlow 2s ease-in-out infinite'
+          }}
+        >
+          <div style={{ animation:'pointerBounce 1.4s ease-in-out infinite' }}>
+            <MousePointerClick size={22} style={{ color:'#f59e0b' }}/>
+          </div>
+          <p className="text-sm font-bold text-center" style={{ color:'#fbbf24', fontFamily:'Syne, sans-serif', letterSpacing:'0.3px' }}>
+            👇 CLICK ANY DOMINO BELOW TO SEE THE FULL BREAKDOWN
+          </p>
+          <div style={{ animation:'pointerBounce 1.4s ease-in-out infinite' }}>
+            <MousePointerClick size={22} style={{ color:'#f59e0b' }}/>
+          </div>
+        </div>
+      )}
+
       <div className="rounded-xl p-5 border mb-4" style={{ background:'#161a22', borderColor:'#1e2330' }}>
-        <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color:'#7a8599' }}>The Chain — Click Any Domino for Details</p>
+        <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color:'#7a8599' }}>The Chain</p>
         <p className="text-xs mb-5" style={{ color:'#6b7a96' }}>⊘ = fallen (triggered) · Tilted = tipping · Upright = standing</p>
         <div style={{ display:'flex', flexWrap:'wrap', gap:'16px', alignItems:'flex-end' }}>
           {dominoesWithStatus.map(function(domino,i) {
             return (
               <div key={domino.id} style={{ display:'flex', alignItems:'flex-end', gap:'4px' }}>
-                <DominoCard domino={domino} isActive={activeDomino?.id===domino.id} onClick={function() { handleClick(domino) }}/>
+                <div style={{ animation: !hasClicked ? 'clickPulse 2s ease-in-out infinite' : 'none' }}>
+                  <DominoCard domino={domino} isActive={activeDomino?.id===domino.id} onClick={function() { handleClick(domino) }}/>
+                </div>
                 {i < dominoes.length-1 && <ChevronRight size={10} style={{ color:'#2a3040', marginBottom:'40px', flexShrink:0 }}/>}
               </div>
             )
