@@ -10,13 +10,6 @@ const SIGNAL_VALUES = Object.keys(SIGNAL_VALUE_COLORS)
 
 const DOMINO_STATUSES = ['Standing', 'Tipping', 'Fallen']
 
-// Parse XRP Locked input. Accepts ALL of these forms:
-//   "235"           -> 235,000,000  (assumes millions when value < 10000)
-//   "235.0"         -> 235,000,000
-//   "235.0M" / "235M" -> 235,000,000
-//   "235000000"     -> 235,000,000
-//   "235,000,000"   -> 235,000,000
-//   ""              -> 0
 function parseXrpLocked(raw) {
   if (raw == null) return 0
   var s = String(raw).trim().replace(/,/g, '').replace(/\s/g, '')
@@ -79,7 +72,6 @@ export default function AdminPages() {
   const [newPipeline, setNewPipeline] = useState({ issuer_name: '', priority: 'Medium', notes: '', status: 'Not Filed' })
   const [addingPipeline, setAddingPipeline] = useState(false)
 
-  // DOMINO THEORY state
   const [dominoes, setDominoes] = useState([])
   const [savingDominoId, setSavingDominoId] = useState(null)
 
@@ -342,6 +334,23 @@ export default function AdminPages() {
     e.preventDefault()
     if (!marketNewsForm.content.trim()) { setMessage('Content is required'); return }
     setLoading(true)
+
+    // ============ AUTO-DEMOTE OLD BREAKING NEWS ============
+    // When posting NEW breaking news, demote all existing breaking news to 'confirmed'
+    // This keeps history intact but removes the red banner from old breaking news.
+    // Only runs when creating a new breaking post (not when editing an existing one).
+    var demotedCount = 0
+    if (marketNewsForm.type === 'breaking' && !editingNewsId) {
+      const demoteResult = await supabase
+        .from('market_news')
+        .update({ type: 'confirmed' })
+        .eq('type', 'breaking')
+        .select()
+      if (demoteResult.data) {
+        demotedCount = demoteResult.data.length
+      }
+    }
+
     const payload = {
       type: marketNewsForm.type,
       content: marketNewsForm.content,
@@ -361,7 +370,11 @@ export default function AdminPages() {
     setLoading(false)
     if (error) { setMessage('Error: ' + error.message); return }
     var label = marketNewsForm.type === 'breaking' ? 'Breaking news' : marketNewsForm.type === 'confirmed' ? 'Market news' : 'Market chatter'
-    setMessage(editingNewsId ? label + ' updated successfully!' : label + ' posted successfully!')
+    var successMsg = editingNewsId ? label + ' updated successfully!' : label + ' posted successfully!'
+    if (demotedCount > 0) {
+      successMsg += ' (' + demotedCount + ' previous breaking ' + (demotedCount === 1 ? 'post' : 'posts') + ' moved to news feed.)'
+    }
+    setMessage(successMsg)
     setMarketNewsForm({ type: 'unconfirmed', content: '', category: 'General', source: '', source_url: '' })
     setEditingNewsId(null)
     loadRecentNews()
@@ -615,7 +628,6 @@ export default function AdminPages() {
     setMessage('Notification sent!'); setNotificationForm({ title: '', message: '' })
   }
 
-  // ============ DOMINO THEORY HANDLERS ============
   function updateDominoField(id, field, value) {
     setDominoes(prev => prev.map(d => d.id === id ? { ...d, [field]: value } : d))
   }
@@ -750,6 +762,16 @@ export default function AdminPages() {
                   <p className="text-sm mb-6" style={{ color: '#9aa8be' }}>
                     Choose a Post Type. <span style={{ color: '#cbd5e1' }}>Breaking News</span> appears in the dashboard's red banner AND the right sidebar news feed. <span style={{ color: '#cbd5e1' }}>Confirmed News</span> and <span style={{ color: '#cbd5e1' }}>Chatter</span> appear in Market News and the news feed.
                   </p>
+
+                  {/* Heads-up notice when admin is about to post breaking news */}
+                  {marketNewsForm.type === 'breaking' && !editingNewsId && (
+                    <div className="mb-6 px-4 py-3 rounded-lg" style={{ background: 'rgba(245,158,11,0.10)', border: '1px solid rgba(245,158,11,0.3)' }}>
+                      <p className="text-sm" style={{ color: '#f59e0b' }}>
+                        <strong>ℹ️ Heads up:</strong> Posting this will automatically move any existing breaking news posts to the regular news feed (they stay visible, just no longer red). Only ONE breaking news post is active at a time.
+                      </p>
+                    </div>
+                  )}
+
                   <form onSubmit={handleMarketNewsSubmit} className="space-y-6">
                     <div>
                       <label className="block text-sm font-medium mb-2" style={{ color: '#cbd5e1' }}>Post Type</label>
@@ -1012,7 +1034,6 @@ export default function AdminPages() {
                 </div>
               )}
 
-              {/* ============== DOMINO THEORY ============== */}
               {activeSection === 'domino-theory' && (
                 <div className="rounded-xl p-6" style={{ background: 'rgba(30,41,59,0.3)', border: '1px solid #334155' }}>
                   <h2 className="text-xl font-semibold mb-2" style={{ color: '#eceef5' }}>Domino Theory</h2>
@@ -1085,9 +1106,7 @@ export default function AdminPages() {
                   )}
                 </div>
               )}
-              {/* ============== END DOMINO THEORY ============== */}
 
-              {/* ============== ETF DAILY DATA — SIMPLIFIED + AUTO-FLOWS + SHORTHAND PARSING ============== */}
               {activeSection === 'etf-snapshots' && (
                 <div className="rounded-xl p-6" style={{ background: 'rgba(30,41,59,0.3)', border: '1px solid #334155' }}>
                   <h2 className="text-xl font-semibold mb-2" style={{ color: '#eceef5' }}>ETF Daily Data</h2>
@@ -1225,7 +1244,6 @@ export default function AdminPages() {
                   </button>
                 </div>
               )}
-              {/* ============== END ETF DAILY DATA ============== */}
 
               {activeSection === 'etf-pipeline' && (
                 <div className="rounded-xl p-6" style={{ background: 'rgba(30,41,59,0.3)', border: '1px solid #334155' }}>
